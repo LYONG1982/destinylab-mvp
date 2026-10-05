@@ -1,0 +1,333 @@
+{
+  "meta": {
+    "project": "Destiny Lab MVP",
+    "version": "1.1",
+    "activityId": "dl-yinchuan-gulou-2026-11",
+    "activityName": "缘分实验室·银川鼓楼",
+    "mode": "SOCIAL",
+    "status": "RUNNING",
+    "mockNow": "2026-11-07T18:36:00+08:00"
+  },
+  "activity": {
+    "activeCount": 37,
+    "canMeetCount": 24,
+    "waitingInvitationCount": 9,
+    "mutualAcceptedCount": 6,
+    "meetingGroupCount": 4,
+    "realMeetCount": 28,
+    "scannedCount": 162,
+    "firstAnswerCompleted": 143,
+    "explorationCompleted": 108,
+    "invitationSentCount": 61,
+    "merchantContinueCount": 9,
+    "serviceConsentCount": 7
+  },
+  "currentUser": {
+    "id": "p-shanfeng",
+    "nickname": "山风",
+    "gender": "male",
+    "ageRange": "26-29",
+    "avatarVariant": 1,
+    "avatarType": "system-illustration",
+    "presenceStatus": "ACTIVE",
+    "flowStatus": "GOING_TO_MEET",
+    "availableToMeet": true,
+    "joinedAt": "2026-11-07T18:21:00+08:00",
+    "lastActiveAt": "2026-11-07T18:35:30+08:00"
+  },
+  "participants": [
+    {
+      "id": "p-shanfeng",
+      "nickname": "山风",
+      "gender": "male",
+      "ageRange": "26-29",
+      "avatarVariant": 1,
+      "presenceStatus": "ACTIVE",
+      "flowStatus": "GOING_TO_MEET",
+      "invitationSentCount": 2,
+      "realMeetCount": 0
+    },
+    {
+      "id": "p-xiaoman",
+      "nickname": "小满",
+      "gender": "female",
+      "ageRange": "26-29",
+      "avatarVariant": 1,
+      "presenceStatus": "ACTIVE",
+      "flowStatus": "GOING_TO_MEET",
+      "invitationSentCount": 1,
+      "realMeetCount": 0
+    },
+    {
+      "id": "p-wanfeng",
+      "nickname": "晚风",
+      "gender": "female",
+      "ageRange": "26-29",
+      "avatarVariant": 2,
+      "presenceStatus": "ACTIVE",
+      "flowStatus": "DISCOVERING",
+      "invitationSentCount": 0,
+      "realMeetCount": 0
+    },
+    {
+      "id": "p-qinghe",
+      "nickname": "青禾",
+      "gender": "female",
+      "ageRange": "30-33",
+      "avatarVariant": 3,
+      "presenceStatus": "ACTIVE",
+      "flowStatus": "DISCOVERING",
+      "invitationSentCount": 0,
+      "realMeetCount": 1
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "title": "今天，想怎样遇见？",
+      "selected": "一起逛逛",
+      "options": [
+        {
+          "label": "轻松聊聊",
+          "percentage": 42
+        },
+        {
+          "label": "一起逛逛",
+          "percentage": 33
+        },
+        {
+          "label": "认真认识",
+          "percentage": 25
+        }
+      ]
+    },
+    {
+      "id": "q3",
+      "title": "如果刚好有半天空闲，你更愿意先聊点什么？",
+      "selected": "旅行与城市",
+      "options": [
+        "美食与探店",
+        "电影与音乐",
+        "旅行与城市",
+        "最近的生活"
+      ]
+    },
+    {
+      "id": "q4",
+      "title": "认识一个人，你更喜欢什么节奏？",
+      "selected": "慢慢靠近"
+    },
+    {
+      "id": "q5",
+      "title": "周末你更愿意？",
+      "selected": "出去走走"
+    },
+    {
+      "id": "q6",
+      "title": "第一次见面更看重？",
+      "selected": "聊得来"
+    }
+  ],
+  "recommendations": [
+    {
+      "participantId": "p-xiaoman",
+      "commonAnswerCount": 4,
+      "headline": "第一次见面，你们都想一起逛逛",
+      "tags": [
+        "旅行与城市",
+        "慢慢靠近",
+        "聊得来"
+      ]
+    },
+    {
+      "participantId": "p-wanfeng",
+      "commonAnswerCount": 3,
+      "headline": "你们都喜欢咖啡和城市漫步",
+      "tags": [
+        "咖啡",
+        "城市漫步",
+        "慢热"
+      ]
+    },
+    {
+      "participantId": "p-qinghe",
+      "commonAnswerCount": 3,
+      "headline": "你们都喜欢秋天和有生活气息的地方",
+      "tags": [
+        "秋天",
+        "生活气息",
+        "城市"
+      ]
+    }
+  ],
+  "invitation": {
+    "id": "inv-shanfeng-xiaoman",
+    "fromParticipantId": "p-shanfeng",
+    "toParticipantId": "p-xiaoman",
+    "status": "ARRIVING",
+    "sentAt": "2026-11-07T18:29:00+08:00",
+    "acceptedAt": "2026-11-07T18:31:00+08:00",
+    "meetAssignedAt": "2026-11-07T18:32:00+08:00",
+    "meetPointId": "meet-01",
+    "senderDepartureConfirmed": true,
+    "receiverDepartureConfirmed": true,
+    "senderArrivalConfirmed": false,
+    "receiverArrivalConfirmed": true,
+    "senderRealMeetConfirmed": false,
+    "receiverRealMeetConfirmed": false
+  },
+  "meetPoints": [
+    {
+      "id": "meet-01",
+      "code": "Meet01",
+      "status": "WAITING_BOTH",
+      "currentInvitationId": "inv-shanfeng-xiaoman",
+      "durationMinutes": 3
+    },
+    {
+      "id": "meet-02",
+      "code": "Meet02",
+      "status": "FREE",
+      "currentInvitationId": null,
+      "durationMinutes": 0
+    },
+    {
+      "id": "meet-03",
+      "code": "Meet03",
+      "status": "MEETING",
+      "currentInvitationId": "inv-qinghe-wanfeng",
+      "durationMinutes": 8
+    }
+  ],
+  "meetPass": {
+    "displayCode": "A-018",
+    "verificationCode": "4721",
+    "meetPointCode": "Meet01",
+    "locationText": "主屏右侧·1｜1装置旁",
+    "walkDistanceMeters": 40
+  },
+  "dashboardAlerts": [
+    {
+      "id": "alert-01",
+      "level": "warning",
+      "title": "Meet01 等待超过 3 分钟",
+      "description": "小满已到达，山风尚未确认到达。",
+      "action": "查看详情"
+    },
+    {
+      "id": "alert-02",
+      "level": "warning",
+      "title": "3 条邀请等待超过 10 分钟",
+      "description": "对方可能已经离开现场。",
+      "action": "查看邀请"
+    }
+  ],
+  "events": [
+    {
+      "time": "18:36",
+      "text": "小满已确认到达 Meet01"
+    },
+    {
+      "time": "18:34",
+      "text": "山风已确认出发"
+    },
+    {
+      "time": "18:32",
+      "text": "系统为山风和小满分配 Meet01"
+    },
+    {
+      "time": "18:31",
+      "text": "小满接受山风的邀请"
+    },
+    {
+      "time": "18:29",
+      "text": "山风向小满发出邀请"
+    }
+  ],
+  "merchants": [
+    {
+      "id": "m-cloud",
+      "name": "云影咖啡",
+      "category": "咖啡",
+      "status": "ACTIVE",
+      "recommendCount": 28,
+      "benefitClaimCount": 12,
+      "redeemCount": 8,
+      "benefit": "双人饮品赠小甜点",
+      "walkingMinutes": 3
+    },
+    {
+      "id": "m-dessert",
+      "name": "山河甜品",
+      "category": "甜品",
+      "status": "ACTIVE",
+      "recommendCount": 19,
+      "benefitClaimCount": 7,
+      "redeemCount": 5,
+      "benefit": "双人套餐赠分享小食",
+      "walkingMinutes": 5
+    },
+    {
+      "id": "m-handcraft",
+      "name": "西巷手作",
+      "category": "体验",
+      "status": "PAUSED",
+      "recommendCount": 11,
+      "benefitClaimCount": 5,
+      "redeemCount": 3,
+      "benefit": "双人体验减免 20 元",
+      "walkingMinutes": 7
+    }
+  ],
+  "serviceConsents": [
+    {
+      "participantId": "p-shanfeng",
+      "type": "EVENT_NOTIFY",
+      "grantedAt": "2026-11-07T19:20:00+08:00",
+      "status": "UNPROCESSED",
+      "owner": null
+    },
+    {
+      "participantId": "p-xiaoman",
+      "type": "MATCHMAKING_SERVICE",
+      "grantedAt": "2026-11-07T19:26:00+08:00",
+      "status": "PENDING_CONTACT",
+      "owner": "王老师"
+    }
+  ],
+  "screen": {
+    "question": {
+      "title": "第一次认识一个人，你更愿意？",
+      "options": [
+        {
+          "label": "一起走走",
+          "percentage": 42
+        },
+        {
+          "label": "喝杯咖啡",
+          "percentage": 31
+        },
+        {
+          "label": "找点东西吃",
+          "percentage": 17
+        },
+        {
+          "label": "附近聊聊",
+          "percentage": 10
+        }
+      ]
+    },
+    "presence": {
+      "activeCount": 37,
+      "canMeetCount": 24
+    },
+    "mutual": {
+      "headline": "刚刚，又有两个人愿意认识彼此",
+      "showIdentity": false
+    },
+    "realMeet": {
+      "count": 18,
+      "label": "次真实相遇，今天已经在鼓楼发生"
+    }
+  }
+}
