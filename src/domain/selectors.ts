@@ -47,7 +47,6 @@ export function phase(s: DemoState, p: Participant) {
   if (!p.present) return "已离场";
   if (p.paused) return "暂停推荐";
   if (!p.profileComplete) return p.answers.q1 ? "补充资料" : "刚进入";
-  if (!complete(p)) return "答题中";
   const i = currentInvite(s, p);
   if (i?.status === "SENT") return "等待回应";
   if (i?.status === "ACCEPTED") return "等待相遇点";
@@ -55,17 +54,18 @@ export function phase(s: DemoState, p: Participant) {
   if (i?.status === "ARRIVING") return "前往相遇点";
   if (i?.status === "CONFIRMED")
     return i.choices[p.id] ? "已选择下一站" : "已确认见面";
+  if (!complete(p)) return "答题中";
   return p.ready ? "探索中" : "先看看";
 }
 export function routeFor(s: DemoState, p: Participant) {
   if (!p.answers.q1) return "01-start";
   if (!p.profileComplete) return "03-profile";
-  if (!complete(p)) return "04-question";
   const i = currentInvite(s, p);
   if (i?.status === "SENT") return "07-invitation";
   if (i && ["ACCEPTED", "MEET_ASSIGNED"].includes(i.status)) return "08-mutual";
   if (i?.status === "ARRIVING") return "09-meet";
   if (i?.status === "CONFIRMED") return "10-next-step";
+  if (!complete(p)) return "04-question";
   return "05-discover";
 }
 export function stats(s: DemoState) {

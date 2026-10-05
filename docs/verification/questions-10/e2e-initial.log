@@ -1,0 +1,85 @@
+
+> destiny-lab-mvp@1.1.0 test:e2e
+> playwright test
+
+
+Running 32 tests using 1 worker
+
+(node:24458) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/journey.spec.ts:25:9 › full journey · no-preference › complete first-time two-person story, persistent 28→29, operator and public screen agree (13.5s)
+  ✓   2 tests/e2e/journey.spec.ts:25:9 › full journey · reduce › complete first-time two-person story, persistent 28→29, operator and public screen agree (7.4s)
+  ✓   3 tests/e2e/journey.spec.ts:155:5 › nickname boundaries and Chinese composition, answer backtracking and refresh restoration (2.4s)
+  ✓   4 tests/e2e/journey.spec.ts:189:5 › rejection and expiration are neutral, and browser back does not accept an invitation (2.1s)
+  ✓   5 tests/e2e/journey.spec.ts:209:5 › same-origin storage synchronizes help and point allocation, not isolated browser contexts (3.1s)
+  ✓   6 tests/e2e/journey.spec.ts:260:5 › failed request is retryable and delayed writes cannot revive a reset scenario (6.3s)
+  ✓   7 tests/e2e/journey.spec.ts:314:5 › partner controls affect mobile, while redemption and service authorization stay out of MVP (1.7s)
+  ✓   8 tests/e2e/journey.spec.ts:342:5 › screen QR decodes to configured entry, remains visible and low activity does not insert identities (13.5s)
+  ✓   9 tests/e2e/journey.spec.ts:361:5 › three independent pairs produce a single anonymous insertion and no repeat (20.4s)
+  ✓  10 tests/e2e/journey.spec.ts:375:5 › phone widths, keyboard modal, and screen safe canvas have no critical overflow (1.9s)
+  ✓  11 tests/e2e/journey.spec.ts:416:5 › corrupt saved state has a visible recovery path without silently overwriting the stored snapshot (891ms)
+  ✓  12 tests/e2e/journey.spec.ts:446:5 › all four screen states render decodable QR pixels and readable panel text (1.5s)
+  ✓  13 tests/e2e/journey.spec.ts:471:5 › recommendation return preserves answers and people while explaining short lists (3.3s)
+  ✓  14 tests/e2e/journey.spec.ts:511:5 › blocked invitation explains current task, opens the right route and clears when the old invite ends (3.6s)
+  ✓  15 tests/e2e/motion.spec.ts:25:5 › question motion advances saved nodes without losing immediate controls or input (2.6s)
+  ✓  16 tests/e2e/motion.spec.ts:63:5 › mutual paths actually draw, do not gate the CTA, and replay once per invitation (2.9s)
+  ✓  17 tests/e2e/motion.spec.ts:115:5 › reduced motion, mid-flight preference change and visibility finish without hidden content (1.3s)
+  ✓  18 tests/e2e/motion.spec.ts:179:5 › failed send has no success motion; successful send preserves the invitation and can leave immediately (1.5s)
+  ✓  19 tests/e2e/motion.spec.ts:206:5 › incoming signal settles at the center, remains SENT and does not replay on refresh (923ms)
+  ✓  20 tests/e2e/motion.spec.ts:230:5 › a saved first answer updates only actual screen percentages across tabs (2.2s)
+  ✓  21 tests/e2e/motion.spec.ts:263:5 › waiting point, arrival and merchant feedback reflect only persisted facts (4.2s)
+  ✓  22 tests/e2e/questions.spec.ts:46:9 › ten questions · no-preference › q7–q10 fit five phone widths and only the final answer opens discovery (15.6s)
+  ✓  23 tests/e2e/questions.spec.ts:46:9 › ten questions · reduce › q7–q10 fit five phone widths and only the final answer opens discovery (8.9s)
+  ✘  24 tests/e2e/questions.spec.ts:137:5 › saved extra answers survive backtracking and refresh; admin shows all ten without filling old answers (10.5s)
+(node:24625) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  25 tests/e2e/questions.spec.ts:197:5 › a persisted six-answer invitation completes two-person meeting then explicitly resumes q7 (3.8s)
+  ✓  26 tests/e2e/questions.spec.ts:265:5 › legacy waiting and ended task pages stay readable without a redirect loop (2.1s)
+  ✓  27 tests/e2e/screen-avatar.spec.ts:22:5 › avatar is required, gender changes clear selection, keyboard works, refresh and narrow layouts retain selection (1.7s)
+  ✓  28 tests/e2e/screen-avatar.spec.ts:91:5 › chosen avatars agree on candidate, invitation, mutual, meet, operator list/modal and operator pair (1.9s)
+  ✓  29 tests/e2e/screen-avatar.spec.ts:132:5 › legacy state loads safely and image failure gives neutral fallback (607ms)
+  ✓  30 tests/e2e/screen-avatar.spec.ts:157:5 › screen preserves QR, layout, canvas identity across dissolve and stops motion when reduced or hidden (23.3s)
+  ✓  31 tests/e2e/screen-avatar.spec.ts:263:5 › mobile choice reaches screen as the same avatar and JOIN/ANSWER cues cannot change actual counts (3.5s)
+  ✓  32 tests/e2e/screen-avatar.spec.ts:307:5 › reduced-motion join and 4K resize keep the selected avatar visible without a queued effect; all canvas pixels leave QR clear (1.7s)
+
+
+  1) tests/e2e/questions.spec.ts:137:5 › saved extra answers survive backtracking and refresh; admin shows all ten without filling old answers 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '如果遇到一个不错的人，你更期待？' })
+    Expected: visible
+    Timeout: 8000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '如果遇到一个不错的人，你更期待？' }) with timeout 8000ms
+      - waiting for getByRole('heading', { name: '如果遇到一个不错的人，你更期待？' })
+
+
+      171 |       await expect(
+      172 |         page.getByRole("heading", { name: extra[index + 2].title }),
+    > 173 |       ).toBeVisible();
+          |         ^
+      174 |   }
+      175 |   await expect(page).toHaveURL(/05-discover/);
+      176 |   const after = await saved(page);
+        at /Users/lvyong198201/Desktop/Game 2026/DestinyLab-MVP/tests/e2e/questions.spec.ts:173:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/questions-saved-extra-answ-bebcd-without-filling-old-answers/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/questions-saved-extra-answ-bebcd-without-filling-old-answers/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/questions-saved-extra-answ-bebcd-without-filling-old-answers/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/questions-saved-extra-answ-bebcd-without-filling-old-answers/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/e2e/questions.spec.ts:137:5 › saved extra answers survive backtracking and refresh; admin shows all ten without filling old answers 
+  31 passed (2.9m)

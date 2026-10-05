@@ -589,7 +589,7 @@ function AdminView({
             </div>
           </div>
           <section className="detail-section">
-            <h3>6 道轻问题</h3>
+            <h3>{QUESTIONS.length} 道轻问题</h3>
             <div className="answer-detail">
               {QUESTIONS.map((q) => (
                 <div key={q.id}>

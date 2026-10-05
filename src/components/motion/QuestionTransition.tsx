@@ -75,7 +75,7 @@ export function DestinyProgressTrack({
   return (
     <ol
       className="destiny-progress"
-      aria-label={`已完成 ${QUESTIONS.filter((q) => answers[q.id]).length} 道，共 6 道`}
+      aria-label={`已完成 ${QUESTIONS.filter((q) => answers[q.id]).length} 道，共 ${QUESTIONS.length} 道`}
     >
       {QUESTIONS.map((q, index) => (
         <li

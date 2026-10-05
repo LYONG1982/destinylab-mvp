@@ -114,6 +114,7 @@ function MobileFlow({
   const [inviteModal, setInviteModal] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const target = person(s, query.get("target") || "p-xiaoman");
+  const resumeRoute = routeFor(s, me);
   const go = (p: string, targetId?: string) =>
     router.push(`/mobile/${p}${targetId ? `?target=${targetId}` : ""}`);
   useEffect(() => {
@@ -121,7 +122,10 @@ function MobileFlow({
     const n = Number(page.slice(0, 2));
     if (n > 2 && !me.answers.q1) destination = "01-start";
     else if (n > 3 && !me.profileComplete) destination = "03-profile";
-    else if (n >= 5 && !complete(me)) destination = "04-question";
+    // Existing six-answer snapshots may finish their current task, including
+    // reading its ended state, before explicitly returning to exploration.
+    else if (n >= 5 && !complete(me) && !(n >= 7 && inv))
+      destination = resumeRoute;
     else if (n >= 7 && !inv) destination = "05-discover";
     else if (n === 8 && inv?.status === "SENT") destination = "07-invitation";
     else if (n === 9 && inv?.status === "CONFIRMED")
@@ -136,7 +140,7 @@ function MobileFlow({
       destination = inv?.status === "SENT" ? "07-invitation" : "09-meet";
     if (destination && destination !== page)
       router.replace(`/mobile/${destination}`);
-  }, [s.epoch, me, page, inv, router]);
+  }, [s.epoch, me, page, inv, router, resumeRoute]);
   const hero = (eyebrow: string, title: React.ReactNode, subtitle?: string) => (
     <div className="page-hero">
       <div className="eyebrow">{eyebrow}</div>
@@ -925,7 +929,9 @@ function Start({
           开始今天的遇见
           <Icon name="arrow" />
         </Button>
-        <p className="fine center">回答 6 个轻问题，发现现场同频的人</p>
+        <p className="fine center">
+          回答 {QUESTIONS.length} 个轻问题，发现现场同频的人
+        </p>
       </section>
     </>
   );
@@ -1176,7 +1182,7 @@ function Questions({
     <div className="question-page">
       <div className="question-progress">
         <strong>{String(index + 1).padStart(2, "0")}</strong>
-        <span>/ 06</span>
+        <span>/ {String(QUESTIONS.length).padStart(2, "0")}</span>
         <DestinyProgressTrack answers={me.answers} current={index} />
       </div>
       <QuestionTransition questionKey={q.id}>
@@ -1211,7 +1217,7 @@ function Questions({
               },
               () => {
                 cityResponse(me.id, q.id, selected || me.answers[q.id]);
-                if (index === 5) onNext();
+                if (index === QUESTIONS.length - 1) onNext();
                 else {
                   setIndex(index + 1);
                   setSelected("");
@@ -1220,7 +1226,7 @@ function Questions({
             )
           }
         >
-          {index === 5 ? "看看现场同频的人" : "下一题"}
+          {index === QUESTIONS.length - 1 ? "看看现场同频的人" : "下一题"}
           <Icon name="arrow" />
         </Button>
         {index > 1 && (

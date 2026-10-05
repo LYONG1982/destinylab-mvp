@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
+import { QUESTIONS } from "@/data/questions";
 import { screenMotion } from "@/lib/motion-tokens";
 import { useDemo } from "@/lib/demo/hooks";
 import { command } from "@/lib/demo/store";
@@ -224,7 +225,7 @@ function ScreenView({
               今天的遇见
             </h2>
             <p>
-              回答 6 个轻问题
+              回答 {QUESTIONS.length} 个轻问题
               <br />
               发现现场同频的人
             </p>

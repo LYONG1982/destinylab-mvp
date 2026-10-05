@@ -1,0 +1,65 @@
+{
+  "baseline": "fb7e795",
+  "comparisons": [
+    {
+      "mode": "question",
+      "decoded": "http://localhost:3210/mobile/01-start",
+      "crop": {
+        "left": 1498,
+        "top": 301,
+        "right": 1778,
+        "bottom": 582
+      },
+      "changedPixels": 0,
+      "sha256": "77fe67ea4d039d237c51ffd37c6eeb109af659730047a7f941dc6fa692f279a0"
+    },
+    {
+      "mode": "presence",
+      "decoded": "http://localhost:3210/mobile/01-start",
+      "crop": {
+        "left": 1498,
+        "top": 301,
+        "right": 1778,
+        "bottom": 582
+      },
+      "changedPixels": 0,
+      "sha256": "77fe67ea4d039d237c51ffd37c6eeb109af659730047a7f941dc6fa692f279a0"
+    },
+    {
+      "mode": "mutual",
+      "decoded": "http://localhost:3210/mobile/01-start",
+      "crop": {
+        "left": 1498,
+        "top": 301,
+        "right": 1778,
+        "bottom": 582
+      },
+      "changedPixels": 0,
+      "sha256": "77fe67ea4d039d237c51ffd37c6eeb109af659730047a7f941dc6fa692f279a0"
+    },
+    {
+      "mode": "real-meet",
+      "decoded": "http://localhost:3210/mobile/01-start",
+      "crop": {
+        "left": 1498,
+        "top": 301,
+        "right": 1778,
+        "bottom": 582
+      },
+      "changedPixels": 0,
+      "sha256": "77fe67ea4d039d237c51ffd37c6eeb109af659730047a7f941dc6fa692f279a0"
+    },
+    {
+      "mode": "question-4k",
+      "decoded": "http://localhost:3210/mobile/01-start",
+      "crop": {
+        "left": 2996,
+        "top": 603,
+        "right": 3556,
+        "bottom": 1163
+      },
+      "changedPixels": 0,
+      "sha256": "2f810027b17685a5ad487872455a27ea9a8e13d353e7566bf10f41877a6948b0"
+    }
+  ]
+}

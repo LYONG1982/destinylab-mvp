@@ -107,6 +107,13 @@ export function createSeed(
     q4: "先做朋友",
     q6: "真诚表达",
   };
+  // Fictional seed answers only; persisted participants are never backfilled.
+  // Keep the original six-question common-answer counts for the demo actors.
+  participants.forEach((p, n) => {
+    QUESTIONS.slice(6).forEach((q, index) => {
+      p.answers[q.id] = q.options[n === 0 ? 0 : 1 + ((n + index) % 3)];
+    });
+  });
   const s: DemoState = {
     schema: 1,
     epoch,

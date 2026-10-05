@@ -41,7 +41,7 @@ npm run screenshots # 服务运行时导出 23 张页面和异常状态图
 | `/mobile/01-start` | 第一道问题 |
 | `/mobile/02-result` | 真实首答样本分布 |
 | `/mobile/03-profile` | 昵称、年龄段、性别和见面准备 |
-| `/mobile/04-question` | q2–q6 共用问答页 |
+| `/mobile/04-question` | q2–q10 共用问答页 |
 | `/mobile/05-discover` | 0–3 位合格候选 |
 | `/mobile/06-common` | 双方共同答案及发出邀请 |
 | `/mobile/07-invitation` | 发起方等待 / 接收方决定 |
@@ -71,7 +71,7 @@ npm run screenshots # 服务运行时导出 23 张页面和异常状态图
 
 ## 验收材料
 
-[操作清单](docs/ACCEPTANCE.md) · [本地验证记录](docs/verification/2026-10-05-local-validation.md) · [PRD](docs/PRD.md) · [用户旅程](docs/USER_JOURNEY.md) · [数据模型](docs/DATA_MODEL.md) · [设计规范](docs/DESIGN.md) · [变更记录](docs/CHANGELOG.md)
+[操作清单](docs/ACCEPTANCE.md) · [十题扩展验证](docs/verification/questions-10/2026-10-06-validation.md) · [本地验证记录](docs/verification/2026-10-05-local-validation.md) · [PRD](docs/PRD.md) · [用户旅程](docs/USER_JOURNEY.md) · [数据模型](docs/DATA_MODEL.md) · [设计规范](docs/DESIGN.md) · [变更记录](docs/CHANGELOG.md)
 
 ## 交付边界
 

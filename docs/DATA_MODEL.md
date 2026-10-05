@@ -53,3 +53,9 @@ Participant.avatarId: string|null；profile 命令必须携带性别匹配的白
 `screenProjection` 仍只返回聚合数据。新增 ScreenAdapter 私下持有当前会话的业务 ID→临时代号映射，只向 Canvas 输出临时代号与白名单虚拟头像源。头像路径属于公开系统素材，不含参与者 ID；不传出姓名或原始关系。该前端适配不构成正式认证边界。
 
 ScreenEvent 的 JOIN/ANSWER/ACTIVE/MATCH 是非持久化展示事件。第一次完善资料产生 JOIN；答案差异产生 ACTIVE，统计计数增加触发对应 ANSWER；broadcast-consume 新消费至少三对才产生 mutual MATCH；realMeetAt 聚合数实际增加产生 confirmed MATCH。它们只能触发视觉效果，不能写回人数或见面次数。ScreenEventSource 为未来受控来源预留订阅接口，未接入 WS/SSE。PUBLIC/LIGHT 类型仅提供受控兼容；真实昵称公开仍未启用。
+
+## 十题增量兼容（2026-10-06）
+
+Participant.answers 继续是 questionId→单选文字，不新增字段、版本或迁移。QUESTIONS 增加 q7–q10；complete 按当前全部 10 题计算，available 和新邀请校验沿用此完整性。旧存储读取不填新答案；下一次保存仅写实际选项。Mock 种子的新四题为独立生成的虚构数据，不用于迁移旧快照。
+
+routeFor 与 phase 让已有 SENT / ACCEPTED / MEET_ASSIGNED / ARRIVING / CONFIRMED 任务优先于补答；移动页守卫允许查看 M07–M10 原任务及终止状态。rediscover 仍由本人触发，清空 currentId 后恢复完整性检查。Invitation.common 只在新邀请时计算，可含至多 10 个相同答案；旧共同答案快照与 realMeetAt 不回算。responses 仍只记录 q1；scans、schema、epoch、存储键及业务事件结构不变。

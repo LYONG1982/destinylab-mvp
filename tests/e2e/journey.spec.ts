@@ -45,17 +45,22 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await page.getByRole("button", { name: "可以，现在就能见面" }).click();
       await page.getByRole("radio", { name: "男生虚拟头像 03" }).check();
       await page.getByRole("button", { name: "继续答题" }).click();
-      for (const [index, answer] of [
+      const answers = [
         "热闹街区",
         "旅行与城市",
         "慢慢靠近",
         "出去走走",
         "聊得来",
-      ].entries()) {
+        "主动认识几个人",
+        "主动找话题",
+        "先做朋友",
+        "有趣会聊天",
+      ];
+      for (const [index, answer] of answers.entries()) {
         await page.getByRole("button", { name: answer, exact: true }).click();
         await page
           .getByRole("button", {
-            name: index === 4 ? "看看现场同频的人" : "下一题",
+            name: index === answers.length - 1 ? "看看现场同频的人" : "下一题",
             exact: true,
           })
           .click();

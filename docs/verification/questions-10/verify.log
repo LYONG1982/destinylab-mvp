@@ -1,0 +1,254 @@
+
+> destiny-lab-mvp@1.1.0 verify
+> npm run lint && npm run typecheck && npm test && npm run build
+
+
+> destiny-lab-mvp@1.1.0 lint
+> eslint .
+
+
+> destiny-lab-mvp@1.1.0 typecheck
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully
+
+> destiny-lab-mvp@1.1.0 test
+> tsx --test tests/domain/*.test.ts
+
+TAP version 13
+# Subtest: nickname uses exact Han range and 1–5 character boundaries
+ok 1 - nickname uses exact Han range and 1–5 character boundaries
+  ---
+  duration_ms: 0.6845
+  type: 'test'
+  ...
+# Subtest: seed has valid relationships, one clock, 28 historical meets and coherent first-question distribution
+ok 2 - seed has valid relationships, one clock, 28 historical meets and coherent first-question distribution
+  ---
+  duration_ms: 3.195208
+  type: 'test'
+  ...
+# Subtest: recommendations expose exactly 0/1/2/3 candidates and calculate common answers
+ok 3 - recommendations expose exactly 0/1/2/3 candidates and calculate common answers
+  ---
+  duration_ms: 9.89
+  type: 'test'
+  ...
+# Subtest: browsing person is not recommended and must actively become ready before sending
+ok 4 - browsing person is not recommended and must actively become ready before sending
+  ---
+  duration_ms: 2.626625
+  type: 'test'
+  ...
+# Subtest: only receiver can accept; active invitation prevents multiple chains
+ok 5 - only receiver can accept; active invitation prevents multiple chains
+  ---
+  duration_ms: 3.195583
+  type: 'test'
+  ...
+# Subtest: arrival cannot be inferred from navigation or acceptance; individual facts remain separate
+ok 6 - arrival cannot be inferred from navigation or acceptance; individual facts remain separate
+  ---
+  duration_ms: 3.531792
+  type: 'test'
+  ...
+# Subtest: two independent meet confirmations add exactly one fact; replays and later repeat do not add
+ok 7 - two independent meet confirmations add exactly one fact; replays and later repeat do not add
+  ---
+  duration_ms: 5.334125
+  type: 'test'
+  ...
+# Subtest: decline/cancel/expiry produce no encounter and allow explicit rediscovery
+ok 8 - decline/cancel/expiry produce no encounter and allow explicit rediscovery
+  ---
+  duration_ms: 3.315291
+  type: 'test'
+  ...
+# Subtest: last meet point cannot be double assigned; releasing a vacant point wakes waiting relation
+ok 9 - last meet point cannot be double assigned; releasing a vacant point wakes waiting relation
+  ---
+  duration_ms: 1.803042
+  type: 'test'
+  ...
+# Subtest: operator help cannot substitute for participant meeting; leave cancels active chain
+ok 10 - operator help cannot substitute for participant meeting; leave cancels active chain
+  ---
+  duration_ms: 4.73525
+  type: 'test'
+  ...
+# Subtest: pause blocks only new invitations and completed old feedback cannot mutate a new chain
+ok 11 - pause blocks only new invitations and completed old feedback cannot mutate a new chain
+  ---
+  duration_ms: 5.15625
+  type: 'test'
+  ...
+# Subtest: next choices are individual and partner pause removes future recommendation
+ok 12 - next choices are individual and partner pause removes future recommendation
+  ---
+  duration_ms: 1.092542
+  type: 'test'
+  ...
+# Subtest: screen projection contains no people, identities, meet codes or exact places; only three-pair aggregation plays
+ok 13 - screen projection contains no people, identities, meet codes or exact places; only three-pair aggregation plays
+  ---
+  duration_ms: 1.143375
+  type: 'test'
+  ...
+# Subtest: epoch guard rejects delayed actions from a previous scenario
+ok 14 - epoch guard rejects delayed actions from a previous scenario
+  ---
+  duration_ms: 0.198459
+  type: 'test'
+  ...
+# Subtest: all named scenarios have valid current links and no duplicated physical reservation
+ok 15 - all named scenarios have valid current links and no duplicated physical reservation
+  ---
+  duration_ms: 3.854625
+  type: 'test'
+  ...
+# Subtest: fixture milestones follow invitation, acceptance, departure, arrival and confirmation order
+ok 16 - fixture milestones follow invitation, acceptance, departure, arrival and confirmation order
+  ---
+  duration_ms: 2.891416
+  type: 'test'
+  ...
+# Subtest: old six-answer participants must supply all four real answers before new recommendations or invitations
+ok 17 - old six-answer participants must supply all four real answers before new recommendations or invitations
+  ---
+  duration_ms: 11.813708
+  type: 'test'
+  ...
+# Subtest: existing six-answer invitation can accept, arrive and confirm before resuming missing questions
+ok 18 - existing six-answer invitation can accept, arrive and confirm before resuming missing questions
+  ---
+  duration_ms: 5.153292
+  type: 'test'
+  ...
+# Subtest: legacy task routes and operator statuses take priority over expanded-question completeness
+ok 19 - legacy task routes and operator statuses take priority over expanded-question completeness
+  ---
+  duration_ms: 3.352125
+  type: 'test'
+  ...
+# Subtest: common answers include up to ten exact matches while existing invitation snapshots stay fixed
+ok 20 - common answers include up to ten exact matches while existing invitation snapshots stay fixed
+  ---
+  duration_ms: 1.160792
+  type: 'test'
+  ...
+# Subtest: all mock scenarios contain valid explicit ten-question answers while fresh starts empty
+ok 21 - all mock scenarios contain valid explicit ten-question answers while fresh starts empty
+  ---
+  duration_ms: 6.606333
+  type: 'test'
+  ...
+# Subtest: catalogue uses twenty unique local IDs; completed fixtures are valid and fresh profile is unselected
+ok 22 - catalogue uses twenty unique local IDs; completed fixtures are valid and fresh profile is unselected
+  ---
+  duration_ms: 6.612125
+  type: 'test'
+  ...
+# Subtest: profile rejects missing, unknown and opposite gender avatars; selected avatar persists without changing recommendation ranks
+ok 23 - profile rejects missing, unknown and opposite gender avatars; selected avatar persists without changing recommendation ranks
+  ---
+  duration_ms: 12.449542
+  type: 'test'
+  ...
+# Subtest: legacy normalization is deterministic, leaves explicit null alone and preserves business fields
+ok 24 - legacy normalization is deterministic, leaves explicit null alone and preserves business fields
+  ---
+  duration_ms: 0.447
+  type: 'test'
+  ...
+# Subtest: display adapter exposes selected avatar with session code, never nickname, raw identity or pair details
+ok 25 - display adapter exposes selected avatar with session code, never nickname, raw identity or pair details
+  ---
+  duration_ms: 0.904834
+  type: 'test'
+  ...
+# Subtest: first profile emits one birth without falsely incrementing attendance, repeated edit does not emit birth
+ok 26 - first profile emits one birth without falsely incrementing attendance, repeated edit does not emit birth
+  ---
+  duration_ms: 3.045083
+  type: 'test'
+  ...
+# Subtest: answers update only changed statistic; a single mutual invitation cannot produce a MATCH cue
+ok 27 - answers update only changed statistic; a single mutual invitation cannot produce a MATCH cue
+  ---
+  duration_ms: 2.81625
+  type: 'test'
+  ...
+# Subtest: aggregate consume and confirmed encounter use separate MATCH semantics, neither event writes counts
+ok 28 - aggregate consume and confirmed encounter use separate MATCH semantics, neither event writes counts
+  ---
+  duration_ms: 2.730709
+  type: 'test'
+  ...
+# Subtest: event controller bounds, coalesces, deduplicates, rejects unfiltered MATCH and clears expired effects
+ok 29 - event controller bounds, coalesces, deduplicates, rejects unfiltered MATCH and clears expired effects
+  ---
+  duration_ms: 0.689
+  type: 'test'
+  ...
+# Subtest: 1/20/50/100/200 person layouts bound physics, preserve real cluster counts and stay within obstacles
+ok 30 - 1/20/50/100/200 person layouts bound physics, preserve real cluster counts and stay within obstacles
+  ---
+  duration_ms: 16.150458
+  type: 'test'
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 30
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 244.819625
+
+> destiny-lab-mvp@1.1.0 build
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.ts took 15ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 401ms
+  Running TypeScript ...
+  Finished TypeScript in 1053ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/23) ...
+  Generating static pages using 9 workers (5/23) 
+  Generating static pages using 9 workers (11/23) 
+  Generating static pages using 9 workers (17/23) 
+✓ Generating static pages using 9 workers (23/23) in 254ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin/dashboard
+├ ○ /admin/encounters
+├ ○ /admin/participants
+├ ○ /admin/partners
+├ ○ /demo
+├ ○ /mobile/01-start
+├ ○ /mobile/02-result
+├ ○ /mobile/03-profile
+├ ○ /mobile/04-question
+├ ○ /mobile/05-discover
+├ ○ /mobile/06-common
+├ ○ /mobile/07-invitation
+├ ○ /mobile/08-mutual
+├ ○ /mobile/09-meet
+├ ○ /mobile/10-next-step
+├ ○ /screen
+├ ○ /screen/mutual
+├ ○ /screen/presence
+├ ○ /screen/question
+└ ○ /screen/real-meet
+
+
+○  (Static)  prerendered as static content
+

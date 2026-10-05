@@ -933,6 +933,7 @@ svg {
 .answer-card strong {
   font-size: 18px;
   font-family: var(--serif);
+  text-wrap: balance;
 }
 .answer-card.selected {
   border-color: var(--wine);
