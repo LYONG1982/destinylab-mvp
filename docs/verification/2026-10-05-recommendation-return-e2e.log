@@ -1,0 +1,14 @@
+
+> destiny-lab-mvp@1.1.0 test:e2e
+> playwright test --grep recommendation return|blocked invitation|complete first-time
+
+
+Running 3 tests using 1 worker
+
+(node:14665) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/journey.spec.ts:22:5 › complete first-time two-person story, persistent 28→29, operator and public screen agree (6.4s)
+  ✓  2 tests/e2e/journey.spec.ts:455:5 › recommendation return preserves answers and people while explaining short lists (1.5s)
+  ✓  3 tests/e2e/journey.spec.ts:495:5 › blocked invitation explains current task, opens the right route and clears when the old invite ends (2.4s)
+
+  3 passed (11.7s)

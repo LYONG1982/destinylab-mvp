@@ -9,7 +9,9 @@ async function scenario(page: Page, name: string) {
   await expect(page.locator(".demo-status")).toContainText("真实相遇");
 }
 async function actorPage(page: Page, actor: string, route: string) {
-  await page.goto(`/mobile/${route}?actor=${actor}`);
+  await page.goto(
+    `/mobile/${route}${route.includes("?") ? "&" : "?"}actor=${actor}`,
+  );
   await expect(page.locator(".mobile-shell")).toBeVisible();
 }
 async function saved(page: Page) {
@@ -448,4 +450,95 @@ test("all four screen states render decodable QR pixels and readable panel text"
         .evaluate((el) => getComputedStyle(el).color),
     ).toBe("rgb(40, 35, 31)");
   }
+});
+
+test("recommendation return preserves answers and people while explaining short lists", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const [name, count] of [
+    ["zero", 0],
+    ["one", 1],
+    ["two", 2],
+    ["discover", 3],
+  ] as const) {
+    await scenario(page, name);
+    await actorPage(page, "p-shanfeng", "05-discover");
+    await expect(page.locator(".recommend-card")).toHaveCount(count);
+    const shortage = page.getByText(
+      "当前推荐已全部展示，暂时没有更多同频的人，可以稍后再来看看。",
+    );
+    if (count > 0 && count < 3) await expect(shortage).toBeVisible();
+    else await expect(shortage).toHaveCount(0);
+    if (count === 0) {
+      await expect(
+        page.getByRole("heading", { name: "现在和你同频的人还不多。" }),
+      ).toBeVisible();
+      continue;
+    }
+    const names = await page.locator(".recommend-card h2").allTextContents();
+    const before = await saved(page);
+    await page.getByRole("button", { name: "看看共同答案" }).first().click();
+    await expect(page).toHaveURL(/06-common/);
+    await page
+      .getByRole("button", { name: "返回推荐列表", exact: true })
+      .click();
+    await expect(page).toHaveURL(/05-discover$/);
+    await expect(page.locator(".recommend-card h2")).toHaveText(names);
+    const after = await saved(page);
+    expect(after.participants).toEqual(before.participants);
+    expect(after.invitations).toEqual(before.invitations);
+    expect(await page.evaluate(() => scrollY)).toBe(0);
+  }
+});
+
+test("blocked invitation explains current task, opens the right route and clears when the old invite ends", async ({
+  page,
+  context,
+}) => {
+  await scenario(page, "waiting");
+  await actorPage(page, "p-shanfeng", "06-common?target=p-qinghe");
+  await expect(page.getByRole("button", { name: "想认识 TA" })).toBeDisabled();
+  await expect(page.locator("#invite-unavailable-reason")).toContainText(
+    "你发出的邀请正在等待回应",
+  );
+  const before = await saved(page);
+  await page.getByRole("link", { name: "查看当前邀请" }).click();
+  await expect(page).toHaveURL(/07-invitation$/);
+  expect((await saved(page)).invitations).toEqual(before.invitations);
+  await actorPage(page, "p-shanfeng", "06-common?target=p-qinghe");
+  const receiver = await context.newPage();
+  await actorPage(receiver, "p-xiaoman", "06-common?target=p-004");
+  await expect(receiver.locator("#invite-unavailable-reason")).toContainText(
+    "你收到了一条待回应的邀请",
+  );
+  await receiver.getByRole("link", { name: "查看当前邀请" }).click();
+  await receiver
+    .getByRole("button", { name: "暂时不见面", exact: true })
+    .click();
+  await expect(page.locator("#invite-unavailable-reason")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "想认识 TA" })).toBeEnabled();
+  await receiver.close();
+  for (const [scene, label, route] of [
+    ["busy", "查看当前相遇", "08-mutual"],
+    ["mutual", "查看当前相遇", "08-mutual"],
+    ["arrival", "查看当前相遇", "09-meet"],
+    ["confirmed", "前往下一站", "10-next-step"],
+  ] as const) {
+    await scenario(page, scene);
+    await actorPage(page, "p-shanfeng", "06-common?target=p-qinghe");
+    await expect(
+      page.getByRole("button", { name: "想认识 TA" }),
+    ).toBeDisabled();
+    await expect(page.locator("#invite-unavailable-reason")).toBeVisible();
+    await page.getByRole("link", { name: label, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`${route}$`));
+  }
+  await scenario(page, "paused");
+  await actorPage(page, "p-shanfeng", "06-common?target=p-xiaoman");
+  await expect(page.locator("#invite-unavailable-reason")).toContainText(
+    "现场暂时暂停新邀请",
+  );
+  await expect(page.getByRole("button", { name: "想认识 TA" })).toBeDisabled();
+  await expect(page.locator(".notice-action")).toHaveCount(0);
 });

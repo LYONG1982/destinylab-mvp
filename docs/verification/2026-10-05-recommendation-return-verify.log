@@ -1,0 +1,169 @@
+
+> destiny-lab-mvp@1.1.0 verify
+> npm run lint && npm run typecheck && npm test && npm run build
+
+
+> destiny-lab-mvp@1.1.0 lint
+> eslint .
+
+
+> destiny-lab-mvp@1.1.0 typecheck
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully
+
+> destiny-lab-mvp@1.1.0 test
+> tsx --test tests/domain/*.test.ts
+
+TAP version 13
+# Subtest: nickname uses exact Han range and 1–5 character boundaries
+ok 1 - nickname uses exact Han range and 1–5 character boundaries
+  ---
+  duration_ms: 0.670333
+  type: 'test'
+  ...
+# Subtest: seed has valid relationships, one clock, 28 historical meets and coherent first-question distribution
+ok 2 - seed has valid relationships, one clock, 28 historical meets and coherent first-question distribution
+  ---
+  duration_ms: 2.786208
+  type: 'test'
+  ...
+# Subtest: recommendations expose exactly 0/1/2/3 candidates and calculate common answers
+ok 3 - recommendations expose exactly 0/1/2/3 candidates and calculate common answers
+  ---
+  duration_ms: 9.522875
+  type: 'test'
+  ...
+# Subtest: browsing person is not recommended and must actively become ready before sending
+ok 4 - browsing person is not recommended and must actively become ready before sending
+  ---
+  duration_ms: 2.326625
+  type: 'test'
+  ...
+# Subtest: only receiver can accept; active invitation prevents multiple chains
+ok 5 - only receiver can accept; active invitation prevents multiple chains
+  ---
+  duration_ms: 2.798041
+  type: 'test'
+  ...
+# Subtest: arrival cannot be inferred from navigation or acceptance; individual facts remain separate
+ok 6 - arrival cannot be inferred from navigation or acceptance; individual facts remain separate
+  ---
+  duration_ms: 3.265333
+  type: 'test'
+  ...
+# Subtest: two independent meet confirmations add exactly one fact; replays and later repeat do not add
+ok 7 - two independent meet confirmations add exactly one fact; replays and later repeat do not add
+  ---
+  duration_ms: 4.642791
+  type: 'test'
+  ...
+# Subtest: decline/cancel/expiry produce no encounter and allow explicit rediscovery
+ok 8 - decline/cancel/expiry produce no encounter and allow explicit rediscovery
+  ---
+  duration_ms: 2.842667
+  type: 'test'
+  ...
+# Subtest: last meet point cannot be double assigned; releasing a vacant point wakes waiting relation
+ok 9 - last meet point cannot be double assigned; releasing a vacant point wakes waiting relation
+  ---
+  duration_ms: 1.201209
+  type: 'test'
+  ...
+# Subtest: operator help cannot substitute for participant meeting; leave cancels active chain
+ok 10 - operator help cannot substitute for participant meeting; leave cancels active chain
+  ---
+  duration_ms: 4.141167
+  type: 'test'
+  ...
+# Subtest: pause blocks only new invitations and completed old feedback cannot mutate a new chain
+ok 11 - pause blocks only new invitations and completed old feedback cannot mutate a new chain
+  ---
+  duration_ms: 4.20025
+  type: 'test'
+  ...
+# Subtest: next choices are individual and partner pause removes future recommendation
+ok 12 - next choices are individual and partner pause removes future recommendation
+  ---
+  duration_ms: 1.016291
+  type: 'test'
+  ...
+# Subtest: screen projection contains no people, identities, meet codes or exact places; only three-pair aggregation plays
+ok 13 - screen projection contains no people, identities, meet codes or exact places; only three-pair aggregation plays
+  ---
+  duration_ms: 1.733792
+  type: 'test'
+  ...
+# Subtest: epoch guard rejects delayed actions from a previous scenario
+ok 14 - epoch guard rejects delayed actions from a previous scenario
+  ---
+  duration_ms: 0.178166
+  type: 'test'
+  ...
+# Subtest: all named scenarios have valid current links and no duplicated physical reservation
+ok 15 - all named scenarios have valid current links and no duplicated physical reservation
+  ---
+  duration_ms: 3.423792
+  type: 'test'
+  ...
+# Subtest: fixture milestones follow invitation, acceptance, departure, arrival and confirmation order
+ok 16 - fixture milestones follow invitation, acceptance, departure, arrival and confirmation order
+  ---
+  duration_ms: 2.457
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 243.899709
+
+> destiny-lab-mvp@1.1.0 build
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.ts took 15ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 571ms
+  Running TypeScript ...
+  Finished TypeScript in 1448ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/23) ...
+  Generating static pages using 9 workers (5/23)
+  Generating static pages using 9 workers (11/23)
+  Generating static pages using 9 workers (17/23)
+✓ Generating static pages using 9 workers (23/23) in 249ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin/dashboard
+├ ○ /admin/encounters
+├ ○ /admin/participants
+├ ○ /admin/partners
+├ ○ /demo
+├ ○ /mobile/01-start
+├ ○ /mobile/02-result
+├ ○ /mobile/03-profile
+├ ○ /mobile/04-question
+├ ○ /mobile/05-discover
+├ ○ /mobile/06-common
+├ ○ /mobile/07-invitation
+├ ○ /mobile/08-mutual
+├ ○ /mobile/09-meet
+├ ○ /mobile/10-next-step
+├ ○ /screen
+├ ○ /screen/mutual
+├ ○ /screen/presence
+├ ○ /screen/question
+└ ○ /screen/real-meet
+
+
+○  (Static)  prerendered as static content

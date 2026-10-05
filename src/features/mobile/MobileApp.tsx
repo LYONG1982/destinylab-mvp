@@ -10,6 +10,7 @@ import type {
   Gender,
 } from "@/domain/types";
 import {
+  ACTIVE_STATUSES,
   commonAnswers,
   complete,
   counterpart,
@@ -72,6 +73,21 @@ function MobileFlow({
   const query = useSearchParams();
   const a = useAction(me.id);
   const inv = currentInvite(s, me);
+  const candidates = recommendations(s, me.id);
+  const invitationBlocked =
+    !!inv && [...ACTIVE_STATUSES, "CONFIRMED"].includes(inv.status);
+  const currentTaskLabel =
+    inv?.status === "SENT"
+      ? "查看当前邀请"
+      : inv?.status === "CONFIRMED"
+        ? "前往下一站"
+        : "查看当前相遇";
+  const invitationMessage =
+    inv?.status === "SENT"
+      ? `${inv.from === me.id ? "你发出的邀请正在等待回应" : "你收到了一条待回应的邀请"}。请先处理当前邀请，暂时不能再发出新邀请。`
+      : inv?.status === "CONFIRMED"
+        ? "你已完成这次相遇。请先前往下一站，选择“我想继续探索”，再发出新邀请。"
+        : "你正在进行一次相遇。结束当前相遇前，暂时不能再发出新邀请。";
   const [inviteModal, setInviteModal] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
   const target = person(s, query.get("target") || "p-xiaoman");
@@ -294,50 +310,52 @@ function MobileFlow({
                   </Link>
                 )}
                 <div className="section-line">
-                  <span>{recommendations(s, me.id).length} 位可以认识的人</span>
+                  <span>{candidates.length} 位可以认识的人</span>
                   <span>不必着急，慢慢来</span>
                 </div>
-                {recommendations(s, me.id).length === 0 ? (
+                {candidates.length === 0 ? (
                   <Empty title="现在和你同频的人还不多。">
                     可以先逛逛鼓楼，稍后再回来看看。
                   </Empty>
                 ) : (
-                  recommendations(s, me.id).map(
-                    ({ participant: p, common }, index) => (
-                      <article
-                        className={`recommend-card ${index === 0 ? "featured" : ""}`}
-                        key={p.id}
+                  candidates.map(({ participant: p, common }, index) => (
+                    <article
+                      className={`recommend-card ${index === 0 ? "featured" : ""}`}
+                      key={p.id}
+                    >
+                      <div className="person-row">
+                        <Avatar person={p} size="lg" />
+                        <div>
+                          <h2>{p.name}</h2>
+                          <p>
+                            {p.gender === "male" ? "男生" : "女生"} · {p.age} 岁
+                          </p>
+                          <p className="common-count">
+                            有 <strong>{common.length}</strong> 道答案相同
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shared-highlight">
+                        <Icon name={index === 0 ? "heart" : "leaf"} />
+                        <span>
+                          <small>从这个共同点开始</small>你们都选择了「
+                          {common[0].answer}」
+                        </span>
+                      </div>
+                      <Button
+                        kind={index === 0 ? "primary" : "secondary"}
+                        onClick={() => go("06-common", p.id)}
                       >
-                        <div className="person-row">
-                          <Avatar person={p} size="lg" />
-                          <div>
-                            <h2>{p.name}</h2>
-                            <p>
-                              {p.gender === "male" ? "男生" : "女生"} · {p.age}{" "}
-                              岁
-                            </p>
-                            <p className="common-count">
-                              有 <strong>{common.length}</strong> 道答案相同
-                            </p>
-                          </div>
-                        </div>
-                        <div className="shared-highlight">
-                          <Icon name={index === 0 ? "heart" : "leaf"} />
-                          <span>
-                            <small>从这个共同点开始</small>你们都选择了「
-                            {common[0].answer}」
-                          </span>
-                        </div>
-                        <Button
-                          kind={index === 0 ? "primary" : "secondary"}
-                          onClick={() => go("06-common", p.id)}
-                        >
-                          看看共同答案
-                          <Icon name="arrow" size={18} />
-                        </Button>
-                      </article>
-                    ),
-                  )
+                        看看共同答案
+                        <Icon name="arrow" size={18} />
+                      </Button>
+                    </article>
+                  ))
+                )}
+                {candidates.length > 0 && candidates.length < 3 && (
+                  <Notice>
+                    当前推荐已全部展示，暂时没有更多同频的人，可以稍后再来看看。
+                  </Notice>
                 )}
                 {!me.ready && (
                   <Button
@@ -359,23 +377,38 @@ function MobileFlow({
                     道答案相同
                   </h2>
                   <CommonList common={commonAnswers(me, target)} />
-                  <Notice>
-                    可以从「
-                    {commonAnswers(me, target)[0]?.answer || "今天的鼓楼"}
-                    」开始聊起。
-                  </Notice>
+                  {invitationBlocked ? (
+                    <Notice>
+                      <span id="invite-unavailable-reason">
+                        {invitationMessage}
+                      </span>
+                      <Link
+                        className="notice-action"
+                        href={`/mobile/${routeFor(s, me)}`}
+                      >
+                        {currentTaskLabel}
+                        <Icon name="arrow" size={16} />
+                      </Link>
+                    </Notice>
+                  ) : s.activityPaused ? (
+                    <Notice>
+                      <span id="invite-unavailable-reason">
+                        现场暂时暂停新邀请。你可以先看看共同答案，恢复后再发出邀请。
+                      </span>
+                    </Notice>
+                  ) : (
+                    <Notice>
+                      可以从「
+                      {commonAnswers(me, target)[0]?.answer || "今天的鼓楼"}
+                      」开始聊起。
+                    </Notice>
+                  )}
                   <Button
-                    disabled={
-                      a.busy ||
-                      s.activityPaused ||
-                      (!!inv &&
-                        [
-                          "SENT",
-                          "ACCEPTED",
-                          "MEET_ASSIGNED",
-                          "ARRIVING",
-                          "CONFIRMED",
-                        ].includes(inv.status))
+                    disabled={a.busy || s.activityPaused || invitationBlocked}
+                    aria-describedby={
+                      invitationBlocked || s.activityPaused
+                        ? "invite-unavailable-reason"
+                        : undefined
                     }
                     onClick={() => setInviteModal(true)}
                   >
@@ -383,7 +416,7 @@ function MobileFlow({
                     <Icon name="arrow" />
                   </Button>
                   <Button kind="text" onClick={() => go("05-discover")}>
-                    再看看其他人
+                    返回推荐列表
                   </Button>
                   <p className="fine center">双方都愿意，才会安排见面。</p>
                 </>

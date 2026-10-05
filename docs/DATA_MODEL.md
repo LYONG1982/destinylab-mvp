@@ -35,3 +35,7 @@ CONFIRMED 只在双方确认时生成 `realMeetAt`，已有事实不可因重试
 ## API 适配
 
 `DestinyLabApi` 定义 command 与 resetScenario 契约；Mock 模拟 250ms 延迟，可人为延长或模拟失败。后续正式阶段需服务端身份、权限、持久化事务、时间和公共投影，不将本地角色参数当成真实认证。
+
+## 返回推荐列表的状态边界
+
+返回只进行路由导航，不新增领域命令，不修改当前关系、答案、候选排序或存储结构。禁用说明由既有 SENT / ACCEPTED / MEET_ASSIGNED / ARRIVING / CONFIRMED 状态派生，目标入口复用 routeFor；终止状态不继续保留旧的阻断说明。

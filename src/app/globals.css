@@ -271,6 +271,16 @@ svg {
 .notice svg {
   margin-top: 1px;
 }
+.notice-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--wine);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
 .notice-error {
   background: #fae9e8;
   color: #922e35;
