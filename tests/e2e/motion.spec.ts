@@ -32,6 +32,7 @@ test("question motion advances saved nodes without losing immediate controls or 
     page.getByRole("status").filter({ hasText: "已加入今晚的答案" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "看看现场还有谁和我一样" }).click();
+  await page.getByRole("radio", { name: "男生虚拟头像 03" }).check();
   await page.getByRole("button", { name: "继续答题" }).click();
   await expect(
     page.locator('.destiny-progress li[data-complete="true"]'),

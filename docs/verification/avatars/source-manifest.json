@@ -1,0 +1,182 @@
+[
+  {
+    "original": "female-01.png",
+    "avatarId": "female_01",
+    "file": "public/assets/avatars/female/female_01.png",
+    "sha256": "383bcbea62790dac0c1d4261f4494151d64497d7a4215c7484a3d1886cb317d1",
+    "bytes": 1780370,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-02.png",
+    "avatarId": "female_02",
+    "file": "public/assets/avatars/female/female_02.png",
+    "sha256": "cd6103490730e95e8e94d43ad1a3321ff82b2a24a9d4e63e374c54e61306f0fa",
+    "bytes": 2096751,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-03.png",
+    "avatarId": "female_03",
+    "file": "public/assets/avatars/female/female_03.png",
+    "sha256": "9855106f96495b873ae64c17896841d59932c79fbc9db110bed2ed78853f4b01",
+    "bytes": 1929750,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-04.png",
+    "avatarId": "female_04",
+    "file": "public/assets/avatars/female/female_04.png",
+    "sha256": "aad4de0761cb6a6eef1d254cbdc93494317bac20939710f38266a3e0b7d45383",
+    "bytes": 1741170,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-05.png",
+    "avatarId": "female_05",
+    "file": "public/assets/avatars/female/female_05.png",
+    "sha256": "768ae5fd206d38c6550523b764dd1290cdc03a81f1335036cdbdf5c18839f561",
+    "bytes": 1656807,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-06.png",
+    "avatarId": "female_06",
+    "file": "public/assets/avatars/female/female_06.png",
+    "sha256": "2cb11768295a9c6f4939f049ecacae91fe4ca74474171a43ae5a06183c5ec645",
+    "bytes": 1824071,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-07.png",
+    "avatarId": "female_07",
+    "file": "public/assets/avatars/female/female_07.png",
+    "sha256": "efdea720676968d8264fbcacbd46cfdccfa5053b41e5808f5c99762079bc9d04",
+    "bytes": 1891157,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-08.png",
+    "avatarId": "female_08",
+    "file": "public/assets/avatars/female/female_08.png",
+    "sha256": "0fee23f7fa757029ea84fe027f6b14cf23c3699c9afc788b383a8a5e078b8eee",
+    "bytes": 1856113,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-09.png",
+    "avatarId": "female_09",
+    "file": "public/assets/avatars/female/female_09.png",
+    "sha256": "c4783f7ac5d986dcc9b6c2d3b256bf089097592b096284114ada40fa40de2a01",
+    "bytes": 2039551,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "female-10.png",
+    "avatarId": "female_10",
+    "file": "public/assets/avatars/female/female_10.png",
+    "sha256": "bba0389a074a1d6af4b439e9352d667abdbe33c125ce2b09ecc951d573851cf4",
+    "bytes": 1987055,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-01.png",
+    "avatarId": "male_01",
+    "file": "public/assets/avatars/male/male_01.png",
+    "sha256": "b4deb639b5982fe483b7a9899be0c9b2f30e3888873a5394c036df4f3d45b882",
+    "bytes": 1443542,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-02.png",
+    "avatarId": "male_02",
+    "file": "public/assets/avatars/male/male_02.png",
+    "sha256": "02498f1b2c35a11e23c35cf95f78280d82587c0b3034442bd3496fbdff7c4f97",
+    "bytes": 1692577,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-03.png",
+    "avatarId": "male_03",
+    "file": "public/assets/avatars/male/male_03.png",
+    "sha256": "56c7f7acd13f157c08118a7c8a22e7438b20603ef7c4b2af980cfcc81494d5a1",
+    "bytes": 1856899,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-04.png",
+    "avatarId": "male_04",
+    "file": "public/assets/avatars/male/male_04.png",
+    "sha256": "b1776fd1e253f031bf8dfe1c91837a2ad0c99eddf16ab94f80f9ead263257750",
+    "bytes": 1764247,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-05.png",
+    "avatarId": "male_05",
+    "file": "public/assets/avatars/male/male_05.png",
+    "sha256": "b6f264a229c9d722f2298f48ef5ab8c7245a6e9c0ac1a3d55c225b7bfbd7a001",
+    "bytes": 1600014,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-06.png",
+    "avatarId": "male_06",
+    "file": "public/assets/avatars/male/male_06.png",
+    "sha256": "0f3489e5881e6a10e6d6fca5bdfa43d817b6da6280ddb93c9928f845f00e81e8",
+    "bytes": 1518439,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-07.png",
+    "avatarId": "male_07",
+    "file": "public/assets/avatars/male/male_07.png",
+    "sha256": "3d285a6400f0ff4499edfde971cdecca0c884698294bcd635387f4e094350c64",
+    "bytes": 1617975,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-08.png",
+    "avatarId": "male_08",
+    "file": "public/assets/avatars/male/male_08.png",
+    "sha256": "648686cbd11bae5b9c58b6ddd3e03895d238e4b85de8ce44c2127931ee0f8bef",
+    "bytes": 1505608,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-09.png",
+    "avatarId": "male_09",
+    "file": "public/assets/avatars/male/male_09.png",
+    "sha256": "d1214f6b5ddbd2eef8a6d66f7da643fb2af435aa5e51d743610201f7b3168c61",
+    "bytes": 2047990,
+    "width": 1254,
+    "height": 1254
+  },
+  {
+    "original": "male-10.png",
+    "avatarId": "male_10",
+    "file": "public/assets/avatars/male/male_10.png",
+    "sha256": "e20511c2022f56239a12d916dea8941fabe19d739b712995e56fefad83449333",
+    "bytes": 1648657,
+    "width": 1254,
+    "height": 1254
+  }
+]

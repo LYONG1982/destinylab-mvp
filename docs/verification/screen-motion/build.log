@@ -1,0 +1,46 @@
+
+> destiny-lab-mvp@1.1.0 build
+> next build
+
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.ts took 17ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 669ms
+  Running TypeScript ...
+  Finished TypeScript in 2.3s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/23) ...
+  Generating static pages using 9 workers (5/23) 
+  Generating static pages using 9 workers (11/23) 
+  Generating static pages using 9 workers (17/23) 
+✓ Generating static pages using 9 workers (23/23) in 274ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin/dashboard
+├ ○ /admin/encounters
+├ ○ /admin/participants
+├ ○ /admin/partners
+├ ○ /demo
+├ ○ /mobile/01-start
+├ ○ /mobile/02-result
+├ ○ /mobile/03-profile
+├ ○ /mobile/04-question
+├ ○ /mobile/05-discover
+├ ○ /mobile/06-common
+├ ○ /mobile/07-invitation
+├ ○ /mobile/08-mutual
+├ ○ /mobile/09-meet
+├ ○ /mobile/10-next-step
+├ ○ /screen
+├ ○ /screen/mutual
+├ ○ /screen/presence
+├ ○ /screen/question
+└ ○ /screen/real-meet
+
+
+○  (Static)  prerendered as static content
+

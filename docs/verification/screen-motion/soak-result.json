@@ -1,0 +1,260 @@
+{
+  "durationSeconds": 606,
+  "simulatedSnapshots": 120,
+  "participants": 200,
+  "samples": [
+    {
+      "seconds": 0,
+      "nodes": 91,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":1089.609375,\"y\":177.1875,\"width\":319.59375,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "21",
+        "clustered": "179",
+        "effects": "2"
+      },
+      "canvases": 3,
+      "animations": 9,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4411544,
+        "totalSize": 5308416,
+        "embedderHeapUsedSize": 1803440,
+        "backingStorageSize": 591222
+      }
+    },
+    {
+      "seconds": 60,
+      "nodes": 91,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":1089.609375,\"y\":177.1875,\"width\":319.59375,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "22",
+        "clustered": "179",
+        "effects": "2",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 4,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4835576,
+        "totalSize": 5308416,
+        "embedderHeapUsedSize": 1849832,
+        "backingStorageSize": 591442
+      }
+    },
+    {
+      "seconds": 121,
+      "nodes": 91,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":1089.609375,\"y\":177.1875,\"width\":319.59375,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "22",
+        "clustered": "179",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 2,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4881908,
+        "totalSize": 5308416,
+        "embedderHeapUsedSize": 1843048,
+        "backingStorageSize": 591435
+      }
+    },
+    {
+      "seconds": 181,
+      "nodes": 108,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":849.6,\"y\":177.1875,\"width\":559.603125,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "24",
+        "clustered": "176",
+        "effects": "2",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 4,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4836760,
+        "totalSize": 5308416,
+        "embedderHeapUsedSize": 1943776,
+        "backingStorageSize": 591445
+      }
+    },
+    {
+      "seconds": 241,
+      "nodes": 74,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":849.6,\"y\":177.1875,\"width\":559.603125,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "24",
+        "clustered": "176",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 2,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4702412,
+        "totalSize": 5570560,
+        "embedderHeapUsedSize": 1778752,
+        "backingStorageSize": 591031
+      }
+    },
+    {
+      "seconds": 301,
+      "nodes": 83,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":849.6,\"y\":177.1875,\"width\":559.603125,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "24",
+        "clustered": "176",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 2,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4534120,
+        "totalSize": 5570560,
+        "embedderHeapUsedSize": 1722272,
+        "backingStorageSize": 591031
+      }
+    },
+    {
+      "seconds": 361,
+      "nodes": 66,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":849.6,\"y\":177.1875,\"width\":559.603125,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "24",
+        "clustered": "176",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 2,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4534804,
+        "totalSize": 5308416,
+        "embedderHeapUsedSize": 1810976,
+        "backingStorageSize": 591031
+      }
+    },
+    {
+      "seconds": 422,
+      "nodes": 100,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":1089.609375,\"y\":177.1875,\"width\":319.59375,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "21",
+        "clustered": "179",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 3,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4524728,
+        "totalSize": 5570560,
+        "embedderHeapUsedSize": 1843440,
+        "backingStorageSize": 591031
+      }
+    },
+    {
+      "seconds": 482,
+      "nodes": 91,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":1089.609375,\"y\":177.1875,\"width\":319.59375,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "21",
+        "clustered": "179",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 2,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4531540,
+        "totalSize": 5570560,
+        "embedderHeapUsedSize": 1797296,
+        "backingStorageSize": 591031
+      }
+    },
+    {
+      "seconds": 542,
+      "nodes": 91,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":1089.609375,\"y\":177.1875,\"width\":319.59375,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "21",
+        "clustered": "179",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 2,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4545816,
+        "totalSize": 5570560,
+        "embedderHeapUsedSize": 1795408,
+        "backingStorageSize": 591031
+      }
+    },
+    {
+      "seconds": 602,
+      "nodes": 108,
+      "motion": {
+        "testid": "screen-motion",
+        "running": "true",
+        "area": "{\"x\":849.6,\"y\":177.1875,\"width\":559.603125,\"height\":735.359375}",
+        "safe": "{\"x\":1419.203125,\"y\":222.609375,\"width\":436.796875,\"height\":654.5}",
+        "nodes": "24",
+        "clustered": "176",
+        "effects": "0",
+        "fps": "30"
+      },
+      "canvases": 3,
+      "animations": 2,
+      "qrCount": 1,
+      "heap": {
+        "usedSize": 4570124,
+        "totalSize": 5308416,
+        "embedderHeapUsedSize": 1746560,
+        "backingStorageSize": 591031
+      }
+    }
+  ],
+  "errors": []
+}

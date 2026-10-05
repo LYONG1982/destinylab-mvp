@@ -1,3 +1,4 @@
+import { validAvatar } from "@/config/avatars";
 import { AGES, QUESTIONS } from "@/data/questions";
 import type {
   CommandEnvelope,
@@ -97,7 +98,9 @@ export function applyCommand(
       ensure(!nicknameError(c.name), nicknameError(c.name));
       ensure(AGES.includes(c.age), "请选择年龄段。");
       ensure(["male", "female"].includes(c.gender), "请选择性别。");
+      ensure(validAvatar(c.avatarId, c.gender), "选一个本次活动头像吧。");
       Object.assign(p, {
+        avatarId: c.avatarId,
         name: c.name,
         gender: c.gender,
         age: c.age,

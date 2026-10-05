@@ -24,4 +24,10 @@ Single square virtual avatar illustration for an elegant Chinese urban social ap
 
 ## 替换方法
 
-同路径替换无字场景与系统头像文件，并检查所有手机页、卡片与大屏。文字由 HTML 渲染，不需要写入图片。Logo 是 `src/components/ui.tsx` 中的原生矢量品牌标识；正式品牌源文件提供后可替换。二维码在 `/demo` 配置 URL，重新打开大屏生效。
+场景图可按原路径维护；新头像必须通过 src/config/avatars.ts 的固定 ID 白名单接入，并检查所有手机页、卡片与大屏，不根据性别或刷新临时随机替换。文字由 HTML 渲染，不需要写入图片。Logo 是 `src/components/ui.tsx` 中的原生矢量品牌标识；正式品牌源文件提供后可替换。二维码在 `/demo` 配置 URL，重新打开大屏生效。
+
+## 用户提供的 20 张虚拟头像（2026-10-05）
+
+来源：同目录资料仓的《缘分实验室_女生头像_10张.zip》《缘分实验室_男生头像_10张.zip》，各 10 张 1254×1254 RGBA PNG。按 female-01→female_01、male-01→male_01 的原顺序重命名，存于 public/assets/avatars/{female,male}。20 张共 35,498,743 字节，原包与原图未改；每个源/目标 SHA256 一致，清单见 verification/avatars/source-manifest.json。
+
+页面通过 Next Image 请求本机缩略图，不访问第三方头像 API，不生成新人脸；Canvas 与页面读取同一配置和图片源。原有两张系统插画仍保留，不再作为实际参与者头像选择来源。

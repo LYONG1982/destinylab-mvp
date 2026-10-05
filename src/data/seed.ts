@@ -1,3 +1,4 @@
+import { defaultAvatarId } from "@/config/avatars";
 import { QUESTIONS } from "./questions";
 import type { DemoState, Participant, Invitation } from "@/domain/types";
 import { commonAnswers } from "@/domain/selectors";
@@ -54,6 +55,7 @@ export function createSeed(
       n === 0 || n === 4 || n === 5 || (n >= 6 && n % 2 === 0)
         ? "male"
         : "female",
+    avatarId: null,
     age: n === 3 ? "30–33" : "26–29",
     ready: n < 6,
     paused: false,
@@ -73,6 +75,9 @@ export function createSeed(
     currentId: null,
     joinedAt: START - (n + 1) * 60000,
   }));
+  participants.forEach((p) => {
+    p.avatarId = defaultAvatarId(p.id, p.gender);
+  });
   participants[1].answers = {
     ...baseAnswers,
     q2: "安静咖啡馆",
@@ -205,6 +210,7 @@ export function createSeed(
   if (scenario === "fresh") {
     participants[0].answers = {};
     participants[0].profileComplete = false;
+    participants[0].avatarId = null;
     participants[0].ready = false;
     delete s.responses[participants[0].id];
   }

@@ -1,0 +1,38 @@
+
+> destiny-lab-mvp@1.1.0 test:e2e
+> playwright test
+
+
+Running 27 tests using 1 worker
+
+(node:21402) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/journey.spec.ts:25:9 › full journey · no-preference › complete first-time two-person story, persistent 28→29, operator and public screen agree (10.9s)
+  ✓   2 tests/e2e/journey.spec.ts:25:9 › full journey · reduce › complete first-time two-person story, persistent 28→29, operator and public screen agree (6.0s)
+  ✓   3 tests/e2e/journey.spec.ts:150:5 › nickname boundaries and Chinese composition, answer backtracking and refresh restoration (2.4s)
+  ✓   4 tests/e2e/journey.spec.ts:184:5 › rejection and expiration are neutral, and browser back does not accept an invitation (2.2s)
+  ✓   5 tests/e2e/journey.spec.ts:204:5 › same-origin storage synchronizes help and point allocation, not isolated browser contexts (3.2s)
+  ✓   6 tests/e2e/journey.spec.ts:255:5 › failed request is retryable and delayed writes cannot revive a reset scenario (5.9s)
+  ✓   7 tests/e2e/journey.spec.ts:309:5 › partner controls affect mobile, while redemption and service authorization stay out of MVP (1.6s)
+  ✓   8 tests/e2e/journey.spec.ts:337:5 › screen QR decodes to configured entry, remains visible and low activity does not insert identities (13.2s)
+  ✓   9 tests/e2e/journey.spec.ts:356:5 › three independent pairs produce a single anonymous insertion and no repeat (20.2s)
+  ✓  10 tests/e2e/journey.spec.ts:370:5 › phone widths, keyboard modal, and screen safe canvas have no critical overflow (2.1s)
+  ✓  11 tests/e2e/journey.spec.ts:411:5 › corrupt saved state has a visible recovery path without silently overwriting the stored snapshot (891ms)
+  ✓  12 tests/e2e/journey.spec.ts:441:5 › all four screen states render decodable QR pixels and readable panel text (1.8s)
+  ✓  13 tests/e2e/journey.spec.ts:466:5 › recommendation return preserves answers and people while explaining short lists (3.3s)
+  ✓  14 tests/e2e/journey.spec.ts:506:5 › blocked invitation explains current task, opens the right route and clears when the old invite ends (3.6s)
+  ✓  15 tests/e2e/motion.spec.ts:25:5 › question motion advances saved nodes without losing immediate controls or input (2.6s)
+  ✓  16 tests/e2e/motion.spec.ts:63:5 › mutual paths actually draw, do not gate the CTA, and replay once per invitation (2.9s)
+  ✓  17 tests/e2e/motion.spec.ts:115:5 › reduced motion, mid-flight preference change and visibility finish without hidden content (1.3s)
+  ✓  18 tests/e2e/motion.spec.ts:179:5 › failed send has no success motion; successful send preserves the invitation and can leave immediately (1.5s)
+  ✓  19 tests/e2e/motion.spec.ts:206:5 › incoming signal settles at the center, remains SENT and does not replay on refresh (1.4s)
+  ✓  20 tests/e2e/motion.spec.ts:230:5 › a saved first answer updates only actual screen percentages across tabs (2.3s)
+  ✓  21 tests/e2e/motion.spec.ts:263:5 › waiting point, arrival and merchant feedback reflect only persisted facts (4.3s)
+  ✓  22 tests/e2e/screen-avatar.spec.ts:22:5 › avatar is required, gender changes clear selection, keyboard works, refresh and narrow layouts retain selection (1.6s)
+  ✓  23 tests/e2e/screen-avatar.spec.ts:91:5 › chosen avatars agree on candidate, invitation, mutual, meet, operator list/modal and operator pair (1.9s)
+  ✓  24 tests/e2e/screen-avatar.spec.ts:132:5 › legacy state loads safely and image failure gives neutral fallback (590ms)
+  ✓  25 tests/e2e/screen-avatar.spec.ts:157:5 › screen preserves QR, layout, canvas identity across dissolve and stops motion when reduced or hidden (23.1s)
+  ✓  26 tests/e2e/screen-avatar.spec.ts:263:5 › mobile choice reaches screen as the same avatar and JOIN/ANSWER cues cannot change actual counts (3.4s)
+  ✓  27 tests/e2e/screen-avatar.spec.ts:307:5 › reduced-motion join and 4K resize keep the selected avatar visible without a queued effect; all canvas pixels leave QR clear (1.9s)
+
+  27 passed (2.1m)

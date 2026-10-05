@@ -1,0 +1,122 @@
+[
+  {
+    "avatarId": "female_01",
+    "status": 200,
+    "bytes": 4540,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_02",
+    "status": 200,
+    "bytes": 5566,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_03",
+    "status": 200,
+    "bytes": 5846,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_04",
+    "status": 200,
+    "bytes": 5458,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_05",
+    "status": 200,
+    "bytes": 4742,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_06",
+    "status": 200,
+    "bytes": 4782,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_07",
+    "status": 200,
+    "bytes": 5880,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_08",
+    "status": 200,
+    "bytes": 5662,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_09",
+    "status": 200,
+    "bytes": 6234,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "female_10",
+    "status": 200,
+    "bytes": 5160,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_01",
+    "status": 200,
+    "bytes": 4190,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_02",
+    "status": 200,
+    "bytes": 5392,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_03",
+    "status": 200,
+    "bytes": 4998,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_04",
+    "status": 200,
+    "bytes": 5462,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_05",
+    "status": 200,
+    "bytes": 4040,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_06",
+    "status": 200,
+    "bytes": 4538,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_07",
+    "status": 200,
+    "bytes": 4852,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_08",
+    "status": 200,
+    "bytes": 4508,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_09",
+    "status": 200,
+    "bytes": 5032,
+    "mime": "image/webp"
+  },
+  {
+    "avatarId": "male_10",
+    "status": 200,
+    "bytes": 5172,
+    "mime": "image/webp"
+  }
+]

@@ -1,0 +1,164 @@
+
+> destiny-lab-mvp@1.1.0 test
+> tsx --test tests/domain/*.test.ts
+
+TAP version 13
+# Subtest: nickname uses exact Han range and 1–5 character boundaries
+ok 1 - nickname uses exact Han range and 1–5 character boundaries
+  ---
+  duration_ms: 0.67
+  type: 'test'
+  ...
+# Subtest: seed has valid relationships, one clock, 28 historical meets and coherent first-question distribution
+ok 2 - seed has valid relationships, one clock, 28 historical meets and coherent first-question distribution
+  ---
+  duration_ms: 2.998875
+  type: 'test'
+  ...
+# Subtest: recommendations expose exactly 0/1/2/3 candidates and calculate common answers
+ok 3 - recommendations expose exactly 0/1/2/3 candidates and calculate common answers
+  ---
+  duration_ms: 9.932
+  type: 'test'
+  ...
+# Subtest: browsing person is not recommended and must actively become ready before sending
+ok 4 - browsing person is not recommended and must actively become ready before sending
+  ---
+  duration_ms: 2.183834
+  type: 'test'
+  ...
+# Subtest: only receiver can accept; active invitation prevents multiple chains
+ok 5 - only receiver can accept; active invitation prevents multiple chains
+  ---
+  duration_ms: 2.977292
+  type: 'test'
+  ...
+# Subtest: arrival cannot be inferred from navigation or acceptance; individual facts remain separate
+ok 6 - arrival cannot be inferred from navigation or acceptance; individual facts remain separate
+  ---
+  duration_ms: 3.317333
+  type: 'test'
+  ...
+# Subtest: two independent meet confirmations add exactly one fact; replays and later repeat do not add
+ok 7 - two independent meet confirmations add exactly one fact; replays and later repeat do not add
+  ---
+  duration_ms: 4.837292
+  type: 'test'
+  ...
+# Subtest: decline/cancel/expiry produce no encounter and allow explicit rediscovery
+ok 8 - decline/cancel/expiry produce no encounter and allow explicit rediscovery
+  ---
+  duration_ms: 3.104625
+  type: 'test'
+  ...
+# Subtest: last meet point cannot be double assigned; releasing a vacant point wakes waiting relation
+ok 9 - last meet point cannot be double assigned; releasing a vacant point wakes waiting relation
+  ---
+  duration_ms: 1.250042
+  type: 'test'
+  ...
+# Subtest: operator help cannot substitute for participant meeting; leave cancels active chain
+ok 10 - operator help cannot substitute for participant meeting; leave cancels active chain
+  ---
+  duration_ms: 4.391625
+  type: 'test'
+  ...
+# Subtest: pause blocks only new invitations and completed old feedback cannot mutate a new chain
+ok 11 - pause blocks only new invitations and completed old feedback cannot mutate a new chain
+  ---
+  duration_ms: 4.610542
+  type: 'test'
+  ...
+# Subtest: next choices are individual and partner pause removes future recommendation
+ok 12 - next choices are individual and partner pause removes future recommendation
+  ---
+  duration_ms: 1.012416
+  type: 'test'
+  ...
+# Subtest: screen projection contains no people, identities, meet codes or exact places; only three-pair aggregation plays
+ok 13 - screen projection contains no people, identities, meet codes or exact places; only three-pair aggregation plays
+  ---
+  duration_ms: 1.070459
+  type: 'test'
+  ...
+# Subtest: epoch guard rejects delayed actions from a previous scenario
+ok 14 - epoch guard rejects delayed actions from a previous scenario
+  ---
+  duration_ms: 0.180708
+  type: 'test'
+  ...
+# Subtest: all named scenarios have valid current links and no duplicated physical reservation
+ok 15 - all named scenarios have valid current links and no duplicated physical reservation
+  ---
+  duration_ms: 3.432917
+  type: 'test'
+  ...
+# Subtest: fixture milestones follow invitation, acceptance, departure, arrival and confirmation order
+ok 16 - fixture milestones follow invitation, acceptance, departure, arrival and confirmation order
+  ---
+  duration_ms: 2.35575
+  type: 'test'
+  ...
+# Subtest: catalogue uses twenty unique local IDs; completed fixtures are valid and fresh profile is unselected
+ok 17 - catalogue uses twenty unique local IDs; completed fixtures are valid and fresh profile is unselected
+  ---
+  duration_ms: 6.502042
+  type: 'test'
+  ...
+# Subtest: profile rejects missing, unknown and opposite gender avatars; selected avatar persists without changing recommendation ranks
+ok 18 - profile rejects missing, unknown and opposite gender avatars; selected avatar persists without changing recommendation ranks
+  ---
+  duration_ms: 12.612625
+  type: 'test'
+  ...
+# Subtest: legacy normalization is deterministic, leaves explicit null alone and preserves business fields
+ok 19 - legacy normalization is deterministic, leaves explicit null alone and preserves business fields
+  ---
+  duration_ms: 0.456833
+  type: 'test'
+  ...
+# Subtest: display adapter exposes selected avatar with session code, never nickname, raw identity or pair details
+ok 20 - display adapter exposes selected avatar with session code, never nickname, raw identity or pair details
+  ---
+  duration_ms: 0.829791
+  type: 'test'
+  ...
+# Subtest: first profile emits one birth without falsely incrementing attendance, repeated edit does not emit birth
+ok 21 - first profile emits one birth without falsely incrementing attendance, repeated edit does not emit birth
+  ---
+  duration_ms: 2.610375
+  type: 'test'
+  ...
+# Subtest: answers update only changed statistic; a single mutual invitation cannot produce a MATCH cue
+ok 22 - answers update only changed statistic; a single mutual invitation cannot produce a MATCH cue
+  ---
+  duration_ms: 2.606625
+  type: 'test'
+  ...
+# Subtest: aggregate consume and confirmed encounter use separate MATCH semantics, neither event writes counts
+ok 23 - aggregate consume and confirmed encounter use separate MATCH semantics, neither event writes counts
+  ---
+  duration_ms: 2.581958
+  type: 'test'
+  ...
+# Subtest: event controller bounds, coalesces, deduplicates, rejects unfiltered MATCH and clears expired effects
+ok 24 - event controller bounds, coalesces, deduplicates, rejects unfiltered MATCH and clears expired effects
+  ---
+  duration_ms: 0.74675
+  type: 'test'
+  ...
+# Subtest: 1/20/50/100/200 person layouts bound physics, preserve real cluster counts and stay within obstacles
+ok 25 - 1/20/50/100/200 person layouts bound physics, preserve real cluster counts and stay within obstacles
+  ---
+  duration_ms: 55.959333
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 323.179459

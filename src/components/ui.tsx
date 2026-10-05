@@ -1,4 +1,9 @@
 "use client";
+import {
+  ParticipantAvatar,
+  type AvatarSize,
+} from "@/components/shared/ParticipantAvatar";
+import { validAvatar } from "@/config/avatars";
 import Link from "next/link";
 import {
   useEffect,
@@ -159,16 +164,16 @@ export function Avatar({
   person,
   size = "md",
 }: {
-  person: Pick<Participant, "gender" | "name" | "id">;
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  person: Pick<Participant, "gender" | "name" | "id" | "avatarId">;
+  size?: AvatarSize;
 }) {
   return (
-    <img
-      className={`avatar avatar-${size}`}
-      src={`/assets/avatar-${person.gender}.png`}
-      alt={`${person.name}的系统默认插画头像，不代表本人长相`}
-      width="96"
-      height="96"
+    <ParticipantAvatar
+      avatarId={
+        validAvatar(person.avatarId, person.gender) ? person.avatarId : null
+      }
+      size={size}
+      alt={`${person.name}的系统虚拟头像，不代表本人长相`}
     />
   );
 }

@@ -43,6 +43,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await expect(page).toHaveURL(/03-profile/);
       await page.getByLabel("怎么称呼你？").fill("山风");
       await page.getByRole("button", { name: "可以，现在就能见面" }).click();
+      await page.getByRole("radio", { name: "男生虚拟头像 03" }).check();
       await page.getByRole("button", { name: "继续答题" }).click();
       for (const [index, answer] of [
         "热闹街区",
@@ -169,6 +170,7 @@ test("nickname boundaries and Chinese composition, answer backtracking and refre
   await input.fill("山风");
   await input.dispatchEvent("compositionend");
   await expect(page.locator("#nickname-error")).toBeEmpty();
+  await page.getByRole("radio", { name: "男生虚拟头像 03" }).check();
   await page.getByRole("button", { name: "继续答题" }).click();
   await page.getByRole("button", { name: "安静咖啡馆", exact: true }).click();
   await page.getByRole("button", { name: "下一题", exact: true }).click();

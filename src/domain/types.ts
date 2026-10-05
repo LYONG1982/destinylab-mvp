@@ -14,6 +14,7 @@ export interface Participant {
   id: string;
   name: string;
   gender: Gender;
+  avatarId: string | null;
   age: string;
   ready: boolean;
   present: boolean;
@@ -102,6 +103,7 @@ export type Command =
       type: "profile";
       name: string;
       gender: Gender;
+      avatarId: string | null;
       age: string;
       ready: boolean;
     }

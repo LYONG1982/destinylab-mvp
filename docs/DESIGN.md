@@ -6,7 +6,7 @@
 
 后台以 1440×1024 为主要尺寸，88px 侧导航、64px 顶栏、浅灰工作区和白卡片。低于 1100px 保留工作台宽度并允许水平滚动。四态大屏为 16:9，四周安全边界；1080p 和 4K 等比布局。
 
-复用组件：Brand、Avatar、Button、Notice、Badge、Modal、Empty、PersonCard、CommonList、PersonStatus、Panel、EncounterCard，以及统一状态/统计选择器。默认头像按性别取固定系统插画，同一人物各处一致。
+复用组件：Brand、Avatar、Button、Notice、Badge、Modal、Empty、PersonCard、CommonList、PersonStatus、Panel、EncounterCard，以及统一状态/统计选择器。ParticipantAvatar 按个人 avatarId 统一取系统虚拟头像，手机、后台和大屏使用同一源；无效或未选择为中性占位。
 
 ## 参考修正
 
@@ -14,7 +14,7 @@
 
 ## 资产制作
 
-内置 imagegen 生成独立背景和两枚系统插画头像，保存到 public/assets。图片输出已目视检查。页面没有截取原始图片里的文字和按钮，人物图不代表真实长相。具体提示词及生成来源见 ASSETS.md。
+初版内置 imagegen 生成独立背景和两枚系统插画头像，保存到 public/assets；本轮人物头像替换为用户提供的 20 张 PNG，旧两图保留作为历史资产及独立虚构动效预览。图片输出已目视检查。页面没有截取原始图片里的文字和按钮，人物图不代表真实长相。具体提示词及生成来源见 ASSETS.md。
 
 动效统一读取 `src/lib/motion-tokens.ts`：基础时长 0.12 / 0.18 / 0.28 / 0.45 / 1.4 秒，语义节奏集中管理，CSS 变量由同一来源派生。采用 CSS / SVG / Web Animations 与有限 RAF；不新增动画库。系统减少动态效果时直接显示最终态。弹窗保留原生 dialog 焦点、Escape 与模态行为。
 
@@ -29,3 +29,11 @@
 所有普通控件保持可用；旧题退出副本为 inert / aria-hidden，新题立即承接交互；动画完成不触发业务写入。数字为展示插值，可访问名称始终提供真实终值。后台只对真实指标变化和新事件轻更新，保留 Modal。
 
 页面隐藏、离屏、减少动画和卸载会取消效果并恢复最终样式。环境循环仅在可见范围开启；新事件和品牌序列不在恢复前台后积压重播。关键截图和行为证据记录于 `verification/motion/`。
+
+## 大屏与头像补充实现
+
+`components/motion/screen` 分离展示适配、MotionController、软物理、Canvas 绘制、内容过渡和开发预览。关系节点在正文/统计的真实右边界和 QR Card 安全区之间采用确定性椭圆分布；只对真实加入/答题证据强调临时代号，聚合相遇用抽象双点/圆形波纹，不能从连线识别具体双方。节点默认低对比，Canvas 不逐帧 setState。头像沿用当前 32/43/64/80/106px 尺寸与窄屏缩放；M03 四至五列，点按选中酒红圈与勾，选项为原生 radio，键盘可切换。
+
+PNG 原图不重绘、不裁切保存，Next Image 在交付层生成缩略响应；Canvas 共用其 getImageProps 输出并缓存加载图片，失效显示抽象节点。保留原图透明度和现有圆形视觉裁切。QR 整张 Card 外再留 16px（1080p）安全区，三层 Canvas 在绘制时裁掉该区域。环境粒子另避开正文，关系场限制在可用区域。
+
+单一 RAF 驱动三层 Canvas，DPR 上限 1.5；帧绘制超过 18ms 时降低至 30fps/24 粒子。显示事件最多 8 个、去重窗口最多 128 个，离场节点短淡出后移除；图片缓存随显示源回收。隐藏/减少动画/卸载清理 RAF 与视觉事件，Observer、监听器、计时器在卸载时释放。

@@ -1,4 +1,5 @@
 "use client";
+import { withCompatibleAvatar } from "@/config/avatars";
 import { createSeed } from "@/data/seed";
 import { applyCommand } from "@/domain/commands";
 import type { Command, DemoState } from "@/domain/types";
@@ -66,7 +67,7 @@ function check(raw: string): DemoState {
       !s.events.every((e) => e && typeof e.id === "string")
     )
       throw new Error();
-    return s;
+    return { ...s, participants: s.participants.map(withCompatibleAvatar) };
   } catch {
     throw new Error("保存的演示状态无法读取，请在演示入口重置。");
   }

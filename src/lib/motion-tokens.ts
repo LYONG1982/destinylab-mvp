@@ -40,3 +40,21 @@ export const motionCssVars = Object.fromEntries([
     ease(key as keyof typeof motionEase),
   ]),
 ]) as CSSProperties;
+
+/** Screen-only, bounded runtime parameters; no business counters live here. */
+export const screenMotion = {
+  particles: 30,
+  particleLimit: 40,
+  nodeLimit: 24,
+  dpr: 1.5,
+  fps: 60,
+  fallbackFps: 30,
+  dissolve: 0.8,
+  birth: 1.5,
+  match: 1.4,
+  mutual: 3,
+  feedback: 1.2,
+  ring: 6,
+  qrHalo: 7,
+  background: 24,
+} as const;

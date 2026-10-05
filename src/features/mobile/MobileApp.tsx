@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { AvatarSelector } from "@/components/shared/AvatarSelector";
+import { validAvatar } from "@/config/avatars";
 import { AGES, QUESTIONS, STATUS_LABELS } from "@/data/questions";
 import type {
   DemoState,
@@ -391,7 +393,7 @@ function MobileFlow({
                     我现在可以见面了
                   </Button>
                 )}
-                <p className="fine center">系统默认头像，不代表本人长相</p>
+                <p className="fine center">系统虚拟头像，不代表本人长相</p>
               </>
             )}
             {page === "06-common" &&
@@ -1010,6 +1012,9 @@ function Profile({
     [age, setAge] = useState(me.age),
     [ready, setReady] = useState(me.ready),
     [error, setError] = useState("");
+  const [avatarId, setAvatarId] = useState(me.avatarId);
+  const [avatarMessage, setAvatarMessage] = useState("");
+  const respond = useCityResponse();
   const composing = useRef(false);
   return (
     <form
@@ -1017,12 +1022,20 @@ function Profile({
         e.preventDefault();
         const err = nicknameError(name);
         setError(err);
-        if (!err && !composing.current)
-          void a.run({ type: "profile", name, gender, age, ready }, onNext);
+        const avatarValid = validAvatar(avatarId, gender);
+        setAvatarMessage(avatarValid ? "" : "选一个本次活动头像吧。");
+        if (!err && avatarValid && !composing.current)
+          void a.run(
+            { type: "profile", name, gender, age, ready, avatarId },
+            () => {
+              if (!me.profileComplete) respond(me.id, "profile", "");
+              onNext();
+            },
+          );
       }}
     >
       <PersonCard
-        p={{ ...me, name: name || "你的昵称", gender, age }}
+        p={{ ...me, name: name || "你的昵称", gender, age, avatarId }}
         preview
       />
       <label className="field-label" htmlFor="nickname">
@@ -1031,6 +1044,7 @@ function Profile({
       <div className="nickname-field">
         <input
           id="nickname"
+          disabled={a.busy}
           value={name}
           aria-describedby="nickname-help nickname-error"
           aria-invalid={!!error}
@@ -1056,7 +1070,7 @@ function Profile({
       <p id="nickname-error" className="field-error" aria-live="polite">
         {error}
       </p>
-      <fieldset>
+      <fieldset disabled={a.busy}>
         <legend className="field-label">你的年龄段</legend>
         <div className="age-grid">
           {AGES.map((v) => (
@@ -1072,7 +1086,7 @@ function Profile({
           ))}
         </div>
       </fieldset>
-      <fieldset>
+      <fieldset disabled={a.busy}>
         <legend className="field-label">我是</legend>
         <div className="choice-row">
           {(["male", "female"] as const).map((v) => (
@@ -1081,7 +1095,15 @@ function Profile({
               key={v}
               aria-pressed={gender === v}
               className={gender === v ? "selected" : ""}
-              onClick={() => setGender(v)}
+              onClick={() => {
+                if (v !== gender) {
+                  setGender(v);
+                  setAvatarId(null);
+                  setAvatarMessage(
+                    `请重新选择一个${v === "male" ? "男生" : "女生"}头像。`,
+                  );
+                }
+              }}
             >
               <span className="radio-dot" />
               {v === "male" ? "男生" : "女生"}
@@ -1089,10 +1111,20 @@ function Profile({
           ))}
         </div>
       </fieldset>
+      <AvatarSelector
+        gender={gender}
+        value={avatarId}
+        disabled={a.busy}
+        message={avatarMessage}
+        onChange={(id) => {
+          setAvatarId(id);
+          setAvatarMessage("");
+        }}
+      />
       <Notice>
         本场将为你推荐愿意认识新朋友的{gender === "male" ? "女生" : "男生"}。
       </Notice>
-      <fieldset>
+      <fieldset disabled={a.busy}>
         <legend className="field-label">你现在方便认识新朋友吗？</legend>
         <div className="readiness">
           <button
@@ -1220,7 +1252,7 @@ export function PersonCard({
         <Motion
           as="span"
           className="avatar-motion"
-          key={p.gender}
+          key={`${p.gender}:${p.avatarId}`}
           preset="avatar"
         >
           <Avatar person={p} size="lg" />
@@ -1241,7 +1273,7 @@ export function PersonCard({
         <p>
           {p.gender === "male" ? "男生" : "女生"} · {p.age} 岁
         </p>
-        <small>系统默认头像，不代表本人长相</small>
+        <small>系统虚拟头像，不代表本人长相</small>
       </div>
     </div>
   );

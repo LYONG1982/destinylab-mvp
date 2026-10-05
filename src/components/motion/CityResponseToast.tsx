@@ -50,16 +50,22 @@ export function CityResponseBoundary({ children }: { children: ReactNode }) {
       const saved = store.getSnapshot();
       if (
         !saved ||
-        saved.participants.find((p) => p.id === actor)?.answers[question] !==
-          answer
+        (question === "profile"
+          ? !saved.participants.find((p) => p.id === actor)?.profileComplete
+          : saved.participants.find((p) => p.id === actor)?.answers[
+              question
+            ] !== answer)
       )
         return;
-      const text = [
-        question === "q1" ? "已加入今晚的答案。" : "",
-        cityResponseFor(saved, actor, question, answer),
-      ]
-        .filter(Boolean)
-        .join(" ");
+      const text =
+        question === "profile"
+          ? "欢迎进入缘分实验室，也可以看看现场大屏。"
+          : [
+              question === "q1" ? "已加入今晚的答案。" : "",
+              cityResponseFor(saved, actor, question, answer),
+            ]
+              .filter(Boolean)
+              .join(" ");
       if (text)
         setResponse({ epoch: saved.epoch, actor, question, answer, text });
     },
@@ -81,10 +87,14 @@ export function CityResponseBoundary({ children }: { children: ReactNode }) {
     response &&
     state?.epoch === response.epoch &&
     actor === response.actor &&
-    state.participants.find((p) => p.id === actor)?.answers[
-      response.question
-    ] === response.answer &&
-    /\/mobile\/(01|02|04|05)-/.test(pathname);
+    (response.question === "profile"
+      ? !!state.participants.find((p) => p.id === actor)?.profileComplete
+      : state.participants.find((p) => p.id === actor)?.answers[
+          response.question
+        ] === response.answer) &&
+    (response.question === "profile"
+      ? /\/mobile\/(03|04)-/.test(pathname)
+      : /\/mobile\/(01|02|04|05)-/.test(pathname));
   // Drop invalid presentation cues immediately; returning to the route cannot replay them.
   if (response && !valid) setResponse(null);
   return (
