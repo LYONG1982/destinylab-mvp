@@ -1,0 +1,14 @@
+{
+  "before": {
+    "files": 17,
+    "bytes": 742750,
+    "gzipBytes": 230332
+  },
+  "after": {
+    "files": 21,
+    "bytes": 829908,
+    "gzipBytes": 259580
+  },
+  "gzipDelta": 29248,
+  "scope": "All .next/static JS and CSS files; not per-route network transfer"
+}

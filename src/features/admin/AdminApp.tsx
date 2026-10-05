@@ -32,6 +32,9 @@ import {
   Notice,
   timeText,
 } from "@/components/ui";
+import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
+import { Motion } from "@/components/motion/Motion";
+
 const NAV = [
   ["dashboard", "现场总览", "grid"],
   ["encounters", "邀请相遇", "heart"],
@@ -55,6 +58,7 @@ function AdminView({
   problem: string;
 }) {
   const a = useAction("operator");
+  const [initialEvents] = useState(() => new Set(s.events.map((e) => e.id)));
   const query = useSearchParams();
   const [personId, setPersonId] = useState<string | null>(null),
     [inviteId, setInviteId] = useState<string | null>(query.get("id"));
@@ -185,7 +189,7 @@ function AdminView({
                     <Icon name={v.icon} size={19} />
                   </div>
                   <strong data-testid={i === 4 ? "real-count" : undefined}>
-                    {v.value}
+                    <AnimatedCounter value={v.value} />
                   </strong>
                   <small>{v.hint}</small>
                 </div>
@@ -218,7 +222,9 @@ function AdminView({
                       <div>
                         <i style={{ width: `${(x.value / m.scans) * 100}%` }} />
                       </div>
-                      <strong>{x.value}</strong>
+                      <strong>
+                        <AnimatedCounter value={x.value} />
+                      </strong>
                     </Link>
                   ))}
                   <p className="funnel-note">
@@ -360,10 +366,12 @@ function AdminView({
                     .slice(-6)
                     .reverse()
                     .map((e) => (
-                      <div className="feed-item" key={e.id}>
-                        <time>{timeText(e.at)}</time>
-                        <span>{e.text}</span>
-                      </div>
+                      <EventRow
+                        key={e.id}
+                        text={e.text}
+                        at={e.at}
+                        animate={!initialEvents.has(e.id)}
+                      />
                     ))}
                 </div>
               </Panel>
@@ -1030,5 +1038,28 @@ function ParticipantList({
         </div>
       </section>
     </>
+  );
+}
+
+function EventRow({
+  text,
+  at,
+  animate,
+}: {
+  text: string;
+  at: number;
+  animate: boolean;
+}) {
+  // The keyed component remains mounted across polling updates; Motion runs once.
+  return animate ? (
+    <Motion className="feed-item" preset="soft">
+      <time>{timeText(at)}</time>
+      <span>{text}</span>
+    </Motion>
+  ) : (
+    <div className="feed-item">
+      <time>{timeText(at)}</time>
+      <span>{text}</span>
+    </div>
   );
 }

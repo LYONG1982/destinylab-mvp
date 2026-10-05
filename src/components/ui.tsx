@@ -7,6 +7,8 @@ import {
   type ReactNode,
   type ButtonHTMLAttributes,
 } from "react";
+import { ease, motionDuration, ms } from "@/lib/motion-tokens";
+import { useVisualEffect } from "@/components/motion/lifecycle";
 import type { Participant } from "@/domain/types";
 export function Icon({
   name = "spark",
@@ -215,6 +217,16 @@ export function Badge({
 }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
 }
+function animateModal(dialog: HTMLDialogElement) {
+  const animation = dialog.animate(
+    [
+      { opacity: 0.65, transform: "translateY(8px)" },
+      { opacity: 1, transform: "translateY(0)" },
+    ],
+    { duration: ms(motionDuration.fast), easing: ease("enter") },
+  );
+  return () => animation.cancel();
+}
 export function Modal({
   title,
   children,
@@ -226,6 +238,7 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
+  useVisualEffect(ref, animateModal);
   useEffect(() => {
     const dialog = ref.current;
     dialog?.showModal();

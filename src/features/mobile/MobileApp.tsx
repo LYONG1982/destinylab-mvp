@@ -20,6 +20,7 @@ import {
   person,
   recommendations,
   routeFor,
+  stats,
 } from "@/domain/selectors";
 import { useAction, useDemo } from "@/lib/demo/hooks";
 import {
@@ -35,6 +36,25 @@ import {
   Modal,
   Notice,
 } from "@/components/ui";
+
+import {
+  QuestionTransition,
+  DestinyProgressTrack,
+} from "@/components/motion/QuestionTransition";
+
+import { CommonAnswerLink } from "@/components/motion/CommonAnswerLink";
+import { SignalArrival, useSendSignal } from "@/components/motion/SignalMotion";
+import { MutualEncounterMotion } from "@/components/motion/MutualEncounterMotion";
+import { MeetStatusTrack } from "@/components/motion/MeetStatusTrack";
+import { Motion, Ambient } from "@/components/motion/Motion";
+import { getSnapshot } from "@/lib/demo/store";
+
+import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
+import { PresenceIndicator } from "@/components/motion/PresenceIndicator";
+import { RouteDraw } from "@/components/motion/RouteDraw";
+import { DestinyTrack } from "@/components/motion/DestinyTrack";
+import { useCityResponse } from "@/components/motion/CityResponseToast";
+import { motionTiming } from "@/lib/motion-tokens";
 
 type Actions = ReturnType<typeof useAction>;
 export function MobileApp({ page }: { page: string }) {
@@ -72,6 +92,7 @@ function MobileFlow({
   const router = useRouter();
   const query = useSearchParams();
   const a = useAction(me.id);
+  const sendSignal = useSendSignal();
   const inv = currentInvite(s, me);
   const candidates = recommendations(s, me.id);
   const invitationBlocked =
@@ -267,6 +288,9 @@ function MobileFlow({
       ) : (
         <>
           {titleBlock()}
+          {["02-result", "05-discover"].includes(page) && (
+            <PresenceIndicator count={stats(s).active} />
+          )}
           <div className="mobile-content">
             {notices}
             {page === "02-result" && (
@@ -319,7 +343,9 @@ function MobileFlow({
                   </Empty>
                 ) : (
                   candidates.map(({ participant: p, common }, index) => (
-                    <article
+                    <Motion
+                      as="article"
+                      delay={index * motionTiming.cardGap}
                       className={`recommend-card ${index === 0 ? "featured" : ""}`}
                       key={p.id}
                     >
@@ -349,7 +375,7 @@ function MobileFlow({
                         看看共同答案
                         <Icon name="arrow" size={18} />
                       </Button>
-                    </article>
+                    </Motion>
                   ))
                 )}
                 {candidates.length > 0 && candidates.length < 3 && (
@@ -372,11 +398,10 @@ function MobileFlow({
               (target && target.id !== me.id ? (
                 <>
                   <PersonCard p={target} />
-                  <h2 className="common-heading">
-                    你们有 <strong>{commonAnswers(me, target).length}</strong>{" "}
-                    道答案相同
-                  </h2>
-                  <CommonList common={commonAnswers(me, target)} />
+                  <CommonAnswerLink
+                    key={target.id}
+                    common={commonAnswers(me, target)}
+                  />
                   {invitationBlocked ? (
                     <Notice>
                       <span id="invite-unavailable-reason">
@@ -427,7 +452,17 @@ function MobileFlow({
               ))}
             {page === "07-invitation" && inv && other && (
               <>
-                <PersonCard p={other} />
+                {inv.status === "SENT" && inv.to === me.id ? (
+                  <SignalArrival
+                    key={inv.id}
+                    identity={`${s.epoch}:${me.id}:${inv.id}`}
+                  >
+                    <p className="invitation-caption">{other.name}想认识你</p>
+                    <PersonCard p={other} />
+                  </SignalArrival>
+                ) : (
+                  <PersonCard p={other} />
+                )}
                 <CommonList common={inv.common.slice(0, 3)} />
                 {inv.status === "SENT" ? (
                   <>
@@ -464,7 +499,9 @@ function MobileFlow({
                     ) : (
                       <>
                         <div className="waiting-state" aria-live="polite">
-                          <span className="pulse-dot" />
+                          <Ambient>
+                            <span className="pulse-dot" />
+                          </Ambient>
                           <h2>等待 {other.name} 回应</h2>
                           <p>
                             TA 可以按自己的节奏决定。
@@ -525,23 +562,12 @@ function MobileFlow({
             )}
             {page === "08-mutual" && inv && other && (
               <>
-                <div className="mutual-portraits">
-                  <div>
-                    <Avatar person={me} size="xl" />
-                    <h3>{me.name}</h3>
-                    <p>{me.age} 岁</p>
-                  </div>
-                  <div className="connection">
-                    <i />
-                    <Icon name="heart" size={30} />
-                    <i />
-                  </div>
-                  <div>
-                    <Avatar person={other} size="xl" />
-                    <h3>{other.name}</h3>
-                    <p>{other.age} 岁</p>
-                  </div>
-                </div>
+                <MutualEncounterMotion
+                  me={me}
+                  other={other}
+                  identity={`${s.epoch}:${me.id}:${inv.id}`}
+                  pointName={s.points.find((p) => p.id === inv.pointId)?.name}
+                />
                 {inv.pointId ? (
                   <>
                     <div className="meet-ticket">
@@ -560,7 +586,7 @@ function MobileFlow({
                         : "TA 也愿意见面，尚未确认出发。"}
                     </Notice>
                     <Button onClick={() => go("09-meet")}>
-                      查看相遇任务
+                      查看见面指引
                       <Icon name="arrow" />
                     </Button>
                   </>
@@ -624,10 +650,25 @@ function MobileFlow({
                   </div>
                   <div className="verification-code">
                     <small>本次辨认码</small>
-                    <strong>{inv.code}</strong>
+                    <Motion
+                      as="span"
+                      className="code-motion"
+                      preset="code"
+                      key={inv.id}
+                    >
+                      <strong>{inv.code}</strong>
+                    </Motion>
                     <span>到场后核对昵称与辨认码，不凭默认头像认人。</span>
                   </div>
                 </div>
+                <MeetStatusTrack
+                  people={[me, other]}
+                  invitation={inv}
+                  pointName={
+                    s.points.find((p) => p.id === inv.pointId)?.name ||
+                    "等待分配"
+                  }
+                />
                 <div className="arrival-status">
                   <PersonStatus p={me} inv={inv} />
                   <PersonStatus p={other} inv={inv} />
@@ -744,6 +785,16 @@ function MobileFlow({
               disabled={a.busy}
               onClick={() =>
                 a.run({ type: "invite", targetId: target.id }, () => {
+                  const saved = getSnapshot();
+                  const created =
+                    saved && currentInvite(saved, person(saved, me.id)!);
+                  if (saved && created?.status === "SENT")
+                    sendSignal({
+                      epoch: saved.epoch,
+                      actor: me.id,
+                      invitationId: created.id,
+                      target: target.name,
+                    });
                   setInviteModal(false);
                   go("07-invitation");
                 })
@@ -793,15 +844,27 @@ function Start({
   onNext: () => void;
 }) {
   const [selected, setSelected] = useState(me.answers.q1 || "一起逛逛");
+  const [touched, setTouched] = useState(false);
+  const cityResponse = useCityResponse();
   return (
     <>
       <div className="start-hero">
+        <Motion preset="hero" className="start-backdrop">
+          {null}
+        </Motion>
         <div className="start-copy">
           <div className="eyebrow">YINCHUAN · GULOU</div>
           <h1>
-            <span>在凤城，</span>
-            <br />
-            认真遇见一个人
+            <Motion as="span" className="title-primary">
+              在凤城，
+            </Motion>
+            <Motion
+              as="span"
+              className="title-secondary"
+              delay={motionTiming.titleGap}
+            >
+              认真遇见一个人
+            </Motion>
           </h1>
           <p>从一个共同话题，开始认识</p>
         </div>
@@ -820,27 +883,41 @@ function Start({
         </div>
         <div className="intent-grid">
           {QUESTIONS[0].options.map((v, index) => (
-            <button
+            <Motion
               key={v}
-              aria-pressed={selected === v}
-              className={`intent-card ${selected === v ? "selected" : ""}`}
-              onClick={() => setSelected(v)}
+              delay={index * motionTiming.cardGap}
+              className="intent-motion"
             >
-              {selected === v && (
-                <span className="selection-check">
-                  <Icon name="check" size={12} />
-                </span>
-              )}
-              <Icon name={["chat", "pin", "people"][index]} size={27} />
-              <strong>{v}</strong>
-              <small>{QUESTIONS[0].hints[index]}</small>
-            </button>
+              <button
+                aria-pressed={selected === v}
+                className={`intent-card ${selected === v ? "selected" : ""}`}
+                onClick={() => {
+                  setSelected(v);
+                  setTouched(true);
+                }}
+              >
+                {selected === v && (
+                  <span className="selection-check">
+                    <Icon name="check" size={12} />
+                  </span>
+                )}
+                <Icon name={["chat", "pin", "people"][index]} size={27} />
+                <strong>{v}</strong>
+                <small>{QUESTIONS[0].hints[index]}</small>
+                {touched && selected === v && (
+                  <DestinyTrack key={v} className="intent-track" />
+                )}
+              </button>
+            </Motion>
           ))}
         </div>
         <Button
           disabled={a.busy}
           onClick={() =>
-            a.run({ type: "answer", questionId: "q1", value: selected }, onNext)
+            a.run({ type: "answer", questionId: "q1", value: selected }, () => {
+              cityResponse(me.id, "q1", selected);
+              onNext();
+            })
           }
         >
           开始今天的遇见
@@ -871,25 +948,29 @@ function Result({
         <p>你选择了</p>
         <h2>「{me.answers.q1 || "一起逛逛"}」</h2>
         <div className="result-stat">
-          <div
-            className="donut"
-            style={
-              {
-                "--percent": `${current?.percentage || 0}%`,
-              } as React.CSSProperties
-            }
-          >
+          <div className="donut motion-donut">
             <strong>
-              {current?.percentage || 0}
-              <small>%</small>
+              <AnimatedCounter
+                value={current?.percentage || 0}
+                fromZero
+                suffix="%"
+                ring
+              />
             </strong>
             <span>的人也这样想</span>
           </div>
-          <p>
-            今天回答这道题的人中，<strong>{current?.percentage || 0}%</strong>{" "}
-            也选择了
-            <br />「{me.answers.q1}」
-          </p>
+          <Motion
+            as="div"
+            className="result-explanation"
+            preset="soft"
+            delay={motionTiming.counter}
+          >
+            <p>
+              今天回答这道题的人中，<strong>{current?.percentage || 0}%</strong>{" "}
+              也选择了
+              <br />「{me.answers.q1}」
+            </p>
+          </Motion>
         </div>
         <div className="sample-note">
           演示样本 · {Object.keys(state.responses).length} 人回答
@@ -940,7 +1021,10 @@ function Profile({
           void a.run({ type: "profile", name, gender, age, ready }, onNext);
       }}
     >
-      <PersonCard p={{ ...me, name: name || "你的昵称", gender, age }} />
+      <PersonCard
+        p={{ ...me, name: name || "你的昵称", gender, age }}
+        preview
+      />
       <label className="field-label" htmlFor="nickname">
         怎么称呼你？
       </label>
@@ -1051,6 +1135,7 @@ function Questions({
   action: Actions;
   onNext: () => void;
 }) {
+  const cityResponse = useCityResponse();
   const initial = QUESTIONS.findIndex((q, i) => i > 0 && !me.answers[q.id]);
   const [index, setIndex] = useState(initial < 0 ? 1 : initial);
   const [selected, setSelected] = useState("");
@@ -1060,73 +1145,99 @@ function Questions({
       <div className="question-progress">
         <strong>{String(index + 1).padStart(2, "0")}</strong>
         <span>/ 06</span>
-        <div>
-          <i style={{ width: `${((index + 1) / 6) * 100}%` }} />
+        <DestinyProgressTrack answers={me.answers} current={index} />
+      </div>
+      <QuestionTransition questionKey={q.id}>
+        <h1>{q.title}</h1>
+        <p className="question-note">没有标准答案，选择此刻的你。</p>
+        <div className="answer-grid">
+          {q.options.map((v, i) => (
+            <button
+              key={v}
+              aria-pressed={(selected || me.answers[q.id]) === v}
+              className={`answer-card ${(selected || me.answers[q.id]) === v ? "selected" : ""}`}
+              onClick={() => setSelected(v)}
+            >
+              <Icon name={["coffee", "chat", "bag", "leaf"][i]} size={34} />
+              <strong>{v}</strong>
+              {(selected || me.answers[q.id]) === v && (
+                <span className="selection-check">
+                  <Icon name="check" size={13} />
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-      </div>
-      <h1>{q.title}</h1>
-      <p className="question-note">没有标准答案，选择此刻的你。</p>
-      <div className="answer-grid">
-        {q.options.map((v, i) => (
-          <button
-            key={v}
-            aria-pressed={(selected || me.answers[q.id]) === v}
-            className={`answer-card ${(selected || me.answers[q.id]) === v ? "selected" : ""}`}
-            onClick={() => setSelected(v)}
-          >
-            <Icon name={["coffee", "chat", "bag", "leaf"][i]} size={34} />
-            <strong>{v}</strong>
-            {(selected || me.answers[q.id]) === v && (
-              <span className="selection-check">
-                <Icon name="check" size={13} />
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-      <Button
-        disabled={a.busy || (!selected && !me.answers[q.id])}
-        onClick={() =>
-          a.run(
-            {
-              type: "answer",
-              questionId: q.id,
-              value: selected || me.answers[q.id],
-            },
-            () => {
-              if (index === 5) onNext();
-              else {
-                setIndex(index + 1);
-                setSelected("");
-              }
-            },
-          )
-        }
-      >
-        {index === 5 ? "看看现场同频的人" : "下一题"}
-        <Icon name="arrow" />
-      </Button>
-      {index > 1 && (
         <Button
-          kind="text"
-          onClick={() => {
-            setIndex(index - 1);
-            setSelected("");
-          }}
+          disabled={a.busy || (!selected && !me.answers[q.id])}
+          onClick={() =>
+            a.run(
+              {
+                type: "answer",
+                questionId: q.id,
+                value: selected || me.answers[q.id],
+              },
+              () => {
+                cityResponse(me.id, q.id, selected || me.answers[q.id]);
+                if (index === 5) onNext();
+                else {
+                  setIndex(index + 1);
+                  setSelected("");
+                }
+              },
+            )
+          }
         >
-          返回上一题
+          {index === 5 ? "看看现场同频的人" : "下一题"}
+          <Icon name="arrow" />
         </Button>
-      )}
+        {index > 1 && (
+          <Button
+            kind="text"
+            onClick={() => {
+              setIndex(index - 1);
+              setSelected("");
+            }}
+          >
+            返回上一题
+          </Button>
+        )}
+      </QuestionTransition>
       <p className="fine center">你的答案只用于发现共同话题</p>
     </div>
   );
 }
-export function PersonCard({ p }: { p: Participant }) {
+export function PersonCard({
+  p,
+  preview = false,
+}: {
+  p: Participant;
+  preview?: boolean;
+}) {
   return (
     <div className="person-card">
-      <Avatar person={p} size="lg" />
+      {preview ? (
+        <Motion
+          as="span"
+          className="avatar-motion"
+          key={p.gender}
+          preset="avatar"
+        >
+          <Avatar person={p} size="lg" />
+        </Motion>
+      ) : (
+        <Avatar person={p} size="lg" />
+      )}
       <div>
-        <h2>{p.name}</h2>
+        <h2>
+          {preview ? (
+            <Motion as="span" key={p.name} preset="soft">
+              {p.name}
+            </Motion>
+          ) : (
+            p.name
+          )}
+        </h2>
         <p>
           {p.gender === "male" ? "男生" : "女生"} · {p.age} 岁
         </p>
@@ -1170,7 +1281,7 @@ function PersonStatus({ p, inv }: { p: Participant; inv: Invitation }) {
             : inv.arrivals[p.id]
               ? "已经到达"
               : inv.departures[p.id]
-                ? "正在前往相遇点"
+                ? "已确认出发"
                 : "尚未确认出发"}
         </small>
       </span>
@@ -1228,32 +1339,51 @@ function NextStep({
               description: "每一次认真相遇，都有意义",
             },
           ] as const
-        ).map((v) => (
-          <button
-            key={v.value}
-            className={`next-card ${choice === v.value ? "selected" : ""}`}
-            aria-pressed={choice === v.value}
-            disabled={
-              a.busy ||
-              (v.value === "MERCHANT" &&
-                !s.merchants.some((m) => m.id === "cloud" && m.active))
-            }
-            onClick={() =>
-              a.run(
-                { type: "next", invitationId: inv.id, choice: v.value },
-                () => setShowMerchants(v.value === "MERCHANT"),
-              )
-            }
-          >
-            <span className={`next-picture ${v.value.toLowerCase()}`}>
-              <Icon name={v.icon} size={36} />
-            </span>
-            <span>
-              <strong>{v.title}</strong>
-              <small>{v.description}</small>
-            </span>
-            <Icon name="arrow" size={18} />
-          </button>
+        ).map((v, index) => (
+          <Motion key={v.value} delay={index * motionTiming.cardGap}>
+            <button
+              className={`next-card ${choice === v.value ? "selected" : ""}`}
+              aria-pressed={choice === v.value}
+              disabled={
+                a.busy ||
+                (v.value === "MERCHANT" &&
+                  !s.merchants.some((m) => m.id === "cloud" && m.active))
+              }
+              onClick={() =>
+                a.run(
+                  { type: "next", invitationId: inv.id, choice: v.value },
+                  () => setShowMerchants(v.value === "MERCHANT"),
+                )
+              }
+            >
+              <span className={`next-picture ${v.value.toLowerCase()}`}>
+                {v.value === "WALK" ? (
+                  <Ambient className="city-walk">
+                    <Icon name={v.icon} size={36} />
+                  </Ambient>
+                ) : (
+                  <Icon name={v.icon} size={36} />
+                )}
+                {v.value === "MERCHANT" && (
+                  <Ambient className="city-steam">
+                    <svg
+                      viewBox="0 0 36 24"
+                      width="36"
+                      height="24"
+                      aria-hidden="true"
+                    >
+                      <path d="M11 22C6 15 17 13 11 4M23 22C18 15 29 13 23 4" />
+                    </svg>
+                  </Ambient>
+                )}
+              </span>
+              <span>
+                <strong>{v.title}</strong>
+                <small>{v.description}</small>
+              </span>
+              <Icon name="arrow" size={18} />
+            </button>
+          </Motion>
         ))}
       </div>
       {choice && (
@@ -1263,6 +1393,16 @@ function NextStep({
       )}
       {showMerchants && (
         <section className="merchant-list">
+          {choice === "MERCHANT" &&
+            inv.pointId &&
+            s.merchants.some((m) => m.id === "cloud" && m.active) && (
+              <RouteDraw
+                point={
+                  s.points.find((p) => p.id === inv.pointId)?.name || "相遇点"
+                }
+                merchant={s.merchants.find((m) => m.id === "cloud")!.name}
+              />
+            )}
           <h2>城市里的相遇伙伴</h2>
           {s.merchants
             .filter((m) => m.active)

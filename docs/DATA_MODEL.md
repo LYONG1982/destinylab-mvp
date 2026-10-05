@@ -39,3 +39,9 @@ CONFIRMED 只在双方确认时生成 `realMeetAt`，已有事实不可因重试
 ## 返回推荐列表的状态边界
 
 返回只进行路由导航，不新增领域命令，不修改当前关系、答案、候选排序或存储结构。禁用说明由既有 SENT / ACCEPTED / MEET_ASSIGNED / ARRIVING / CONFIRMED 状态派生，目标入口复用 routeFor；终止状态不继续保留旧的阻断说明。
+
+## 动效展示状态边界（2026-10-05）
+
+领域模型、schema=1、邀请状态、命令和事件类型均未改变。`hasPlayedMutualMotion` 与邀请到达播放记录使用独立 sessionStorage 命名空间 `destinylab:motion:`，以 epoch / 参与者 ID / 邀请 ID 区分；存储受限时退回内存，不影响业务。它们不是用户资料字段。
+
+跨路由信号与城市提示只存在组件展示状态中，在失效、离开相关路由、隐藏或到时后丢弃，不写入 DemoState。`demoPresentation.isDemoData=true` 为本地展示适配元数据；未来真实适配器不得默认沿用演示回应。展示读实际答案、邀请、出发 / 到达与匿名统计，不执行业务命令。

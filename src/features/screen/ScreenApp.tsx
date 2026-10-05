@@ -4,7 +4,11 @@ import QRCode from "qrcode";
 import { useDemo } from "@/lib/demo/hooks";
 import { command } from "@/lib/demo/store";
 import { screenProjection } from "@/domain/selectors";
-import { Brand, Icon, Loading } from "@/components/ui";
+import { Brand, Loading } from "@/components/ui";
+import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
+import { AnimatedBar } from "@/components/motion/AnimatedBar";
+import { DestinyTrack } from "@/components/motion/DestinyTrack";
+
 export type ScreenState = "question" | "presence" | "mutual" | "real-meet";
 type Projection = ReturnType<typeof screenProjection>;
 export function ScreenApp({ fixed }: { fixed?: ScreenState }) {
@@ -110,9 +114,11 @@ function ScreenView({
                     <div className="screen-bar" key={v.label}>
                       <span>{v.label}</span>
                       <div>
-                        <i style={{ width: `${v.percentage}%` }} />
+                        <AnimatedBar percentage={v.percentage} />
                       </div>
-                      <strong>{v.percentage}%</strong>
+                      <strong>
+                        <AnimatedCounter value={v.percentage} suffix="%" />
+                      </strong>
                     </div>
                   ))}
                 </div>
@@ -124,7 +130,9 @@ function ScreenView({
             {mode === "presence" && (
               <>
                 <div className="eyebrow">HERE & NOW · 此刻在场</div>
-                <div className="screen-number">{p.active}</div>
+                <div className="screen-number">
+                  <AnimatedCounter value={p.active} />
+                </div>
                 <h1>人正在鼓楼探索</h1>
                 <p className="screen-subtext">
                   其中 {p.canMeet} 人，现在可以认识新朋友
@@ -146,9 +154,7 @@ function ScreenView({
               <>
                 <div className="eyebrow">WHEN PATHS CROSS</div>
                 <div className="relationship-tracks" aria-hidden="true">
-                  <i />
-                  <Icon name="heart" />
-                  <i />
+                  <DestinyTrack />
                 </div>
                 <h1>
                   今天，又有人
@@ -167,7 +173,7 @@ function ScreenView({
               <>
                 <div className="eyebrow">REAL MOMENTS · 认真发生</div>
                 <div className="screen-number" data-testid="screen-real-count">
-                  {p.real}
+                  <AnimatedCounter value={p.real} />
                 </div>
                 <h1>
                   次真实相遇，

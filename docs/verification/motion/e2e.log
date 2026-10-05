@@ -1,0 +1,32 @@
+
+> destiny-lab-mvp@1.1.0 test:e2e
+> playwright test
+
+
+Running 21 tests using 1 worker
+
+(node:17481) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/journey.spec.ts:25:9 › full journey · no-preference › complete first-time two-person story, persistent 28→29, operator and public screen agree (10.3s)
+  ✓   2 tests/e2e/journey.spec.ts:25:9 › full journey · reduce › complete first-time two-person story, persistent 28→29, operator and public screen agree (6.4s)
+  ✓   3 tests/e2e/journey.spec.ts:149:5 › nickname boundaries and Chinese composition, answer backtracking and refresh restoration (2.3s)
+  ✓   4 tests/e2e/journey.spec.ts:182:5 › rejection and expiration are neutral, and browser back does not accept an invitation (2.2s)
+  ✓   5 tests/e2e/journey.spec.ts:202:5 › same-origin storage synchronizes help and point allocation, not isolated browser contexts (3.5s)
+  ✓   6 tests/e2e/journey.spec.ts:253:5 › failed request is retryable and delayed writes cannot revive a reset scenario (6.8s)
+  ✓   7 tests/e2e/journey.spec.ts:307:5 › partner controls affect mobile, while redemption and service authorization stay out of MVP (2.0s)
+  ✓   8 tests/e2e/journey.spec.ts:335:5 › screen QR decodes to configured entry, remains visible and low activity does not insert identities (13.3s)
+  ✓   9 tests/e2e/journey.spec.ts:354:5 › three independent pairs produce a single anonymous insertion and no repeat (20.2s)
+  ✓  10 tests/e2e/journey.spec.ts:368:5 › phone widths, keyboard modal, and screen safe canvas have no critical overflow (1.9s)
+  ✓  11 tests/e2e/journey.spec.ts:409:5 › corrupt saved state has a visible recovery path without silently overwriting the stored snapshot (942ms)
+  ✓  12 tests/e2e/journey.spec.ts:439:5 › all four screen states render decodable QR pixels and readable panel text (1.5s)
+  ✓  13 tests/e2e/journey.spec.ts:464:5 › recommendation return preserves answers and people while explaining short lists (3.4s)
+  ✓  14 tests/e2e/journey.spec.ts:504:5 › blocked invitation explains current task, opens the right route and clears when the old invite ends (3.7s)
+  ✓  15 tests/e2e/motion.spec.ts:25:5 › question motion advances saved nodes without losing immediate controls or input (2.6s)
+  ✓  16 tests/e2e/motion.spec.ts:62:5 › mutual paths actually draw, do not gate the CTA, and replay once per invitation (2.9s)
+  ✓  17 tests/e2e/motion.spec.ts:114:5 › reduced motion, mid-flight preference change and visibility finish without hidden content (1.3s)
+  ✓  18 tests/e2e/motion.spec.ts:178:5 › failed send has no success motion; successful send preserves the invitation and can leave immediately (1.6s)
+  ✓  19 tests/e2e/motion.spec.ts:205:5 › incoming signal settles at the center, remains SENT and does not replay on refresh (920ms)
+  ✓  20 tests/e2e/motion.spec.ts:229:5 › a saved first answer updates only actual screen percentages across tabs (2.4s)
+  ✓  21 tests/e2e/motion.spec.ts:262:5 › waiting point, arrival and merchant feedback reflect only persisted facts (4.5s)
+
+  21 passed (1.6m)

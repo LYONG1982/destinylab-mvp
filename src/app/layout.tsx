@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { motionCssVars } from "@/lib/motion-tokens";
+import { MotionRoot } from "@/components/motion/Motion";
 export const metadata: Metadata = {
   title: "缘分实验室 · Destiny Lab",
   description: "从一个共同话题，开始认识。银川鼓楼现场社交体验，本地演示。",
@@ -12,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body style={motionCssVars}>
+        <MotionRoot>{children}</MotionRoot>
+      </body>
     </html>
   );
 }

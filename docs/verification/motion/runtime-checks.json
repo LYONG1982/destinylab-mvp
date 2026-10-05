@@ -1,0 +1,318 @@
+{
+  "capturedAt": "2026-10-05T08:33:11.921Z",
+  "widths": [
+    {
+      "route": "01-start",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "01-start",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "01-start",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "01-start",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "01-start",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "02-result",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "02-result",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "02-result",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "02-result",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "02-result",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "03-profile",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "03-profile",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "03-profile",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "03-profile",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "03-profile",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "04-question",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "04-question",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "04-question",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "04-question",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "04-question",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "05-discover",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "05-discover",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "05-discover",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "05-discover",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "05-discover",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "06-common?target=p-xiaoman",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "06-common?target=p-xiaoman",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "06-common?target=p-xiaoman",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "06-common?target=p-xiaoman",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "06-common?target=p-xiaoman",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "07-invitation",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "07-invitation",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "07-invitation",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "07-invitation",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "07-invitation",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "08-mutual",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "08-mutual",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "08-mutual",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "08-mutual",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "08-mutual",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "09-meet",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "09-meet",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "09-meet",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "09-meet",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "09-meet",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    },
+    {
+      "route": "10-next-step",
+      "width": 320,
+      "actual": 320,
+      "viewport": 320
+    },
+    {
+      "route": "10-next-step",
+      "width": 360,
+      "actual": 360,
+      "viewport": 360
+    },
+    {
+      "route": "10-next-step",
+      "width": 390,
+      "actual": 390,
+      "viewport": 390
+    },
+    {
+      "route": "10-next-step",
+      "width": 393,
+      "actual": 393,
+      "viewport": 393
+    },
+    {
+      "route": "10-next-step",
+      "width": 430,
+      "actual": 430,
+      "viewport": 430
+    }
+  ],
+  "CPU4xBrand": {
+    "frames": 0,
+    "pending": 0,
+    "longTasks": [],
+    "cls": 0
+  },
+  "quietM09": {
+    "framesInThreeSeconds": 0,
+    "pending": 0,
+    "runningAnimations": 0
+  },
+  "errors": [],
+  "limitations": "Desktop Chrome emulation, not WeChat or physical midrange phone verification."
+}

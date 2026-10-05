@@ -1,0 +1,239 @@
+{
+  "capturedAt": "2026-10-05T08:32:17.926Z",
+  "manifest": [
+    {
+      "name": "M01-start",
+      "route": "/mobile/01-start?actor=p-shanfeng",
+      "scenario": "fresh",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/01-start"
+    },
+    {
+      "name": "M02-result",
+      "route": "/mobile/02-result?actor=p-shanfeng",
+      "scenario": "discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/02-result"
+    },
+    {
+      "name": "M03-profile",
+      "route": "/mobile/03-profile?actor=p-shanfeng",
+      "scenario": "discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/03-profile"
+    },
+    {
+      "name": "M04-question",
+      "route": "/mobile/04-question?actor=p-shanfeng",
+      "scenario": "discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/04-question"
+    },
+    {
+      "name": "M05-discover",
+      "route": "/mobile/05-discover?actor=p-shanfeng",
+      "scenario": "discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/05-discover"
+    },
+    {
+      "name": "M06-common",
+      "route": "/mobile/06-common?actor=p-shanfeng&target=p-xiaoman",
+      "scenario": "discover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/06-common"
+    },
+    {
+      "name": "M07-received",
+      "route": "/mobile/07-invitation?actor=p-xiaoman",
+      "scenario": "waiting",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/07-invitation",
+      "recapturedAt": "2026-10-05T08:50:54.968Z"
+    },
+    {
+      "name": "M08-mutual",
+      "route": "/mobile/08-mutual?actor=p-shanfeng",
+      "scenario": "mutual",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/08-mutual"
+    },
+    {
+      "name": "M09-meet",
+      "route": "/mobile/09-meet?actor=p-shanfeng",
+      "scenario": "arrival",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/09-meet",
+      "recapturedAt": "2026-10-05T08:50:57.162Z"
+    },
+    {
+      "name": "M10-next-step",
+      "route": "/mobile/10-next-step?actor=p-shanfeng",
+      "scenario": "confirmed",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/10-next-step"
+    },
+    {
+      "name": "A01-dashboard",
+      "route": "/admin/dashboard",
+      "scenario": "help",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "actualRoute": "/admin/dashboard"
+    },
+    {
+      "name": "A02-encounters",
+      "route": "/admin/encounters",
+      "scenario": "broadcast",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "actualRoute": "/admin/encounters"
+    },
+    {
+      "name": "A03-participants",
+      "route": "/admin/participants",
+      "scenario": "discover",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "actualRoute": "/admin/participants"
+    },
+    {
+      "name": "A04-partners",
+      "route": "/admin/partners",
+      "scenario": "merchant",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "actualRoute": "/admin/partners"
+    },
+    {
+      "name": "S01-question",
+      "route": "/screen/question",
+      "scenario": "discover",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "actualRoute": "/screen/question"
+    },
+    {
+      "name": "S02-presence",
+      "route": "/screen/presence",
+      "scenario": "discover",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "actualRoute": "/screen/presence"
+    },
+    {
+      "name": "S03-mutual",
+      "route": "/screen/mutual",
+      "scenario": "broadcast",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "actualRoute": "/screen/mutual"
+    },
+    {
+      "name": "S04-real-meet",
+      "route": "/screen/real-meet",
+      "scenario": "confirmed",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "actualRoute": "/screen/real-meet"
+    },
+    {
+      "name": "E01-empty",
+      "route": "/mobile/05-discover?actor=p-shanfeng",
+      "scenario": "zero",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/05-discover"
+    },
+    {
+      "name": "E02-waiting",
+      "route": "/mobile/07-invitation?actor=p-shanfeng",
+      "scenario": "waiting",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/07-invitation"
+    },
+    {
+      "name": "E03-busy",
+      "route": "/mobile/08-mutual?actor=p-shanfeng",
+      "scenario": "busy",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/08-mutual"
+    },
+    {
+      "name": "E04-help",
+      "route": "/mobile/09-meet?actor=p-shanfeng",
+      "scenario": "help",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualRoute": "/mobile/09-meet",
+      "recapturedAt": "2026-10-05T08:50:59.341Z"
+    },
+    {
+      "name": "D01-demo",
+      "route": "/demo",
+      "scenario": "fresh",
+      "viewport": {
+        "width": 1440,
+        "height": 1024
+      },
+      "actualRoute": "/demo"
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,8 @@
+
+Running 1 test using 1 worker
+
+(node:16946) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/journey.spec.ts:25:9 › full journey · reduce › complete first-time two-person story, persistent 28→29, operator and public screen agree (6.5s)
+
+  1 passed (7.6s)

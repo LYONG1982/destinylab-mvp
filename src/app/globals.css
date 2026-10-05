@@ -61,9 +61,9 @@ a {
 }
 button {
   transition:
-    background 0.16s,
-    border-color 0.16s,
-    transform 0.16s;
+    background var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
 }
 button:active:not(:disabled) {
   transform: translateY(1px);
@@ -1101,7 +1101,6 @@ svg {
   border-radius: 50%;
   background: var(--gold);
   box-shadow: 0 0 0 8px #c4a06915;
-  animation: breathe 2s ease-in-out infinite;
 }
 .mutual-portraits {
   display: flex;
@@ -1125,7 +1124,6 @@ svg {
   color: var(--wine);
   margin-top: -45px;
   flex: 1;
-  animation: breathe 1.5s ease-in-out;
 }
 .connection i {
   height: 1px;
@@ -2382,7 +2380,7 @@ svg {
 .relationship-tracks svg {
   width: 4vw;
   height: 4vw;
-  animation: breathe 3s ease-in-out infinite;
+  animation: none;
 }
 .presence-network {
   position: absolute;
@@ -2656,4 +2654,504 @@ svg {
   font-size: 15px;
   line-height: 2;
   letter-spacing: 1px;
+}
+
+/* Motion: final states are readable without animations or JavaScript effects. */
+.animated-counter {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+.animated-counter [data-number] {
+  font: inherit;
+  color: inherit;
+}
+.destiny-track {
+  width: 100%;
+  overflow: visible;
+}
+.destiny-track path {
+  stroke: var(--wine);
+  stroke-width: 1.8;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+}
+.destiny-track path:nth-child(2) {
+  stroke: var(--gold);
+}
+.question-transition {
+  position: relative;
+}
+.question-transition .button {
+  margin-top: 16px;
+}
+.question-outgoing {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.destiny-progress {
+  display: flex;
+  width: 100%;
+  list-style: none;
+  margin: 4px 0 20px;
+  padding: 0;
+  align-items: center;
+}
+.destiny-progress li {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.destiny-progress li:last-child {
+  flex: 0;
+}
+.destiny-progress li:not(:last-child)::after {
+  content: "";
+  height: 1px;
+  background: var(--line);
+  flex: 1;
+}
+.destiny-progress li[data-complete="true"]::after {
+  background: var(--gold);
+}
+.destiny-progress li > span {
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: var(--cream);
+  transition: background var(--motion-fast);
+}
+.destiny-progress li[data-complete="true"] > span {
+  background: var(--wine);
+  border-color: var(--wine);
+}
+.destiny-progress li[aria-current] > span {
+  outline: 3px solid #a17c4720;
+  outline-offset: 3px;
+}
+.mobile-shell .answer-card:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.mobile-shell .answer-card.selected,
+.mobile-shell .intent-card.selected {
+  border-color: var(--gold);
+}
+.ambient {
+  display: inline-flex;
+}
+html[data-motion="true"] .ambient[data-inview="true"] .pulse-dot {
+  animation: presence-breathe var(--motion-presence) ease-in-out infinite;
+}
+@keyframes presence-breathe {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient *,
+  .mobile-shell * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.common-links {
+  display: grid;
+  gap: 16px;
+}
+.common-heading strong {
+  display: inline-block;
+}
+.common-link {
+  padding: 13px 14px;
+  background: #fffdf9a8;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.common-link > small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.common-link > div {
+  display: grid;
+  grid-template-columns: 1fr minmax(36px, 0.7fr) 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.common-link strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--wine);
+  overflow-wrap: anywhere;
+}
+.common-link strong:last-child {
+  text-align: right;
+}
+.common-link svg {
+  width: 100%;
+  fill: var(--gold);
+}
+.common-link path {
+  stroke: var(--gold);
+  stroke-width: 1.4;
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.signal-path {
+  display: block;
+  width: 100%;
+  height: 36px;
+}
+.signal-path path {
+  stroke: var(--gold);
+  stroke-width: 1;
+}
+.signal-path circle {
+  fill: var(--gold);
+}
+.signal-motion {
+  position: fixed;
+  z-index: 20;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(340px, calc(100vw - 40px));
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 24px #34281518;
+  border-radius: 14px;
+  padding: 14px 20px;
+  pointer-events: none;
+}
+.signal-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--wine);
+}
+.signal-motion p {
+  text-align: center;
+  font-size: 13px;
+}
+.invitation-caption {
+  color: var(--wine);
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+.mutual-motion {
+  text-align: center;
+}
+.mutual-tracks {
+  flex: 1;
+  min-width: 36px;
+  width: 0;
+  margin-top: -48px;
+}
+.mutual-intersection {
+  fill: var(--gold);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.mutual-copy {
+  font-family: var(--serif);
+  font-size: 19px;
+  color: var(--wine);
+}
+.mutual-place-copy {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 6px 0 12px;
+}
+.verification-code > .code-motion {
+  display: block;
+  font-size: 48px;
+  letter-spacing: 0.1em;
+}
+.verification-code .code-motion strong {
+  letter-spacing: inherit;
+}
+.meet-status-tracks {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffdf980;
+}
+.meet-status-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: var(--muted);
+}
+.meet-status-track > span {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.meet-status-track small {
+  display: block;
+  font-size: 10px;
+}
+.meet-status-track svg {
+  flex: 1;
+  width: 0;
+  min-width: 24px;
+  color: #aaa39b;
+}
+.meet-status-track path {
+  stroke: currentColor;
+  stroke-width: 1;
+}
+.meet-status-track circle {
+  fill: currentColor;
+}
+.meet-status-track[data-status="departed"] svg {
+  color: var(--wine);
+}
+.meet-status-track[data-status="arrived"] svg {
+  color: var(--green);
+}
+.start-hero {
+  background: none;
+  overflow: hidden;
+}
+.start-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      #fff9eef5 0%,
+      #fff9eed9 48%,
+      #fff9ee55 72%,
+      #f6efe600 90%,
+      var(--cream) 100%
+    ),
+    url("/assets/gulou-autumn.png") center 60% / cover;
+}
+.start-copy h1 .title-primary,
+.start-copy h1 .title-secondary {
+  display: block;
+}
+.start-copy h1 .title-secondary {
+  color: var(--ink);
+  font-size: inherit;
+}
+.intent-motion {
+  min-width: 0;
+}
+.intent-motion .intent-card {
+  width: 100%;
+  height: 100%;
+}
+.mobile-shell .intent-card:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.intent-card .intent-track {
+  position: absolute;
+  top: 100%;
+  left: 38%;
+  width: 24%;
+  height: 17px;
+}
+.presence-indicator {
+  margin: -12px 22px 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.presence-indicator > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.presence-indicator .ambient {
+  margin-right: 5px;
+}
+.presence-indicator .pulse-dot {
+  width: 5px;
+  height: 5px;
+  box-shadow: none;
+}
+.motion-donut {
+  background: var(--paper);
+}
+.motion-donut::before {
+  content: none;
+}
+.motion-donut .counter-ring,
+.motion-donut .counter-ring > span,
+.motion-donut [data-number] {
+  font: inherit;
+  color: inherit;
+}
+.counter-ring svg {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  transform: rotate(-90deg);
+  fill: none;
+  pointer-events: none;
+}
+.counter-ring circle {
+  stroke: var(--wine);
+  stroke-width: 10px;
+}
+.counter-ring .ring-base {
+  stroke: #efe3dc;
+}
+.result-explanation {
+  font-size: 13px;
+  color: var(--ink);
+  text-align: left;
+  line-height: 1.9;
+}
+.result-explanation strong {
+  font:
+    22px Georgia,
+    serif;
+  color: var(--wine);
+}
+.avatar-motion {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.city-response {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 19;
+  width: min(370px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 12px;
+  box-shadow: 0 5px 24px #34281512;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--wine);
+  pointer-events: none;
+}
+.next-options .next-card {
+  width: 100%;
+}
+.next-picture {
+  position: relative;
+}
+.city-steam {
+  position: absolute;
+  top: 16%;
+  left: calc(50% - 18px);
+  pointer-events: none;
+}
+.city-steam svg {
+  fill: none;
+  stroke: #fffdf9;
+  stroke-width: 1;
+  opacity: 0.4;
+}
+html[data-motion="true"] .ambient.city-walk[data-inview="true"] > svg {
+  animation: city-walk var(--motion-ambient) ease-in-out infinite;
+}
+html[data-motion="true"] .ambient.city-steam[data-inview="true"] > svg {
+  animation: city-steam var(--motion-ambient) ease-in-out infinite;
+}
+@keyframes city-walk {
+  0%,
+  100% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+}
+@keyframes city-steam {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translateY(2px);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translateY(-2px);
+  }
+}
+.route-draw {
+  display: grid;
+  grid-template-columns: auto minmax(30px, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f0e7d9;
+  font-size: 13px;
+  color: var(--wine);
+  margin-bottom: 16px;
+}
+.route-draw svg {
+  width: 100%;
+  stroke: var(--gold);
+  fill: var(--gold);
+}
+.route-draw path {
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.route-draw small {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-motion] .ambient * {
+    animation: none !important;
+  }
+}
+.badge {
+  transition:
+    color var(--motion-fast),
+    background-color var(--motion-fast),
+    border-color var(--motion-fast);
+}
+.admin-shell .animated-counter {
+  font: inherit;
+}
+
+.screen-canvas .animated-counter,
+.screen-canvas .animated-counter span {
+  font: inherit;
+  color: inherit;
+}
+.screen-canvas .animated-counter small {
+  font-size: 0.6em;
+}
+.relationship-tracks .destiny-track {
+  width: 100%;
+  height: 100%;
+  animation: none;
+  color: var(--gold);
+}
+.screen-mutual .destiny-track path:first-child {
+  stroke: #dbb398;
+}
+.screen-mutual .destiny-track path:nth-child(2) {
+  stroke: var(--gold);
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    transition: none;
+  }
 }
