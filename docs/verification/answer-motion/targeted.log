@@ -1,0 +1,85 @@
+
+Running 5 tests using 1 worker
+
+(node:27244) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/answer-motion.spec.ts:32:5 › single choice saves once, failed answers stay selected and rapid retry cannot skip a question (2.3s)
+  ✘  2 tests/e2e/answer-motion.spec.ts:71:5 › first answer has no preset or extra submit; readiness stays in two equal columns at five widths (1.3s)
+(node:27263) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  3 tests/e2e/answer-motion.spec.ts:118:5 › mobile frame trace has one question, monotonic entry, stable x and scroll through forward and back (2.9s)
+  ✓  4 tests/e2e/answer-motion.spec.ts:205:5 › slow answers lock controls; hidden completion and epoch reset cannot advance an old task (5.0s)
+  ✘  5 tests/e2e/answer-motion.spec.ts:377:5 › a real second confirmation animates 28 to 29 without zero or overshoot (45.9s)
+
+
+  1) tests/e2e/answer-motion.spec.ts:71:5 › first answer has no preset or extra submit; readiness stays in two equal columns at five widths
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 0
+    Received array:  []
+
+       98 |       }),
+       99 |     );
+    > 100 |     expect(boxes).toHaveLength(2);
+          |                   ^
+      101 |     expect(boxes[0].y).toBe(boxes[1].y);
+      102 |     expect(boxes[0].height).toBe(boxes[1].height);
+      103 |     expect(boxes[0].width).toBeCloseTo(boxes[1].width, 1);
+        at /Users/lvyong198201/Desktop/Game 2026/DestinyLab-MVP/tests/e2e/answer-motion.spec.ts:100:19
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/answer-motion-first-answer-ea424-qual-columns-at-five-widths/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/answer-motion-first-answer-ea424-qual-columns-at-five-widths/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/answer-motion-first-answer-ea424-qual-columns-at-five-widths/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/answer-motion-first-answer-ea424-qual-columns-at-five-widths/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/e2e/answer-motion.spec.ts:377:5 › a real second confirmation animates 28 to 29 without zero or overshoot
+
+    Test timeout of 45000ms exceeded.
+
+    Error: locator.click: Test timeout of 45000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '我已经见到 TA', exact: true })
+
+
+      403 |         requestAnimationFrame(tick);
+      404 |       }),
+    > 405 |   );
+          |     ^
+      406 |   await page.getByRole("button", { name: "我已经见到 TA", exact: true }).click();
+      407 |   const values = await samples;
+      408 |   await record("real-meet-28-29", values);
+        at /Users/lvyong198201/Desktop/Game 2026/DestinyLab-MVP/tests/e2e/answer-motion.spec.ts:405:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/answer-motion-a-real-secon-394f8-9-without-zero-or-overshoot/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/answer-motion-a-real-secon-394f8-9-without-zero-or-overshoot/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/answer-motion-a-real-secon-394f8-9-without-zero-or-overshoot/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/answer-motion-a-real-secon-394f8-9-without-zero-or-overshoot/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/answer-motion-a-real-secon-394f8-9-without-zero-or-overshoot/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests/e2e/answer-motion.spec.ts:71:5 › first answer has no preset or extra submit; readiness stays in two equal columns at five widths
+    tests/e2e/answer-motion.spec.ts:377:5 › a real second confirmation animates 28 to 29 without zero or overshoot
+  3 passed (1.0m)

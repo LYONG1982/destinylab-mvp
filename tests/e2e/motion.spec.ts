@@ -27,7 +27,7 @@ test("question motion advances saved nodes without losing immediate controls or 
 }) => {
   await scenario(page, "fresh");
   await mobile(page, "01-start");
-  await page.getByRole("button", { name: "开始今天的遇见" }).click();
+  await page.getByRole("button", { name: /一起逛逛/ }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "已加入今晚的答案" }),
   ).toBeVisible();
@@ -38,15 +38,10 @@ test("question motion advances saved nodes without losing immediate controls or 
     page.locator('.destiny-progress li[data-complete="true"]'),
   ).toHaveCount(1);
   await page.getByRole("button", { name: "热闹街区", exact: true }).click();
-  await page.getByRole("button", { name: "下一题", exact: true }).click();
   await expect(page.locator(".question-progress strong")).toHaveText("03");
   await expect(
     page.locator('.destiny-progress li[data-complete="true"]'),
   ).toHaveCount(2);
-  await page.getByRole("button", { name: "旅行与城市", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "旅行与城市", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "返回上一题" }).click();
   await expect(page.locator(".question-progress strong")).toHaveText("02");
   await expect(
@@ -238,7 +233,6 @@ test("a saved first answer updates only actual screen percentages across tabs", 
   await expect(screen.locator(".screen-bar")).toHaveCount(3);
   await mobile(page, "01-start");
   await page.getByRole("button", { name: /轻松聊聊/ }).click();
-  await page.getByRole("button", { name: "开始今天的遇见" }).click();
   await expect(page).toHaveURL(/02-result/);
   const state = await saved(page);
   const responses = Object.values(state.responses);

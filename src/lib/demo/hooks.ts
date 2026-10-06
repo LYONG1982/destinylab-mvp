@@ -1,5 +1,11 @@
 "use client";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import * as store from "./store";
 import type { Command } from "@/domain/types";
 export function useDemo() {
@@ -46,20 +52,44 @@ export function useDemo() {
   }, [state]);
   return { state, actor, problem };
 }
-export function useAction(actor: string) {
+export function useAction(actor: string, scope = actor) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
-  async function run(c: Command, after?: () => void) {
-    if (busy) return;
+  const generation = useRef(0);
+  const locked = useRef(false);
+  useLayoutEffect(() => {
+    const version = ++generation.current;
+    locked.current = false;
+    return () => {
+      generation.current = version + 1;
+    };
+  }, [actor, scope]);
+  async function run(
+    c: Command,
+    after?: (isCurrent: () => boolean) => void | Promise<void>,
+  ) {
+    if (locked.current) return;
+    locked.current = true;
+    const version = generation.current;
+    const epoch = store.getSnapshot()?.epoch;
+    const path = location.pathname;
+    const isCurrent = () =>
+      generation.current === version &&
+      store.getSnapshot()?.epoch === epoch &&
+      location.pathname === path;
     setBusy(true);
     setError("");
     try {
       await store.command(actor, c);
-      after?.();
+      if (isCurrent()) await after?.(isCurrent);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "操作未完成，请重试。");
+      if (isCurrent())
+        setError(e instanceof Error ? e.message : "操作未完成，请重试。");
     } finally {
-      setBusy(false);
+      if (generation.current === version) {
+        locked.current = false;
+        setBusy(false);
+      }
     }
   }
   return { busy, error, setError, run };

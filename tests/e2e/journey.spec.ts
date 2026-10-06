@@ -31,7 +31,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await scenario(page, "fresh");
       await page.setViewportSize({ width: 390, height: 844 });
       await actorPage(page, "p-shanfeng", "01-start");
-      const cta = page.getByRole("button", { name: "开始今天的遇见" });
+      const cta = page.getByRole("button", { name: /一起逛逛/ });
       const box = await cta.boundingBox();
       expect(box!.y + box!.height).toBeLessThan(844);
       await cta.click();
@@ -56,14 +56,8 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         "先做朋友",
         "有趣会聊天",
       ];
-      for (const [index, answer] of answers.entries()) {
+      for (const answer of answers) {
         await page.getByRole("button", { name: answer, exact: true }).click();
-        await page
-          .getByRole("button", {
-            name: index === answers.length - 1 ? "看看现场同频的人" : "下一题",
-            exact: true,
-          })
-          .click();
       }
       await expect(page).toHaveURL(/05-discover/);
       await expect(page.locator(".recommend-card")).toHaveCount(3);
@@ -157,7 +151,7 @@ test("nickname boundaries and Chinese composition, answer backtracking and refre
 }) => {
   await scenario(page, "fresh");
   await actorPage(page, "p-shanfeng", "01-start");
-  await page.getByRole("button", { name: "开始今天的遇见" }).click();
+  await page.getByRole("button", { name: /一起逛逛/ }).click();
   await page.getByRole("button", { name: "看看现场还有谁和我一样" }).click();
   const input = page.getByLabel("怎么称呼你？");
   await input.fill("山风123");
@@ -178,7 +172,7 @@ test("nickname boundaries and Chinese composition, answer backtracking and refre
   await page.getByRole("radio", { name: "男生虚拟头像 03" }).check();
   await page.getByRole("button", { name: "继续答题" }).click();
   await page.getByRole("button", { name: "安静咖啡馆", exact: true }).click();
-  await page.getByRole("button", { name: "下一题", exact: true }).click();
+  await expect(page.locator(".question-progress strong")).toHaveText("03");
   await page.getByRole("button", { name: "返回上一题" }).click();
   await expect(
     page.getByRole("button", { name: "安静咖啡馆", exact: true }),

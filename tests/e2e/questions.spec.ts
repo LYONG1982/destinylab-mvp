@@ -97,26 +97,17 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
             true,
           );
           await expect(
-            page.getByRole("button", {
-              name: index === 3 ? "看看现场同频的人" : "下一题",
-              exact: true,
-            }),
-          ).toBeDisabled();
+            page.getByRole("button", { name: /^(下一题|看看现场同频的人)$/ }),
+          ).toHaveCount(0);
           if (reducedMotion === "no-preference" && [320, 390].includes(width)) {
             await expect(page.locator(".question-outgoing")).toHaveCount(0);
             await page.screenshot({
-              path: `docs/verification/questions-10/${q.id}-${width}.png`,
+              path: `docs/verification/answer-motion/${q.id}-${width}.png`,
               fullPage: true,
             });
           }
           await page
             .getByRole("button", { name: q.answer, exact: true })
-            .click();
-          await page
-            .getByRole("button", {
-              name: index === 3 ? "看看现场同频的人" : "下一题",
-              exact: true,
-            })
             .click();
           if (index < 3) await expect(page).toHaveURL(/04-question/);
         }
@@ -144,7 +135,6 @@ test("saved extra answers survive backtracking and refresh; admin shows all ten 
   await page
     .getByRole("button", { name: "主动认识几个人", exact: true })
     .click();
-  await page.getByRole("button", { name: "下一题", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: extra[1].title }),
   ).toBeVisible();
@@ -153,7 +143,6 @@ test("saved extra answers survive backtracking and refresh; admin shows all ten 
     page.getByRole("button", { name: extra[0].answer, exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "跟着感觉走", exact: true }).click();
-  await page.getByRole("button", { name: "下一题", exact: true }).click();
   await expect
     .poll(async () => (await saved(page)).participants[0].answers.q7)
     .toBe("跟着感觉走");
@@ -166,12 +155,6 @@ test("saved extra answers survive backtracking and refresh; admin shows all ten 
   ).toBeVisible();
   for (const [index, q] of extra.slice(1).entries()) {
     await page.getByRole("button", { name: q.answer, exact: true }).click();
-    await page
-      .getByRole("button", {
-        name: index === 2 ? "看看现场同频的人" : "下一题",
-        exact: true,
-      })
-      .click();
     await expect
       .poll(async () => (await saved(page)).participants[0].answers[q.id])
       .toBe(q.answer);
@@ -205,7 +188,7 @@ test("saved extra answers survive backtracking and refresh; admin shows all ten 
   for (const value of ["跟着感觉走", ...extra.slice(1).map((q) => q.answer)])
     await expect(dialog).toContainText(value);
   await page.screenshot({
-    path: "docs/verification/questions-10/admin-ten-answers.png",
+    path: "docs/verification/answer-motion/admin-ten-answers.png",
   });
 });
 test("a persisted six-answer invitation completes two-person meeting then explicitly resumes q7", async ({

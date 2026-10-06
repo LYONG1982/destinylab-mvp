@@ -42,6 +42,7 @@ import {
 import {
   QuestionTransition,
   DestinyProgressTrack,
+  type QuestionTransitionHandle,
 } from "@/components/motion/QuestionTransition";
 
 import { CommonAnswerLink } from "@/components/motion/CommonAnswerLink";
@@ -72,7 +73,7 @@ export function MobileApp({ page }: { page: string }) {
     );
   return (
     <MobileFlow
-      key={`${state.epoch}:${actor}`}
+      key={`${state.epoch}:${actor}:${page}`}
       state={state}
       me={me}
       page={page}
@@ -266,6 +267,7 @@ function MobileFlow({
         <div className="mobile-utility">
           <button
             className="back-link"
+            disabled={page === "04-question" && a.busy}
             onClick={() => {
               const back: Record<string, string> = {
                 "02-result": "01-start",
@@ -849,8 +851,9 @@ function Start({
   action: Actions;
   onNext: () => void;
 }) {
-  const [selected, setSelected] = useState(me.answers.q1 || "一起逛逛");
+  const [selected, setSelected] = useState(me.answers.q1 || "");
   const [touched, setTouched] = useState(false);
+  const choosing = useRef(false);
   const cityResponse = useCityResponse();
   return (
     <>
@@ -897,9 +900,28 @@ function Start({
               <button
                 aria-pressed={selected === v}
                 className={`intent-card ${selected === v ? "selected" : ""}`}
+                disabled={a.busy}
                 onClick={() => {
+                  if (a.busy || choosing.current) return;
+                  choosing.current = true;
                   setSelected(v);
                   setTouched(true);
+                  void a
+                    .run(
+                      { type: "answer", questionId: "q1", value: v },
+                      (isCurrent) => {
+                        if (
+                          !isCurrent() ||
+                          document.visibilityState !== "visible"
+                        )
+                          return;
+                        cityResponse(me.id, "q1", v);
+                        onNext();
+                      },
+                    )
+                    .finally(() => {
+                      choosing.current = false;
+                    });
                 }}
               >
                 {selected === v && (
@@ -917,18 +939,14 @@ function Start({
             </Motion>
           ))}
         </div>
-        <Button
-          disabled={a.busy}
-          onClick={() =>
-            a.run({ type: "answer", questionId: "q1", value: selected }, () => {
-              cityResponse(me.id, "q1", selected);
-              onNext();
-            })
-          }
-        >
-          开始今天的遇见
-          <Icon name="arrow" />
-        </Button>
+        {a.error && <Notice tone="error">{a.error}</Notice>}
+        <p className="answer-feedback" role="status">
+          {a.busy
+            ? "正在保存你的选择…"
+            : a.error
+              ? "保存未完成，请再次点击答案重试"
+              : "选一个答案，开始今天的遇见"}
+        </p>
         <p className="fine center">
           回答 {QUESTIONS.length} 个轻问题，发现现场同频的人
         </p>
@@ -1140,7 +1158,7 @@ function Profile({
             onClick={() => setReady(true)}
           >
             <span className="radio-dot" />
-            可以，现在就能见面
+            <span>可以，现在就能见面</span>
           </button>
           <button
             type="button"
@@ -1149,7 +1167,7 @@ function Profile({
             onClick={() => setReady(false)}
           >
             <span className="radio-dot" />
-            我想先看看
+            <span>我想先看看</span>
           </button>
         </div>
       </fieldset>
@@ -1177,7 +1195,30 @@ function Questions({
   const initial = QUESTIONS.findIndex((q, i) => i > 0 && !me.answers[q.id]);
   const [index, setIndex] = useState(initial < 0 ? 1 : initial);
   const [selected, setSelected] = useState("");
+  const transition = useRef<QuestionTransitionHandle>(null);
+  const choosing = useRef(false);
   const q = QUESTIONS[index];
+  function choose(value: string) {
+    if (a.busy || choosing.current || transition.current?.busy()) return;
+    choosing.current = true;
+    setSelected(value);
+    void a
+      .run({ type: "answer", questionId: q.id, value }, async (isCurrent) => {
+        if (document.visibilityState !== "visible") return;
+        cityResponse(me.id, q.id, value);
+        await transition.current?.change(() => {
+          if (!isCurrent()) return;
+          if (index === QUESTIONS.length - 1) onNext();
+          else {
+            setIndex(index + 1);
+            setSelected("");
+          }
+        }, isCurrent);
+      })
+      .finally(() => {
+        choosing.current = false;
+      });
+  }
   return (
     <div className="question-page">
       <div className="question-progress">
@@ -1185,16 +1226,17 @@ function Questions({
         <span>/ {String(QUESTIONS.length).padStart(2, "0")}</span>
         <DestinyProgressTrack answers={me.answers} current={index} />
       </div>
-      <QuestionTransition questionKey={q.id}>
-        <h1>{q.title}</h1>
-        <p className="question-note">没有标准答案，选择此刻的你。</p>
+      <QuestionTransition ref={transition} questionKey={q.id}>
+        <h1 tabIndex={-1}>{q.title}</h1>
+        <p className="question-note">没有标准答案，选择后自动继续。</p>
         <div className="answer-grid">
           {q.options.map((v, i) => (
             <button
               key={v}
+              disabled={a.busy}
               aria-pressed={(selected || me.answers[q.id]) === v}
               className={`answer-card ${(selected || me.answers[q.id]) === v ? "selected" : ""}`}
-              onClick={() => setSelected(v)}
+              onClick={() => choose(v)}
             >
               <Icon name={["coffee", "chat", "bag", "leaf"][i]} size={34} />
               <strong>{v}</strong>
@@ -1206,40 +1248,32 @@ function Questions({
             </button>
           ))}
         </div>
-        <Button
-          disabled={a.busy || (!selected && !me.answers[q.id])}
-          onClick={() =>
-            a.run(
-              {
-                type: "answer",
-                questionId: q.id,
-                value: selected || me.answers[q.id],
-              },
-              () => {
-                cityResponse(me.id, q.id, selected || me.answers[q.id]);
-                if (index === QUESTIONS.length - 1) onNext();
-                else {
-                  setIndex(index + 1);
-                  setSelected("");
-                }
-              },
-            )
-          }
+        <p className="answer-feedback" role="status">
+          {a.busy
+            ? "正在保存你的选择…"
+            : a.error
+              ? "保存未完成，请再次点击答案重试"
+              : "点击即可继续，可返回修改答案"}
+        </p>
+        <div
+          className="question-back"
+          style={{ visibility: index > 1 ? "visible" : "hidden" }}
         >
-          {index === QUESTIONS.length - 1 ? "看看现场同频的人" : "下一题"}
-          <Icon name="arrow" />
-        </Button>
-        {index > 1 && (
           <Button
             kind="text"
+            disabled={a.busy || index <= 1}
             onClick={() => {
-              setIndex(index - 1);
-              setSelected("");
+              if (a.busy || transition.current?.busy()) return;
+              a.setError("");
+              void transition.current?.change(() => {
+                setIndex(index - 1);
+                setSelected("");
+              });
             }}
           >
             返回上一题
           </Button>
-        )}
+        </div>
       </QuestionTransition>
       <p className="fine center">你的答案只用于发现共同话题</p>
     </div>

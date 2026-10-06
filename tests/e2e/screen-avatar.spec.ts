@@ -10,7 +10,7 @@ async function scenario(page: Page, name: string) {
 async function profile(page: Page) {
   await scenario(page, "fresh");
   await page.goto("/mobile/01-start");
-  await page.getByRole("button", { name: "开始今天的遇见" }).click();
+  await page.getByRole("button", { name: /一起逛逛/ }).click();
   await page.getByRole("button", { name: "看看现场还有谁和我一样" }).click();
   await expect(page.getByRole("radio")).toHaveCount(10);
 }
@@ -67,7 +67,7 @@ test("avatar is required, gender changes clear selection, keyboard works, refres
     }
   }
   await page.screenshot({
-    path: "docs/verification/avatars/M03-selected.png",
+    path: "docs/verification/answer-motion/M03-selected.png",
     fullPage: true,
   });
   await page.getByRole("button", { name: "继续答题" }).click();
@@ -241,14 +241,14 @@ test("screen preserves QR, layout, canvas identity across dissolve and stops mot
       })),
     ).toEqual({ transform: "none", opacity: "1" });
     await page.screenshot({
-      path: `docs/verification/screen-motion/${mode}.png`,
+      path: `docs/verification/answer-motion/${mode}.png`,
     });
   }
   await page.setViewportSize({ width: 3840, height: 2160 });
   await page.goto("/screen/question");
   await page.waitForTimeout(1600);
   await page.screenshot({
-    path: "docs/verification/screen-motion/question-4k.png",
+    path: "docs/verification/answer-motion/question-4k.png",
   });
   const png4k = PNG.sync.read(await qr.screenshot());
   expect(

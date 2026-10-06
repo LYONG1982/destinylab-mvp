@@ -59,3 +59,9 @@ ScreenEvent 的 JOIN/ANSWER/ACTIVE/MATCH 是非持久化展示事件。第一次
 Participant.answers 继续是 questionId→单选文字，不新增字段、版本或迁移。QUESTIONS 增加 q7–q10；complete 按当前全部 10 题计算，available 和新邀请校验沿用此完整性。旧存储读取不填新答案；下一次保存仅写实际选项。Mock 种子的新四题为独立生成的虚构数据，不用于迁移旧快照。
 
 routeFor 与 phase 让已有 SENT / ACCEPTED / MEET_ASSIGNED / ARRIVING / CONFIRMED 任务优先于补答；移动页守卫允许查看 M07–M10 原任务及终止状态。rediscover 仍由本人触发，清空 currentId 后恢复完整性检查。Invitation.common 只在新邀请时计算，可含至多 10 个相同答案；旧共同答案快照与 realMeetAt 不回算。responses 仍只记录 q1；scans、schema、epoch、存储键及业务事件结构不变。
+
+## 自动前进与显示连续性（2026-10-06）
+
+点击答案仍执行原 answer 命令，成功写入后才前进；不预提交下一题。useAction 以同步锁防止同一任务重复提交，以组件代次、epoch 和路由检查异步结果；离开、换角色或重置后旧结果不能推进新页面。隐藏时允许已经提交的答案保存，但不继续旧视觉跳转。失败不写答案、不推进。
+
+大屏访问记录与正在显示的数值仅在组件内存中存在；epoch 变化重建、整页刷新可重播首次入场，不写 DemoState。非当前场景无需回放历史插值，再进入读取最新投影。数字和进度条共用显示插值而非修改统计；真实相遇继续按 realMeetAt 去重。无新字段、命令、迁移或后端服务。

@@ -1,0 +1,52 @@
+
+> destiny-lab-mvp@1.1.0 test:e2e
+> playwright test
+
+
+Running 41 tests using 1 worker
+
+(node:27644) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/answer-motion.spec.ts:32:5 › single choice saves once, failed answers stay selected and rapid retry cannot skip a question (2.1s)
+  ✓   2 tests/e2e/answer-motion.spec.ts:71:5 › first answer has no preset or extra submit; readiness stays in two equal columns at five widths (1.3s)
+  ✓   3 tests/e2e/answer-motion.spec.ts:119:5 › mobile frame trace has one question, monotonic entry, stable x and scroll through forward and back (2.8s)
+  ✓   4 tests/e2e/answer-motion.spec.ts:206:5 › slow answers lock controls; hidden completion and epoch reset cannot advance an old task (5.0s)
+  ✓   5 tests/e2e/answer-motion.spec.ts:247:5 › three full screen rotations never replay stable counters or resurrect outgoing text (1.4m)
+  ✓   6 tests/e2e/answer-motion.spec.ts:383:5 › changing motion preference during question exit completes once and keeps controls usable (861ms)
+  ✓   7 tests/e2e/answer-motion.spec.ts:416:5 › a real second confirmation animates 28 to 29 without zero or overshoot (3.8s)
+  ✓   8 tests/e2e/answer-motion.spec.ts:460:5 › rapid statistical updates continue from painted values; reduce and hidden settle on latest values (2.7s)
+  ✓   9 tests/e2e/answer-motion.spec.ts:533:5 › broadcast eligibility changes do not restart the scene clock; mutual exit never flashes back (20.9s)
+  ✓  10 tests/e2e/journey.spec.ts:25:9 › full journey · no-preference › complete first-time two-person story, persistent 28→29, operator and public screen agree (14.1s)
+  ✓  11 tests/e2e/journey.spec.ts:25:9 › full journey · reduce › complete first-time two-person story, persistent 28→29, operator and public screen agree (7.3s)
+  ✓  12 tests/e2e/journey.spec.ts:149:5 › nickname boundaries and Chinese composition, answer backtracking and refresh restoration (2.6s)
+  ✓  13 tests/e2e/journey.spec.ts:183:5 › rejection and expiration are neutral, and browser back does not accept an invitation (2.1s)
+  ✓  14 tests/e2e/journey.spec.ts:203:5 › same-origin storage synchronizes help and point allocation, not isolated browser contexts (3.6s)
+  ✓  15 tests/e2e/journey.spec.ts:254:5 › failed request is retryable and delayed writes cannot revive a reset scenario (6.2s)
+  ✓  16 tests/e2e/journey.spec.ts:308:5 › partner controls affect mobile, while redemption and service authorization stay out of MVP (1.7s)
+  ✓  17 tests/e2e/journey.spec.ts:336:5 › screen QR decodes to configured entry, remains visible and low activity does not insert identities (13.2s)
+  ✓  18 tests/e2e/journey.spec.ts:355:5 › three independent pairs produce a single anonymous insertion and no repeat (20.2s)
+  ✓  19 tests/e2e/journey.spec.ts:369:5 › phone widths, keyboard modal, and screen safe canvas have no critical overflow (2.1s)
+  ✓  20 tests/e2e/journey.spec.ts:410:5 › corrupt saved state has a visible recovery path without silently overwriting the stored snapshot (1.2s)
+  ✓  21 tests/e2e/journey.spec.ts:440:5 › all four screen states render decodable QR pixels and readable panel text (1.5s)
+  ✓  22 tests/e2e/journey.spec.ts:465:5 › recommendation return preserves answers and people while explaining short lists (3.3s)
+  ✓  23 tests/e2e/journey.spec.ts:505:5 › blocked invitation explains current task, opens the right route and clears when the old invite ends (3.7s)
+  ✓  24 tests/e2e/motion.spec.ts:25:5 › question motion advances saved nodes without losing immediate controls or input (2.2s)
+  ✓  25 tests/e2e/motion.spec.ts:58:5 › mutual paths actually draw, do not gate the CTA, and replay once per invitation (2.9s)
+  ✓  26 tests/e2e/motion.spec.ts:110:5 › reduced motion, mid-flight preference change and visibility finish without hidden content (1.3s)
+  ✓  27 tests/e2e/motion.spec.ts:174:5 › failed send has no success motion; successful send preserves the invitation and can leave immediately (1.8s)
+  ✓  28 tests/e2e/motion.spec.ts:201:5 › incoming signal settles at the center, remains SENT and does not replay on refresh (1.7s)
+  ✓  29 tests/e2e/motion.spec.ts:225:5 › a saved first answer updates only actual screen percentages across tabs (2.9s)
+  ✓  30 tests/e2e/motion.spec.ts:257:5 › waiting point, arrival and merchant feedback reflect only persisted facts (4.3s)
+  ✓  31 tests/e2e/questions.spec.ts:46:9 › ten questions · no-preference › q7–q10 fit five phone widths and only the final answer opens discovery (20.0s)
+  ✓  32 tests/e2e/questions.spec.ts:46:9 › ten questions · reduce › q7–q10 fit five phone widths and only the final answer opens discovery (8.3s)
+  ✓  33 tests/e2e/questions.spec.ts:128:5 › saved extra answers survive backtracking and refresh; admin shows all ten without filling old answers (4.0s)
+  ✓  34 tests/e2e/questions.spec.ts:194:5 › a persisted six-answer invitation completes two-person meeting then explicitly resumes q7 (3.4s)
+  ✓  35 tests/e2e/questions.spec.ts:262:5 › legacy waiting and ended task pages stay readable without a redirect loop (2.1s)
+  ✓  36 tests/e2e/screen-avatar.spec.ts:22:5 › avatar is required, gender changes clear selection, keyboard works, refresh and narrow layouts retain selection (1.9s)
+  ✓  37 tests/e2e/screen-avatar.spec.ts:91:5 › chosen avatars agree on candidate, invitation, mutual, meet, operator list/modal and operator pair (2.0s)
+  ✓  38 tests/e2e/screen-avatar.spec.ts:132:5 › legacy state loads safely and image failure gives neutral fallback (834ms)
+  ✓  39 tests/e2e/screen-avatar.spec.ts:157:5 › screen preserves QR, layout, canvas identity across dissolve and stops motion when reduced or hidden (23.4s)
+  ✓  40 tests/e2e/screen-avatar.spec.ts:263:5 › mobile choice reaches screen as the same avatar and JOIN/ANSWER cues cannot change actual counts (3.5s)
+  ✓  41 tests/e2e/screen-avatar.spec.ts:307:5 › reduced-motion join and 4K resize keep the selected avatar visible without a queued effect; all canvas pixels leave QR clear (1.8s)
+
+  41 passed (5.0m)

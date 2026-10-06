@@ -748,7 +748,20 @@ svg {
 }
 .readiness {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
+}
+.readiness button {
+  min-height: 64px;
+  padding: 10px 8px;
+  gap: 8px;
+}
+.readiness button > span:last-child {
+  min-width: 0;
+  text-wrap: balance;
+}
+.readiness .radio-dot {
+  flex-shrink: 0;
 }
 .privacy-note {
   display: flex;
@@ -867,6 +880,7 @@ svg {
 }
 .question-page {
   padding-top: 22px;
+  overflow-anchor: none;
 }
 .question-progress {
   display: flex;
@@ -902,6 +916,23 @@ svg {
   line-height: 1.5;
   font-family: var(--serif);
   margin: 28px 0 12px;
+  min-height: 2lh;
+  text-wrap: balance;
+}
+@media (max-width: 360px) {
+  .question-page h1 {
+    min-height: 3lh;
+  }
+}
+.answer-feedback {
+  min-height: 24px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+}
+.answer-card:disabled,
+.intent-card:disabled {
+  opacity: 1;
 }
 .question-note {
   color: var(--muted);
@@ -2682,15 +2713,10 @@ svg {
 }
 .question-transition {
   position: relative;
+  display: flow-root;
 }
 .question-transition .button {
   margin-top: 16px;
-}
-.question-outgoing {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
 }
 .destiny-progress {
   display: flex;
@@ -3160,6 +3186,9 @@ html[data-motion="true"] .ambient.city-steam[data-inview="true"] > svg {
 /* Screen motion lives outside the content and QR layout. */
 .screen-canvas {
   isolation: isolate;
+  transition:
+    background-color 0.8s,
+    color 0.8s;
 }
 .screen-canvas::before {
   display: none;
@@ -3174,6 +3203,7 @@ html[data-motion="true"] .ambient.city-steam[data-inview="true"] > svg {
     url("/assets/gulou-autumn.png") right 53% / cover;
   opacity: 0.6;
   transform-origin: 75% 50%;
+  transition: opacity 0.8s;
 }
 .screen-mutual > .screen-background {
   opacity: 0.14;
@@ -3213,14 +3243,14 @@ html[data-motion="true"] .ambient.city-steam[data-inview="true"] > svg {
 }
 .screen-scene-outgoing {
   position: absolute;
-  inset: 0;
+  opacity: 0;
   pointer-events: none;
 }
-.screen-scene-current > .fine {
+.screen-scene-layer > .fine {
   font-size: 0.8vw;
   margin-top: 1.5vw;
 }
-.screen-scene-current .presence-network {
+.screen-scene-layer .presence-network {
   visibility: hidden;
 }
 .screen-motion-preview {
@@ -3382,4 +3412,11 @@ html[data-motion="true"] .screen-qr::before {
 }
 .avatar-option-image {
   pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-canvas,
+  .screen-canvas > .screen-background {
+    transition: none;
+  }
 }

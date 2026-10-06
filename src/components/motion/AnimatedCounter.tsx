@@ -1,7 +1,6 @@
 "use client";
-import { useCallback, useEffect, useRef } from "react";
-import { motionTiming, ms } from "@/lib/motion-tokens";
-import { useVisualEffect } from "./lifecycle";
+import { useCallback, useRef } from "react";
+import { useAnimatedValue } from "./useAnimatedValue";
 
 export function AnimatedCounter({
   value,
@@ -15,43 +14,14 @@ export function AnimatedCounter({
   ring?: boolean;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const previous = useRef(fromZero ? 0 : value);
-  useEffect(() => {
-    if (
-      matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      document.visibilityState !== "visible"
-    )
-      previous.current = value;
-  }, [value]);
-  const animate = useCallback(
-    (el: HTMLSpanElement) => {
-      const number = el.querySelector<HTMLElement>("[data-number]")!;
-      const circle = el.querySelector<SVGCircleElement>("[data-ring]");
-      const from = previous.current;
-      let frame = 0;
-      const draw = (v: number) => {
-        number.textContent = String(Math.round(v));
-        if (circle) circle.style.strokeDashoffset = String(1 - v / 100);
-      };
-      const finish = () => {
-        cancelAnimationFrame(frame);
-        draw(value);
-        previous.current = value;
-      };
-      const begin = performance.now();
-      draw(from);
-      const tick = (now: number) => {
-        const progress = Math.min(1, (now - begin) / ms(motionTiming.counter));
-        draw(from + (value - from) * (1 - Math.pow(1 - progress, 3)));
-        if (progress < 1) frame = requestAnimationFrame(tick);
-        else finish();
-      };
-      frame = requestAnimationFrame(tick);
-      return finish;
-    },
-    [value],
-  );
-  useVisualEffect(ref, animate);
+  const draw = useCallback((el: HTMLSpanElement, next: number) => {
+    el.querySelector<HTMLElement>("[data-number]")!.textContent = String(
+      Math.round(next),
+    );
+    const circle = el.querySelector<SVGCircleElement>("[data-ring]");
+    if (circle) circle.style.strokeDashoffset = String(1 - next / 100);
+  }, []);
+  useAnimatedValue(ref, value, fromZero, draw);
   return (
     <span
       ref={ref}

@@ -1,67 +1,135 @@
 "use client";
-import { useEffect, useRef, type ReactNode } from "react";
+import {
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  type Ref,
+  type ReactNode,
+} from "react";
 import { QUESTIONS } from "@/data/questions";
-import { ease, motionTiming, ms } from "@/lib/motion-tokens";
+import { ease } from "@/lib/motion-tokens";
 import { reduceQuery } from "./lifecycle";
-import { Motion } from "./Motion";
 
-/** Outgoing content is a noninteractive visual copy; the current question is never gated. */
+export interface QuestionTransitionHandle {
+  busy: () => boolean;
+  change: (commit: () => void, isCurrent?: () => boolean) => Promise<void>;
+}
+
+/** One live question: finish the selection, replace while faded, then enter before paint. */
 export function QuestionTransition({
   questionKey,
   children,
+  ref,
 }: {
   questionKey: string;
   children: ReactNode;
+  ref?: Ref<QuestionTransitionHandle>;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const previous = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    const el = ref.current!;
-    const outgoing = previous.current;
-    previous.current = el.firstElementChild!.cloneNode(true) as HTMLElement;
+  const host = useRef<HTMLDivElement>(null);
+  const animation = useRef<Animation | null>(null);
+  const pending = useRef<(() => void) | null>(null);
+  const replace = useRef<(() => void) | null>(null);
+  const mounted = useRef(false);
+  const finish = () => {
+    animation.current?.cancel();
+    animation.current = null;
+    replace.current = null;
+    if (host.current) {
+      const entered = host.current.dataset.phase === "entering";
+      host.current.inert = false;
+      host.current.style.minHeight = "";
+      host.current.dataset.phase = "idle";
+      if (entered && mounted.current && document.visibilityState === "visible")
+        host.current
+          .querySelector<HTMLElement>("h1")
+          ?.focus({ preventScroll: true });
+    }
+    pending.current?.();
+    pending.current = null;
+  };
+  useImperativeHandle(ref, () => ({
+    busy: () => pending.current !== null,
+    change: (commit, isCurrent = () => true) => {
+      if (pending.current || !mounted.current || !isCurrent())
+        return Promise.resolve();
+      if (document.visibilityState !== "visible") return Promise.resolve();
+      if (matchMedia(reduceQuery).matches) {
+        commit();
+        return Promise.resolve();
+      }
+      return new Promise<void>((resolve) => {
+        pending.current = resolve;
+        const el = host.current!;
+        el.inert = true;
+        el.style.minHeight = `${el.getBoundingClientRect().height}px`;
+        el.dataset.phase = "leaving";
+        const exit = el.animate([{ opacity: 1 }, { opacity: 0 }], {
+          duration: 70,
+          easing: ease("exit"),
+          fill: "forwards",
+        });
+        animation.current = exit;
+        const next = () => {
+          replace.current = null;
+          if (
+            !mounted.current ||
+            !isCurrent() ||
+            document.visibilityState !== "visible"
+          )
+            finish();
+          else commit();
+        };
+        replace.current = next;
+        exit.onfinish = next;
+      });
+    },
+  }));
+  useLayoutEffect(() => {
+    const el = host.current!;
+    if (!pending.current) return;
+    animation.current?.cancel();
+    el.dataset.phase = "entering";
     if (
-      !outgoing ||
       matchMedia(reduceQuery).matches ||
       document.visibilityState !== "visible"
-    )
-      return;
-    outgoing.className = "question-outgoing";
-    outgoing.setAttribute("aria-hidden", "true");
-    outgoing.inert = true;
-    outgoing
-      .querySelectorAll("[id]")
-      .forEach((node) => node.removeAttribute("id"));
-    el.append(outgoing);
-    const animation = outgoing.animate(
-      [
-        { opacity: 0.6, transform: "translateX(0)" },
-        { opacity: 0, transform: "translateX(-16px)" },
-      ],
-      { duration: ms(motionTiming.question), easing: ease("exit") },
-    );
-    const finish = () => {
-      animation.cancel();
-      outgoing.remove();
-    };
-    animation.onfinish = finish;
-    const preference = matchMedia(reduceQuery);
-    const check = () => {
-      if (preference.matches || document.visibilityState !== "visible")
-        finish();
-    };
-    preference.addEventListener("change", check);
-    document.addEventListener("visibilitychange", check);
-    return () => {
+    ) {
       finish();
-      preference.removeEventListener("change", check);
-      document.removeEventListener("visibilitychange", check);
-    };
+      return;
+    }
+    const entry = el.animate(
+      [
+        { opacity: 0, transform: "translateY(5px)" },
+        { opacity: 1, transform: "translateY(0)" },
+      ],
+      { duration: 140, easing: ease("enter"), fill: "both" },
+    );
+    animation.current = entry;
+    entry.onfinish = finish;
   }, [questionKey]);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    const preference = matchMedia(reduceQuery);
+    const stop = () => {
+      if (document.visibilityState !== "visible") finish();
+      else if (preference.matches) {
+        if (replace.current) {
+          animation.current?.cancel();
+          replace.current();
+        } else finish();
+      }
+    };
+    preference.addEventListener("change", stop);
+    document.addEventListener("visibilitychange", stop);
+    return () => {
+      mounted.current = false;
+      finish();
+      preference.removeEventListener("change", stop);
+      document.removeEventListener("visibilitychange", stop);
+    };
+  }, []);
   return (
-    <div className="question-transition" ref={ref}>
-      <Motion key={questionKey} preset="question">
-        {children}
-      </Motion>
+    <div ref={host} className="question-transition" data-question={questionKey}>
+      <div>{children}</div>
     </div>
   );
 }

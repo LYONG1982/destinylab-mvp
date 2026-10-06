@@ -1,0 +1,332 @@
+[
+  {
+    "time": 1.5999999940395355,
+    "percentage": 33,
+    "number": 33
+  },
+  {
+    "time": 18.19999999403956,
+    "percentage": 32.8185,
+    "number": 33
+  },
+  {
+    "time": 34.89999999403949,
+    "percentage": 36.092,
+    "number": 36
+  },
+  {
+    "time": 51.599999994039536,
+    "percentage": 39.2289,
+    "number": 39
+  },
+  {
+    "time": 68.19999999403956,
+    "percentage": 42.2126,
+    "number": 42
+  },
+  {
+    "time": 84.89999999403949,
+    "percentage": 45.0306,
+    "number": 45
+  },
+  {
+    "time": 101.59999999403954,
+    "percentage": 44.880700000000004,
+    "number": 45
+  },
+  {
+    "time": 118.19999999403956,
+    "percentage": 42.4399,
+    "number": 42
+  },
+  {
+    "time": 134.8999999940395,
+    "percentage": 40.1293,
+    "number": 40
+  },
+  {
+    "time": 151.49999999403963,
+    "percentage": 37.9182,
+    "number": 38
+  },
+  {
+    "time": 168.19999999403944,
+    "percentage": 35.8303,
+    "number": 36
+  },
+  {
+    "time": 184.79999999403958,
+    "percentage": 33.8375,
+    "number": 34
+  },
+  {
+    "time": 201.59999999403954,
+    "percentage": 31.961000000000002,
+    "number": 32
+  },
+  {
+    "time": 218.19999999403944,
+    "percentage": 30.164800000000003,
+    "number": 30
+  },
+  {
+    "time": 234.8999999940395,
+    "percentage": 28.488999999999997,
+    "number": 28
+  },
+  {
+    "time": 251.49999999403963,
+    "percentage": 26.8994,
+    "number": 27
+  },
+  {
+    "time": 268.19999999403944,
+    "percentage": 25.4123,
+    "number": 25
+  },
+  {
+    "time": 284.8999999940395,
+    "percentage": 24.007,
+    "number": 24
+  },
+  {
+    "time": 301.4999999940396,
+    "percentage": 22.689799999999998,
+    "number": 23
+  },
+  {
+    "time": 318.19999999403944,
+    "percentage": 21.465,
+    "number": 21
+  },
+  {
+    "time": 334.7999999940396,
+    "percentage": 20.3151,
+    "number": 20
+  },
+  {
+    "time": 351.4999999940396,
+    "percentage": 19.2509,
+    "number": 19
+  },
+  {
+    "time": 368.19999999403944,
+    "percentage": 18.256800000000002,
+    "number": 18
+  },
+  {
+    "time": 384.8999999940395,
+    "percentage": 17.3366,
+    "number": 17
+  },
+  {
+    "time": 401.4999999940396,
+    "percentage": 16.4874,
+    "number": 16
+  },
+  {
+    "time": 418.19999999403944,
+    "percentage": 15.7109,
+    "number": 16
+  },
+  {
+    "time": 434.8999999940395,
+    "percentage": 14.9949,
+    "number": 15
+  },
+  {
+    "time": 451.4999999940396,
+    "percentage": 14.341400000000002,
+    "number": 14
+  },
+  {
+    "time": 468.19999999403944,
+    "percentage": 13.7509,
+    "number": 14
+  },
+  {
+    "time": 484.7999999940396,
+    "percentage": 13.2135,
+    "number": 13
+  },
+  {
+    "time": 501.4999999940396,
+    "percentage": 12.7328,
+    "number": 13
+  },
+  {
+    "time": 518.1999999940394,
+    "percentage": 12.3001,
+    "number": 12
+  },
+  {
+    "time": 534.7999999940396,
+    "percentage": 11.9157,
+    "number": 12
+  },
+  {
+    "time": 551.4999999940396,
+    "percentage": 11.5786,
+    "number": 12
+  },
+  {
+    "time": 568.1999999940394,
+    "percentage": 11.2819,
+    "number": 11
+  },
+  {
+    "time": 584.8999999940395,
+    "percentage": 11.025,
+    "number": 11
+  },
+  {
+    "time": 601.4999999940396,
+    "percentage": 10.8048,
+    "number": 11
+  },
+  {
+    "time": 618.1999999940394,
+    "percentage": 10.6198,
+    "number": 11
+  },
+  {
+    "time": 634.8999999940395,
+    "percentage": 10.4646,
+    "number": 10
+  },
+  {
+    "time": 651.4999999940396,
+    "percentage": 10.3378,
+    "number": 10
+  },
+  {
+    "time": 668.1999999940394,
+    "percentage": 10.237,
+    "number": 10
+  },
+  {
+    "time": 684.8999999940395,
+    "percentage": 10.1582,
+    "number": 10
+  },
+  {
+    "time": 701.4999999940396,
+    "percentage": 10.0991,
+    "number": 10
+  },
+  {
+    "time": 718.1999999940394,
+    "percentage": 10.0571,
+    "number": 10
+  },
+  {
+    "time": 734.7999999940396,
+    "percentage": 10.029,
+    "number": 10
+  },
+  {
+    "time": 751.4999999940396,
+    "percentage": 10.0121,
+    "number": 10
+  },
+  {
+    "time": 768.1999999940394,
+    "percentage": 10.0035,
+    "number": 10
+  },
+  {
+    "time": 784.8999999940395,
+    "percentage": 10.000399999999999,
+    "number": 10
+  },
+  {
+    "time": 801.4999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 818.1999999940394,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 834.7999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 851.4999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 868.1999999940394,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 884.7999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 901.4999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 918.0999999940395,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 934.7999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 951.4999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 968.1999999940394,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 984.8999999940395,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 1001.4999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 1018.0999999940395,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 1034.7999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 1051.4999999940396,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 1068.1999999940394,
+    "percentage": 10,
+    "number": 10
+  },
+  {
+    "time": 1084.8999999940395,
+    "percentage": 10,
+    "number": 10
+  }
+]

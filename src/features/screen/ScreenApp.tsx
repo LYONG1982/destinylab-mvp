@@ -1,5 +1,12 @@
 "use client";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import QRCode from "qrcode";
 import { QUESTIONS } from "@/data/questions";
 import { screenMotion } from "@/lib/motion-tokens";
@@ -35,6 +42,14 @@ function ScreenView({
   const snapshot = useMemo(() => adapter.read(state), [adapter, state]);
   const p = snapshot.projection;
   const [mode, setMode] = useState<ScreenState>(fixed || "question");
+  const [visited] = useState(() => new Set<ScreenState>());
+  const latestProjection = useRef(p);
+  useLayoutEffect(() => {
+    latestProjection.current = p;
+  }, [p]);
+  useEffect(() => {
+    visited.add(mode);
+  }, [mode, visited]);
   const [qr, setQr] = useState("");
   const [qrError, setQrError] = useState("");
   const [url] = useState(() => {
@@ -66,23 +81,27 @@ function ScreenView({
       "real-meet": 8000,
       mutual: 6000,
     };
+    let cancelled = false;
     const timer = setTimeout(() => {
       if (mode === "mutual") {
         setMode("question");
         return;
       }
-      if (p.canBroadcast) {
+      if (latestProjection.current.canBroadcast) {
         void command("operator", { type: "broadcast-consume" })
-          .then(() => setMode("mutual"))
-          .catch(() =>
+          .then(() => {
+            if (!cancelled) setMode("mutual");
+          })
+          .catch(() => {
+            if (cancelled) return;
             setMode(
               mode === "question"
                 ? "presence"
                 : mode === "presence"
                   ? "real-meet"
                   : "question",
-            ),
-          );
+            );
+          });
       } else
         setMode(
           mode === "question"
@@ -92,8 +111,11 @@ function ScreenView({
               : "question",
         );
     }, delays[mode]);
-    return () => clearTimeout(timer);
-  }, [mode, fixed, p.canBroadcast]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [mode, fixed]);
   return (
     <main className="screen-viewport">
       <div
@@ -135,13 +157,16 @@ function ScreenView({
                       <div className="screen-bar" key={v.label}>
                         <span>{v.label}</span>
                         <div>
-                          <AnimatedBar percentage={v.percentage} fromZero />
+                          <AnimatedBar
+                            percentage={v.percentage}
+                            fromZero={!visited.has("question")}
+                          />
                         </div>
                         <strong>
                           <AnimatedCounter
                             value={v.percentage}
                             suffix="%"
-                            fromZero
+                            fromZero={!visited.has("question")}
                           />
                         </strong>
                       </div>
@@ -156,11 +181,15 @@ function ScreenView({
                 <>
                   <div className="eyebrow">HERE & NOW · 此刻在场</div>
                   <div className="screen-number">
-                    <AnimatedCounter value={p.active} fromZero />
+                    <AnimatedCounter
+                      value={p.active}
+                      fromZero={!visited.has("presence")}
+                    />
                   </div>
                   <h1>人正在鼓楼探索</h1>
                   <p className="screen-subtext">
-                    其中 {p.canMeet} 人，现在可以认识新朋友
+                    其中 <AnimatedCounter value={p.canMeet} />{" "}
+                    人，现在可以认识新朋友
                   </p>
                   <div className="presence-network" aria-hidden="true">
                     {Array.from({ length: 8 }, (_, i) => (
@@ -201,7 +230,10 @@ function ScreenView({
                     className="screen-number"
                     data-testid="screen-real-count"
                   >
-                    <AnimatedCounter value={p.real} fromZero />
+                    <AnimatedCounter
+                      value={p.real}
+                      fromZero={!visited.has("real-meet")}
+                    />
                   </div>
                   <h1>
                     次真实相遇，
