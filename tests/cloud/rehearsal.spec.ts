@@ -38,6 +38,12 @@ const NAMES = [
   "晴天",
 ];
 const target = cloudTestTarget(process.env);
+const soakSeconds = Number(process.env.DESTINY_CLOUD_SOAK_SECONDS || "0");
+if (
+  !Number.isInteger(soakSeconds) ||
+  (soakSeconds !== 0 && (soakSeconds < 1800 || soakSeconds > 3600))
+)
+  throw new Error("Cloud rehearsal soak must be 1800–3600 seconds or disabled");
 const url = (path: string, audience = "participant") =>
   `/api/live/${path}?activity=${target.activity}&audience=${audience}`;
 const login = () =>
@@ -77,6 +83,7 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
   browser,
   request,
 }) => {
+  test.setTimeout(600000 + soakSeconds * 1000);
   // The first request is read-only. No login, session or participant creation before proof.
   const ready = await request.get("/api/health/ready", {
     headers: { "x-destiny-test-token": target.token },
@@ -347,6 +354,49 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
     }
     await users[0].context.pages()[0].reload();
     expect((await read(users[0].context.request)).actor).toBe(users[0].actor);
+    const soakStarted = Date.now();
+    let soakSamples = 0;
+    while (Date.now() - soakStarted < soakSeconds * 1000) {
+      const index = soakSamples % 2;
+      await command(users[0].context.request, epoch, {
+        type: "answer",
+        questionId: "q1",
+        value: QUESTIONS[0].options[index],
+      });
+      const worldState = await read(screenContext.request, "screen");
+      const count = worldState.world!.question.options[index].count;
+      await expect(
+        screen.locator(`[data-field-id="q1:${index}"] [data-field-count]`),
+      ).toContainText(`${count} 人`);
+      const state = await read(adminContext.request, "operator");
+      expect(state.state!.participants).toHaveLength(20);
+      expect(state.state!.live!.metrics.real).toBe(2);
+      const participant = users[soakSamples % users.length];
+      expect((await read(participant.context.request)).actor).toBe(
+        participant.actor,
+      );
+      expect(errors).toEqual([]);
+      soakSamples++;
+      writeFileSync(
+        join(process.env.DESTINY_CLOUD_TEST_OUTPUT!, "soak-progress.json"),
+        JSON.stringify({
+          elapsedSeconds: Math.floor((Date.now() - soakStarted) / 1000),
+          samples: soakSamples,
+          contexts: users.length,
+          pageErrors: errors.length,
+        }),
+        { mode: 0o600 },
+      );
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          Math.min(
+            30000,
+            Math.max(0, soakSeconds * 1000 - (Date.now() - soakStarted)),
+          ),
+        ),
+      );
+    }
     const final = await read(adminContext.request, "operator");
     expect(final.state!.live!.metrics.real).toBe(2);
     expect(final.state!.participants).toHaveLength(20);
@@ -380,6 +430,8 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
           syncSamplesMs: sync,
           syncP95Ms: sorted[Math.ceil(sorted.length * 0.95) - 1],
           pageErrors: errors.length,
+          soakSeconds,
+          soakSamples,
         },
         null,
         2,
