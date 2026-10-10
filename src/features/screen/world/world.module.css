@@ -1,0 +1,881 @@
+.viewport {
+  min-height: 100dvh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #100d12;
+  color: #f4e6d8;
+}
+.stage {
+  width: min(100vw, calc(100dvh * 16 / 9));
+  aspect-ratio: 16/9;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  container-type: inline-size;
+  color: #f4e6d8;
+  background: #170f16;
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, #160f150a 0%, #160f1510 70%, #160f1520),
+    url("/assets/destiny-field/ambient-act12-v2.png") center / cover no-repeat;
+  opacity: 1;
+  transition: opacity 1.7s ease;
+}
+.stage[data-mode="MEET"] .atmosphere {
+  opacity: 0.88;
+}
+.canvas,
+.playerNames,
+.stablePlayers,
+.newcomerEffects,
+.fallback,
+.modeCopy {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.canvas {
+  z-index: 1;
+}
+.playerNames {
+  z-index: 3;
+}
+.playerNames :global(.destiny-player-name) {
+  color: #ecded6;
+  font-family: "PingFang SC", sans-serif;
+  text-shadow: 0 1px 5px #100a13;
+  letter-spacing: 0.08em;
+  text-align: center;
+  white-space: nowrap;
+}
+.stablePlayers {
+  z-index: 3;
+  transition: opacity 0.7s ease;
+}
+.stage[data-intersection="true"] .stablePlayers {
+  opacity: 0.22;
+}
+.stablePlayers :global(.destiny-player) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #f2e8dc;
+  will-change: transform;
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+}
+.stablePlayers :global(.destiny-player[hidden]) {
+  display: none !important;
+}
+.stablePlayers :global(.destiny-player-avatar) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: center;
+}
+.stablePlayers :global(.destiny-player-avatar img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 0.075cqw solid #f8e5cfb8;
+  box-shadow:
+    0 0 0.42cqw #d5b4953a,
+    0 0.2cqw 0.7cqw #0004;
+}
+.stablePlayers
+  :global(
+    .destiny-player[data-player-gender="male"] .destiny-player-avatar img
+  ) {
+  border-color: #c2d9e6ba;
+  box-shadow: 0 0 0.5cqw #90bfdb26;
+}
+.stablePlayers
+  :global(
+    .destiny-player[data-player-gender="female"] .destiny-player-avatar img
+  ) {
+  border-color: #ecc7c7c7;
+  box-shadow: 0 0 0.5cqw #e7a6b432;
+}
+.stablePlayers :global(.destiny-player-avatar::after) {
+  content: "";
+  position: absolute;
+  inset: -0.23cqw;
+  border-radius: 50%;
+  border: 0.08cqw solid #edce9a;
+  opacity: 0;
+  pointer-events: none;
+}
+.stage[data-mode="LIVE"]
+  .stablePlayers
+  :global(
+    .destiny-player[data-available="true"] .destiny-player-avatar::after
+  ) {
+  animation: availableBreath var(--breath-duration, 3.2s) ease-in-out
+    var(--breath-delay, 0s) infinite;
+  box-shadow: 0 0 0.7cqw #deb27426;
+}
+.stablePlayers
+  :global(
+    .destiny-player[data-highlight="true"] .destiny-player-avatar::after
+  ) {
+  opacity: 0.72;
+  box-shadow: 0 0 0.9cqw #f0c88270;
+}
+.stablePlayers :global(.destiny-player-nickname) {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 1.4;
+  letter-spacing: 0.035em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 0.05cqw 0.4cqw #000b;
+  font-weight: 400;
+}
+.newcomerEffects {
+  z-index: 6;
+}
+.newcomerEffects :global(.destiny-newcomer-count) {
+  position: absolute;
+  font:
+    400 1.65cqw/1.3 "Times New Roman",
+    serif;
+  color: #f5d7a2;
+  text-shadow: 0 0 0.7cqw #eab87568;
+}
+@keyframes availableBreath {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.08);
+  }
+}
+.modeCopy {
+  z-index: 4;
+  transition: opacity 0.7s ease;
+}
+.choice,
+.live,
+.meet {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 1.15s ease,
+    visibility 1.15s;
+}
+.stage[data-mode="CHOICE"] .choice,
+.stage[data-mode="LIVE"] .live,
+.stage[data-mode="MEET"] .meet {
+  opacity: 1;
+  visibility: visible;
+}
+.choice > h1 {
+  position: absolute;
+  top: 3.8%;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 4.48cqw;
+  font-weight: 400;
+  letter-spacing: 0.075em;
+  line-height: 1.2;
+  color: #f4e2c9;
+  text-shadow: 0 0 1.8cqw #d8a2891a;
+}
+.stage[data-mode="CHOICE"] .choice > h1 {
+  animation: titleEnter 1.3s ease both;
+}
+.fields {
+  position: absolute;
+  inset: 0;
+}
+.fieldLabel {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 25%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: var(--field-color);
+}
+.fieldSigil {
+  position: absolute;
+  top: 14.3%;
+  left: calc(50% - 1.25cqw);
+  width: 2.5cqw;
+  height: 2.5cqw;
+  opacity: 0.88;
+  filter: drop-shadow(0 0 0.3cqw #e4c49a55);
+}
+.fieldSigil svg {
+  width: 100%;
+  height: 100%;
+}
+.fieldLabel h2 {
+  position: absolute;
+  top: 20.2%;
+  width: 100%;
+  margin: 0;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: 1.875cqw;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+}
+.genderLabels {
+  position: absolute;
+  top: 25.3%;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.25cqw;
+  letter-spacing: 0.2em;
+  color: #e8dacf;
+}
+.genderLabels span {
+  width: 45.8333%;
+}
+.fieldLabel > .percent {
+  position: absolute;
+  top: 78.1%;
+  left: 0;
+  width: 100%;
+  font:
+    400 3.75cqw/1.15 "Times New Roman",
+    serif;
+  font-variant-numeric: tabular-nums;
+}
+.fieldLabel .percent small {
+  font-size: 0.55em;
+  margin-left: 0.03em;
+}
+.fieldLabel > p {
+  position: absolute;
+  top: 86.7%;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  font-size: 1.4cqw;
+  line-height: 1.4;
+  color: #efe2cf;
+}
+.fieldLabel > p small {
+  font-size: 0.93em;
+}
+.stage[data-mode="CHOICE"] .fieldSigil,
+.stage[data-mode="CHOICE"] .fieldLabel h2,
+.stage[data-mode="CHOICE"] .genderLabels {
+  animation: fieldEnter 0.9s ease var(--field-delay) both;
+}
+.story {
+  position: absolute;
+  top: 93.6%;
+  left: 5%;
+  width: 76.7%;
+  margin: 0;
+  text-align: center;
+  font:
+    400 1.35cqw/1.5 "Songti SC",
+    serif;
+  letter-spacing: 0.22em;
+  color: #debf9b;
+  opacity: 0;
+}
+.liveHeadline {
+  position: absolute;
+  top: 11.5%;
+  left: 34%;
+  width: 32%;
+  height: 20%;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1.1cqw;
+}
+.liveHeadline > span {
+  font:
+    400 3.125cqw/1.1 "Songti SC",
+    "STSong",
+    serif;
+  color: #f0d6ae;
+}
+.liveNumber {
+  font:
+    400 var(--number-size, 10.42cqw) / 1 "Times New Roman",
+    "Songti SC",
+    serif;
+  font-variant-numeric: tabular-nums;
+  color: #f3d9aa;
+  text-shadow: 0 0 1.8cqw #efbe7330;
+}
+.live > h1 {
+  position: absolute;
+  top: 34.5%;
+  left: 34%;
+  width: 32%;
+  text-align: center;
+  margin: 0;
+  font:
+    400 2.5cqw/1.5 "Songti SC",
+    "STSong",
+    "Noto Serif CJK SC",
+    serif;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: #efdbc0;
+}
+.maleHeading,
+.femaleHeading {
+  position: absolute;
+  top: 22.8%;
+  margin: 0;
+  width: 13.8%;
+  text-align: center;
+  font:
+    400 1.875cqw/1.3 "Songti SC",
+    serif;
+  letter-spacing: 0.15em;
+}
+.maleHeading {
+  left: 19.2%;
+  color: #c2ddea;
+}
+.femaleHeading {
+  left: 67.1%;
+  color: #efbfc8;
+}
+.availableCopy {
+  position: absolute;
+  top: 58%;
+  left: 34.5%;
+  width: 31%;
+  margin: 0;
+  text-align: center;
+  font:
+    400 1.25cqw/1.8 "Songti SC",
+    serif;
+  letter-spacing: 0.1em;
+  color: #ceb396;
+  opacity: 0;
+}
+.stage[data-mode="LIVE"] .liveHeadline {
+  animation: liveEnter 1.4s ease 0.65s both;
+}
+.stage[data-mode="LIVE"] .live > h1 {
+  animation: titleEnter 1s ease 1.1s both;
+}
+.stage[data-mode="LIVE"] .maleHeading,
+.stage[data-mode="LIVE"] .femaleHeading {
+  animation: titleEnter 1s ease 0.6s both;
+}
+@keyframes titleEnter {
+  from {
+    opacity: 0;
+    transform: translateY(0.42cqw);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fieldEnter {
+  from {
+    opacity: 0;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes liveEnter {
+  from {
+    opacity: 0;
+    transform: translateY(0.52cqw) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.meet > h1 {
+  position: absolute;
+  top: 8.5%;
+  left: 10%;
+  width: 80%;
+  margin: 0;
+  text-align: center;
+  font:
+    400 3.333cqw/1.4 "Songti SC",
+    "STSong",
+    "Noto Serif CJK SC",
+    serif;
+  letter-spacing: 0.08em;
+  color: #f0dcc0;
+}
+/* Each MEET entry starts a fresh 5s in / 5s out cycle. */
+.meetSubtitle {
+  position: absolute;
+  top: 18.8%;
+  left: 10%;
+  width: 80%;
+  margin: 0;
+  text-align: center;
+  font:
+    400 1.458333cqw/1.6 "Songti SC",
+    "STSong",
+    "Noto Serif CJK SC",
+    serif;
+  letter-spacing: 0.16em;
+  color: #c9b69f;
+  opacity: 0;
+}
+.stage[data-mode="MEET"] .meetSubtitle {
+  animation: meetSubtitleCycle 10s ease-in-out infinite;
+}
+.stage[data-mode="MEET"][data-intersection="true"] .meetSubtitle {
+  animation-play-state: paused;
+}
+@keyframes meetSubtitleCycle {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage[data-mode="MEET"] .meetSubtitle {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.meetStatistic {
+  position: absolute;
+  top: 70%;
+  left: 35%;
+  width: 28%;
+  text-align: center;
+  color: #e5cdae;
+}
+.meetStatistic > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.65cqw;
+  font-size: 1.666667cqw;
+}
+.coreNumber {
+  font:
+    400 4.166667cqw/1.1 "Times New Roman",
+    serif;
+  font-variant-numeric: tabular-nums;
+  color: #edd6b2;
+}
+.meetStatistic p {
+  font-size: 1.145833cqw;
+  letter-spacing: 0.16em;
+  margin: 0.65cqw 0 0;
+  color: #b6a090;
+}
+.justMet {
+  position: absolute;
+  top: 24%;
+  left: 45%;
+  width: 10%;
+  text-align: center;
+  font-size: 1.04cqw;
+  color: #d7b98e;
+  opacity: 0;
+  transition: opacity 0.45s;
+  letter-spacing: 0.3em;
+}
+.stage[data-pair-fresh="true"] .justMet {
+  opacity: 0.8;
+}
+.stablePlayers
+  :global(.destiny-player[data-pair-member="true"] .destiny-player-avatar img) {
+  border-width: 0.1cqw;
+  box-shadow:
+    0 0 1.4cqw #a1c7dc23,
+    0 0.4cqw 1.5cqw #10060e60;
+}
+.stablePlayers
+  :global(
+    .destiny-player[data-pair-member="true"] .destiny-player-avatar::after
+  ) {
+  border-color: #9bbecf;
+  inset: -0.6cqw;
+  animation: availableBreath var(--breath-duration, 3.2s) ease-in-out
+    var(--breath-delay, 0s) infinite;
+}
+.stablePlayers
+  :global(
+    .destiny-player[data-pair-member="true"][data-player-gender="female"]
+      .destiny-player-avatar::after
+  ) {
+  border-color: #d69aab;
+}
+.pairFallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  display: none;
+  fill: none;
+  stroke-width: 1.4;
+  opacity: 0.6;
+}
+.stage[data-renderer="fallback"][data-mode="MEET"][data-pair-visible="true"]
+  .pairFallback {
+  display: block;
+}
+.stage[data-intersection="true"] .pairFallback {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage
+    .stablePlayers
+    :global(
+      .destiny-player[data-pair-member="true"] .destiny-player-avatar::after
+    ) {
+    animation: none;
+    opacity: 0.3;
+  }
+  .justMet {
+    transition: none;
+  }
+}
+.demoLabel {
+  position: fixed;
+  bottom: 0.45rem;
+  left: 0.65rem;
+  color: #bfaaa3;
+  opacity: 0.65;
+  font: 10px/1 sans-serif;
+  z-index: 12;
+  pointer-events: none;
+}
+.qr {
+  position: absolute;
+  z-index: 10;
+  right: 2%;
+  bottom: 3.5%;
+  width: 14%;
+  color: #f3e7d8;
+  text-align: center;
+  contain: layout paint;
+  padding: 0;
+  background: #160f17;
+  border: 1px solid #a7825b45;
+  border-radius: 0 0 0.75cqw 0.75cqw;
+  overflow: hidden;
+  box-shadow: 0 5px 24px #06050950;
+}
+.qr img,
+.qrPlaceholder {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  opacity: 1;
+  transform: none;
+  filter: none;
+  background: #fff9ec;
+  image-rendering: pixelated;
+}
+.qr strong {
+  display: block;
+  font-family: "Songti SC", serif;
+  font-size: 1.25cqw;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  padding: 0.7cqw 0.3cqw 0.25cqw;
+}
+.qr small {
+  display: block;
+  font-size: 0.6cqw;
+  color: #baa89c;
+  letter-spacing: 0.02em;
+  padding: 0 0.25cqw 0.7cqw;
+  white-space: nowrap;
+}
+.qrPlaceholder {
+  color: #251824;
+  display: grid;
+  place-items: center;
+  font-size: 0.8cqw;
+}
+.stage[data-intersection="true"] .modeCopy {
+  opacity: 0.05;
+}
+.intersectionCopy {
+  position: absolute;
+  z-index: 5;
+  left: 25%;
+  top: 54%;
+  width: 50%;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 650ms;
+}
+.intersectionCopy strong {
+  display: block;
+  font:
+    400 3.2cqw/1.4 "Songti SC",
+    serif;
+  letter-spacing: 0.18em;
+  text-shadow: 0 0 34px #dca07630;
+}
+.intersectionCopy span {
+  display: block;
+  margin-top: 0.8cqw;
+  font-size: 1.15cqw;
+  letter-spacing: 0.2em;
+  color: #d8bbaa;
+  opacity: 0;
+  transition: opacity 650ms;
+}
+.stage[data-event-phase="cross"] .intersectionCopy,
+.stage[data-event-phase="meaning"] .intersectionCopy {
+  opacity: 1;
+}
+.stage[data-event-phase="meaning"] .intersectionCopy span {
+  opacity: 1;
+}
+.debug {
+  position: fixed;
+  z-index: 20;
+  bottom: 10px;
+  left: 12px;
+  max-width: 520px;
+  border: 1px solid #b8987955;
+  border-radius: 10px;
+  background: #20141fec;
+  color: #d9c5b4;
+  padding: 8px 12px;
+  font: 12px/1.6 sans-serif;
+}
+.debug summary {
+  cursor: pointer;
+  user-select: none;
+}
+.debug p {
+  margin: 5px 0;
+}
+.debug > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.debug button {
+  border: 1px solid #826750;
+  color: #e0cfba;
+  background: #392633;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font: 12px/1.4 sans-serif;
+  cursor: pointer;
+}
+.debug button:hover {
+  background: #543342;
+}
+.loading {
+  letter-spacing: 0.2em;
+  color: #b99c8f;
+}
+.fallback {
+  z-index: 2;
+}
+.fallbackPlayer {
+  left: var(--choice-x);
+  top: var(--choice-y);
+  position: absolute;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 3.2%;
+  color: #dfccbe;
+  font-size: 0.75cqw;
+}
+.fallbackPlayer img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid #bd9a7399;
+}
+.fallbackPlayer span {
+  display: block;
+  white-space: nowrap;
+  margin-top: 0.2cqw;
+}
+.fallbackPlayer.available img {
+  outline: 2px solid #be9e7955;
+  outline-offset: 0.3cqw;
+}
+.stage[data-renderer="fallback"] .canvas {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .choice,
+  .live,
+  .meet,
+  .modeCopy,
+  .intersectionCopy,
+  .intersectionCopy span {
+    transition: none;
+  }
+}
+
+.stage[data-mode="LIVE"] .fallbackPlayer,
+.stage[data-mode="MEET"] .fallbackPlayer {
+  left: var(--live-x);
+  top: var(--live-y);
+}
+.stage[data-intersection="true"] .fallback {
+  opacity: 0.4;
+}
+
+.stage:not([data-mode="MEET"]) .fallback {
+  display: none;
+}
+.stage[data-intersection="true"]
+  .stablePlayers
+  :global(.destiny-player-avatar::after),
+.stage[data-running="false"]
+  .stablePlayers
+  :global(.destiny-player-avatar::after),
+.stage[data-intersection="true"] .choice > h1,
+.stage[data-intersection="true"] .fieldSigil,
+.stage[data-intersection="true"] .genderLabels,
+.stage[data-intersection="true"] .liveHeadline {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere,
+  .stablePlayers {
+    transition: none;
+  }
+  .stage .choice > h1,
+  .stage .fieldSigil,
+  .stage .fieldLabel h2,
+  .stage .genderLabels,
+  .stage .liveHeadline,
+  .stage .live > h1,
+  .stage .maleHeading,
+  .stage .femaleHeading,
+  .stage .stablePlayers :global(.destiny-player-avatar::after) {
+    animation: none;
+  }
+  .stage[data-mode="LIVE"]
+    .stablePlayers
+    :global(
+      .destiny-player[data-available="true"] .destiny-player-avatar::after
+    ) {
+    opacity: 0.45;
+  }
+}
+
+.fieldLabel > p.empty {
+  top: 84.5%;
+  font-size: 1.35cqw;
+  color: #d7c6b6;
+  letter-spacing: 0.08em;
+}
+
+/* ACT03: slot copy is updated only by the shared director; no floating panels. */
+.pairCaption {
+  position: absolute;
+  width: 22cqw;
+  margin-left: -11cqw;
+  text-align: center;
+  color: #c9af91;
+  font-size: 1.04cqw;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+}
+.pairCaption[hidden] {
+  display: none;
+}
+.pairEmpty {
+  position: absolute;
+  top: 43%;
+  left: 10%;
+  width: 80%;
+  text-align: center;
+  color: #ccb89e;
+  font:
+    400 1.875cqw/1.6 "Songti SC",
+    serif;
+  opacity: 0;
+}
+.stage[data-pair-count="0"] .pairEmpty {
+  opacity: 1;
+}
+.connectionStatus {
+  position: absolute;
+  bottom: 5%;
+  left: 5%;
+  color: #bea995;
+  font-size: 0.94cqw;
+}
+.meetStatistic[hidden] {
+  display: none;
+}
+
+.stablePlayers :global(.destiny-player-avatar[data-failed="true"]) {
+  background:
+    radial-gradient(circle at 50% 37%, #bea58d 0 18%, transparent 19%),
+    radial-gradient(ellipse at 50% 100%, #bea58d 0 38%, #372b2a 39%);
+  border-radius: 50%;
+}
+
+/* Only the director's current collision receives a slightly brighter local ring. */
+.stage[data-mode="MEET"]
+  .stablePlayers
+  :global(
+    .destiny-player[data-pair-phase="collision"] .destiny-player-avatar::after
+  ) {
+  animation: none;
+  opacity: 0.65;
+  box-shadow: 0 0 0.8cqw #d6b58440;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage[data-mode="MEET"]
+    .stablePlayers
+    :global(
+      .destiny-player[data-pair-phase="collision"] .destiny-player-avatar::after
+    ) {
+    opacity: 0.3;
+    box-shadow: none;
+  }
+}

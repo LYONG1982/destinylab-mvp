@@ -1,0 +1,48 @@
+{
+  "origin": "http://127.0.0.1:3214",
+  "activity": "cloudtest-local-1010b",
+  "independentBrowserContexts": 20,
+  "realDevices": 0,
+  "pairs": 2,
+  "apiAnswerBatchMs": [
+    252,
+    294
+  ],
+  "syncSamplesMs": [
+    796,
+    810,
+    812,
+    800,
+    799,
+    797,
+    801,
+    800,
+    799,
+    796,
+    1096,
+    804
+  ],
+  "syncP95Ms": 1096,
+  "pageErrors": 0,
+  "restartIdentityPreserved": true,
+  "restartRevisionPreserved": true,
+  "backupRestoreExactMatch": true,
+  "localCookieHttpOnly": true,
+  "localCookieSameSite": "Lax",
+  "httpsSecureCookie": "pending-cloud",
+  "cloudDeployed": false,
+  "verifiedAt": "2026-10-10 Asia/Shanghai",
+  "imageArchitecture": "linux/arm64",
+  "runnerImage": "sha256:661bb649572d33babdfc8f05888fc3f01beefe7394056220184c47f36c206125",
+  "limits": {
+    "cpu": 0.5,
+    "memoryGiB": 1
+  },
+  "domainTests": 105,
+  "lint": "passed",
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "durationSeconds": 34.4,
+  "cloudRehearsal30To60Minutes": "pending",
+  "firstRun": "test point name violated existing MeetNN validation; corrected test data, retained first test activity, reran in a fresh activity"
+}
