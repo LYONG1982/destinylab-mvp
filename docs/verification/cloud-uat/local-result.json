@@ -44,5 +44,22 @@
   "productionBuild": "passed",
   "durationSeconds": 34.4,
   "cloudRehearsal30To60Minutes": "pending",
-  "firstRun": "test point name violated existing MeetNN validation; corrected test data, retained first test activity, reran in a fresh activity"
+  "firstRun": "test point name violated existing MeetNN validation; corrected test data, retained first test activity, reran in a fresh activity",
+  "localSseRotationMs": 25741,
+  "localSseReconnect": true,
+  "readinessNoUnauthorizedBinding": true,
+  "originalAcceptancePreserved": true,
+  "originalAcceptanceReadOnlyObservation": {
+    "activity": "meet",
+    "participants": 1,
+    "invitations": 0
+  },
+  "githubRepository": "https://github.com/LYONG1982/destinylab-mvp",
+  "githubPrivate": true,
+  "githubInitialCommit": "a058782572fb79cb0efec53ab0fd0f265e07ddaf",
+  "amd64Build": "passed",
+  "amd64RuntimeSmoke": "passed-under-local-emulation",
+  "amd64InitializerPreservesExistingData": true,
+  "amd64RunnerImage": "sha256:5fe85331d6effe9cbc012cddb0020292a66c44eaaab523f05a6a47f8be17d027",
+  "amd64MigrationImage": "sha256:948610ccd89a434bb70f5dacb88b81ba825a17b3c0e4baf62281581d6ab86d02"
 }

@@ -51,3 +51,5 @@ DESTINY_CLOUD_TEST_ENV=/protected/cloud-test.env npx playwright test --config pl
 当前环境属于资源点计费。2026-10-10 官方报价：CPU 55 点/核时、内存 32 点/GB 时、1000 点=1 元；0.5 核/1GB 的纯计算参考约 0.0595 元/小时，**不含数据库、出网、构建、日志与存储**。不是完整部署报价，也不是支出上限。现有余额 0 元，不能据已有个人版推断新资源免费。数据库方案与预算确认前不启用新收费资源，不升级旧业务共享集群。停止应用不等于停止数据库/存储计费，不删除数据或备份。
 
 来源：[资源点计费](https://cloud.tencent.com/document/product/876/127357)、[CPU 规格](https://docs.cloudbase.net/run/deploy/configuring/resources/cpu-limits)、[默认域名限制](https://docs.cloudbase.net/service/alias)。
+
+候选独立数据库已在控制台只读核价：上海 PostgreSQL 17 高可用版、1核2GB、10GB、本地 SSD，按量 0.57 元/小时；和候选应用基础计算合计约 0.6295 元/小时，不含其他用量。新增资源、条款、总预算及保留时长待确认，细则见已批准计划的第 8 节（该节新增资源尚未批准）。
