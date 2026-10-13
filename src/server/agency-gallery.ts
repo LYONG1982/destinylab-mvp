@@ -21,11 +21,11 @@ export async function galleryState(
   actor: string,
 ): Promise<AgencyGallery> {
   const version = await c.query(
-    "SELECT version FROM dl_agency_albums WHERE activity_id=$1 AND actor=$2",
+    "SELECT COALESCE(sum(version),0)::int AS version FROM dl_agency_albums WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2)",
     [activity, actor],
   );
   const photos = await c.query(
-    "SELECT id,width,height,created_at,staff FROM dl_agency_photos WHERE activity_id=$1 AND actor=$2 ORDER BY position,created_at,id",
+    "SELECT id,width,height,created_at,staff FROM dl_agency_photos WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) ORDER BY position,created_at,id",
     [activity, actor],
   );
   const published = await c.query(
@@ -34,7 +34,7 @@ export async function galleryState(
   );
   const user = (
     await c.query(
-      "SELECT a.id,a.created_at FROM dl_avatar_assets a JOIN dl_activities d ON d.id=a.activity_id CROSS JOIN LATERAL jsonb_array_elements(d.state->'participants') p WHERE a.activity_id=$1 AND a.actor=$2 AND a.attached AND p->>'id'=$2 AND p->'photo'->>'id'=a.id::text",
+      "SELECT a.id,a.created_at FROM dl_avatar_assets a JOIN dl_activities d ON d.id=a.activity_id CROSS JOIN LATERAL jsonb_array_elements(d.state->'participants') p WHERE a.activity_id=$1 AND a.actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) AND a.attached AND p->>'id'=a.actor AND p->'photo'->>'id'=a.id::text ORDER BY a.created_at DESC LIMIT 1",
       [activity, actor],
     )
   ).rows[0];
@@ -50,7 +50,10 @@ export async function galleryState(
     photos: all.map((p) => ({
       id: p.id,
       source: p.source,
-      uploadedBy: p.source === "user" || p.staff === "registration" ? "participant" : "staff",
+      uploadedBy:
+        p.source === "user" || p.staff === "registration"
+          ? "participant"
+          : "staff",
       width: p.width,
       height: p.height,
       createdAt: p.created_at.toISOString(),
@@ -67,18 +70,18 @@ export async function galleryPhoto(
   thumb: boolean,
 ) {
   return transaction(async (c) => {
-    const { photo } = await agencyCurrent(c, activity, actor);
+    const { photo, photoActor } = await agencyCurrent(c, activity, actor);
     if (!/^[a-f0-9-]{36}$/.test(id)) throw new HttpError(404, "照片不可查看。");
     if (id === photo) {
       const user = await c.query(
         "SELECT bytes FROM dl_avatar_assets WHERE id=$1 AND activity_id=$2 AND actor=$3 AND attached",
-        [id, activity, actor],
+        [id, activity, photoActor],
       );
       if (!user.rowCount) throw new HttpError(404, "照片不可查看。");
       return user.rows[0].bytes as Buffer;
     }
     const r = await c.query(
-      `SELECT ${thumb ? "thumbnail" : "bytes"} AS bytes FROM dl_agency_photos WHERE activity_id=$1 AND actor=$2 AND id=$3`,
+      `SELECT ${thumb ? "thumbnail" : "bytes"} AS bytes FROM dl_agency_photos WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) AND id=$3`,
       [activity, actor, id],
     );
     if (!r.rowCount) throw new HttpError(404, "照片不可查看。");
@@ -204,7 +207,7 @@ export async function uploadAgencyPhoto(
       createHash("sha256").update(source).digest("hex"),
   );
   return transaction(async (c) => {
-    await agencyCurrent(c, activity, actor);
+    const { sourceActor } = await agencyCurrent(c, activity, actor);
     if (await duplicate(c, activity, actor, command, hash))
       return galleryState(c, activity, actor);
     const g = await checkVersion(c, activity, actor, expected);
@@ -216,7 +219,7 @@ export async function uploadAgencyPhoto(
       [
         randomUUID(),
         activity,
-        actor,
+        sourceActor,
         bytes,
         thumbnail,
         width,
@@ -282,7 +285,7 @@ export async function galleryAction(
           const cover = snapshot.photos.length
             ? (
                 await c.query(
-                  "SELECT thumbnail FROM dl_agency_photos WHERE id=$1 AND activity_id=$2 AND actor=$3 UNION ALL SELECT bytes AS thumbnail FROM dl_agency_user_photo_snapshots WHERE id=$1 AND activity_id=$2 AND actor=$3",
+                  "SELECT thumbnail FROM dl_agency_photos WHERE id=$1 AND activity_id=$2 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$2 AND member_actor=$3 AND active) UNION ALL SELECT bytes AS thumbnail FROM dl_agency_user_photo_snapshots WHERE id=$1 AND activity_id=$2 AND actor=$3",
                   [snapshot.photos[0], activity, actor],
                 )
               ).rows[0]?.thumbnail

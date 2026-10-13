@@ -336,3 +336,8 @@ V1.3无数据库或API变更。票券继续读取config.title/date/location及re
 ## 小程序双入口与内容审核增量
 
 012 保留历史参与关联并增加独立微信身份会话、报名绑定及按入口区分的小程序码；013 增加 dl_mini_media_reviews 和 dl_mini_review_results，分别持久化照片审核及去重回调。真实生日仍只保存在报名私有记录中，不进入机构公共字段或大屏投影。
+
+
+## 2026-10-13 双入口统一档案增量
+
+014 新增 dl_agency_source_links（来源 actor → member_actor），dl_agency_sources 与 dl_agency_members 视图。原始提交与管理记录不删除；仅由服务端 dl_registrations.participant_id 关联，禁止按未验证电话合并。

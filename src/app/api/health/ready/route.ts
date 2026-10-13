@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       )
         throw new Error("AGENCY_CONFIG_MISSING");
       await database().query(
-        "SELECT 1 FROM dl_tongzhou_submissions, dl_agency_sessions, dl_private_commands, dl_agency_profiles, dl_agency_actions, dl_agency_photos, dl_agency_albums, dl_agency_user_photo_snapshots LIMIT 0",
+        "SELECT 1 FROM dl_agency_members, dl_agency_sources, dl_tongzhou_submissions, dl_agency_sessions, dl_private_commands, dl_agency_profiles, dl_agency_actions, dl_agency_photos, dl_agency_albums, dl_agency_user_photo_snapshots LIMIT 0",
       );
     }
     if (process.env.DESTINY_AVATARS_ENABLED === "true")

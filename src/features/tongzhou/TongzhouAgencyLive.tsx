@@ -16,7 +16,23 @@ import { PublicProfileCard } from "./PublicProfileCard";
 import { ProfileShare } from "./ProfileShare";
 import { submissionTime } from "./TongzhouDetails";
 import styles from "./agency.module.css";
+const SOURCE_LABELS: Record<string, string> = {
+  registration: "报名入口",
+  encounter: "活动遇见",
+};
+function SourceBadges({ sources }: { sources: string[] }) {
+  return (
+    <span className={styles.sources}>
+      {sources.map((source) => (
+        <span key={source} className={styles.pill}>
+          {SOURCE_LABELS[source] || source}
+        </span>
+      ))}
+    </span>
+  );
+}
 type Row = {
+  sources: string[];
   actor: string;
   name: string;
   gender: string;
@@ -44,6 +60,14 @@ type Listing = {
   };
 };
 type Detail = {
+  sources: string[];
+  latestSource: string;
+  history: {
+    note: string;
+    signed: boolean;
+    service: keyof typeof SERVICE_LABELS;
+    source: string;
+  }[];
   record: TongzhouSubmission;
   management: AgencyManagement;
   photo: string | null;
@@ -399,6 +423,7 @@ export function TongzhouAgencyLive() {
                   <tr>
                     {[
                       "用户",
+                      "资料来源",
                       "性别 / 年龄",
                       "城市",
                       "手机号",
@@ -433,6 +458,9 @@ export function TongzhouAgencyLive() {
                         <small className={styles.subline}>
                           {r.nickname || r.code || "待设置公开昵称"}
                         </small>
+                      </td>
+                      <td>
+                        <SourceBadges sources={r.sources} />
                       </td>
                       <td>
                         {r.gender} ·{" "}
@@ -476,6 +504,7 @@ export function TongzhouAgencyLive() {
                   onClick={(e) => open(r.actor, e.currentTarget)}
                 >
                   <strong>{r.name}</strong>
+                  <SourceBadges sources={r.sources} />
                   <small className={styles.subline}>
                     {r.nickname || r.code}
                   </small>
@@ -1087,6 +1116,14 @@ function DetailDrawer({
                 hidden={tab !== "basic"}
               >
                 <section className={styles.section}>
+                  <h3>资料来源</h3>
+                  <SourceBadges sources={detail.sources} />
+                  <p className={styles.subline}>
+                    当前资料来自{SOURCE_LABELS[detail.latestSource]} ·{" "}
+                    {submissionTime(detail.record.updatedAt)}
+                  </p>
+                </section>
+                <section className={styles.section}>
                   {[
                     [
                       "基本资料",
@@ -1135,6 +1172,21 @@ function DetailDrawer({
                 </section>
                 <section className={styles.section}>
                   <h3>服务跟进</h3>
+                  {!!detail.history.length && (
+                    <details className={styles.followupHistory}>
+                      <summary>合并前跟进记录（保留原文）</summary>
+                      {detail.history.map((item, index) => (
+                        <div key={index}>
+                          <strong>
+                            {SOURCE_LABELS[item.source]} ·{" "}
+                            {item.signed ? "已签约" : "未签约"} ·{" "}
+                            {SERVICE_LABELS[item.service]}
+                          </strong>
+                          <p>{item.note || "无备注"}</p>
+                        </div>
+                      ))}
+                    </details>
+                  )}
                   <div className={styles.twoColumns}>
                     <label className={styles.field}>
                       签约状态
@@ -1361,7 +1413,10 @@ function DetailDrawer({
                             alt={`候选照片 ${index + 1}`}
                           />
                           <span className={styles.pill}>
-                            {p.source === "user" || p.uploadedBy === "participant" ? "用户上传" : "机构上传"}
+                            {p.source === "user" ||
+                            p.uploadedBy === "participant"
+                              ? "用户上传"
+                              : "机构上传"}
                           </span>
                           <label>
                             <input

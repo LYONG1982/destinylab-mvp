@@ -991,3 +991,22 @@
   outline: 2px solid #b79d83;
   outline-offset: 2px;
 }
+
+.sources {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.followupHistory {
+  margin: 0 0 18px;
+  padding: 12px;
+  background: #faf6f4;
+  border-radius: 12px;
+}
+.followupHistory summary {
+  cursor: pointer;
+}
+.followupHistory p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

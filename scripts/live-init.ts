@@ -89,6 +89,12 @@ async function main() {
       "utf8",
     ),
   );
+  await database().query(
+    await readFile(
+      new URL("../database/014-agency-unified-members.sql", import.meta.url),
+      "utf8",
+    ),
+  );
   const created = await transaction(async (client) => {
     const result = await client.query(
       "INSERT INTO dl_activities(id,state) VALUES($1,$2::jsonb) ON CONFLICT(id) DO NOTHING RETURNING id",

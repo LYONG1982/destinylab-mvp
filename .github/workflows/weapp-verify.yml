@@ -45,6 +45,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:mini:integration
+      - run: node --conditions=react-server --import tsx --test tests/agency/unified.test.ts
       - run: node --conditions=react-server --import tsx --test tests/live/meet-points.test.ts
       - run: npm run typecheck --prefix miniapp
       - run: npm run build:weapp --prefix miniapp

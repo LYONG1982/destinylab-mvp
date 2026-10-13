@@ -271,7 +271,7 @@ async function projectAgency(c: PoolClient, r: Row) {
   );
   if (r.agency_allowed) {
     const total = await c.query(
-      "SELECT (SELECT count(*) FROM dl_registration_photos WHERE registration_id=$1)+(SELECT count(*) FROM dl_agency_photos WHERE activity_id=$2 AND actor=$3 AND staff<>'registration') AS n",
+      "SELECT (SELECT count(*) FROM dl_registration_photos WHERE registration_id=$1)+(SELECT count(*) FROM dl_agency_photos WHERE activity_id=$2 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$2 AND member_actor=(SELECT member_actor FROM dl_agency_sources WHERE activity_id=$2 AND actor=$3) AND active) AND staff<>'registration') AS n",
       [r.id, r.activity_id, actor],
     );
     if (Number(total.rows[0].n) > 9)

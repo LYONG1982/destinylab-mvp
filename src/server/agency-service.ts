@@ -103,7 +103,11 @@ function management(
 }
 export async function agencyDetail(activity: string, actor: string) {
   return transaction(async (c) => {
-    const { record, photo } = await current(c, activity, actor);
+    const { record, photo, sources, latestSource } = await current(
+      c,
+      activity,
+      actor,
+    );
     const r = await c.query(
       "SELECT * FROM dl_agency_profiles WHERE activity_id=$1 AND actor=$2",
       [activity, actor],
@@ -111,6 +115,14 @@ export async function agencyDetail(activity: string, actor: string) {
     const gallery = await galleryState(c, activity, actor);
     return {
       record,
+      sources,
+      latestSource,
+      history: (
+        await c.query(
+          "SELECT m.note,m.signed,m.service,s.source FROM dl_agency_profiles m JOIN dl_agency_sources s USING(activity_id,actor) WHERE s.activity_id=$1 AND s.member_actor=$2 AND s.actor<>$2 AND s.active AND (m.note<>'' OR m.signed OR m.service<>'none') ORDER BY m.updated_at",
+          [activity, actor],
+        )
+      ).rows,
       gallery,
       photoId: photo,
       management: management(
@@ -129,11 +141,11 @@ export async function agencyDetail(activity: string, actor: string) {
 }
 export async function agencyPhoto(activity: string, actor: string) {
   return transaction(async (c) => {
-    const { photo } = await current(c, activity, actor);
+    const { photo, photoActor } = await current(c, activity, actor);
     if (!photo) throw new HttpError(404, "暂无照片。");
     const r = await c.query(
       "SELECT bytes FROM dl_avatar_assets WHERE id=$1 AND activity_id=$2 AND actor=$3",
-      [photo, activity, actor],
+      [photo, activity, photoActor],
     );
     if (!r.rowCount) throw new HttpError(404, "暂无照片。");
     return r.rows[0].bytes as Buffer;
@@ -155,7 +167,7 @@ export async function agencyList(
     throw new HttpError(400, "筛选条件无效。");
   return transaction(async (c) => {
     await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
-    const base = `FROM dl_tongzhou_submissions s LEFT JOIN dl_agency_profiles m USING(activity_id,actor) WHERE s.activity_id=$1 AND ${predicate}`;
+    const base = `FROM dl_agency_members s LEFT JOIN dl_agency_profiles m USING(activity_id,actor) WHERE s.activity_id=$1 AND ${predicate}`;
     const stats = await c.query(
       `SELECT count(*)::int AS total,count(*) FILTER(WHERE s.record->'fields'->>'gender'='男')::int AS male,count(*) FILTER(WHERE s.record->'fields'->>'gender'='女')::int AS female,count(*) FILTER(WHERE m.signed)::int AS signed,count(*) FILTER(WHERE COALESCE(m.service,'none')='none')::int AS none,count(*) FILTER(WHERE m.service='active')::int AS active,count(*) FILTER(WHERE m.service='done')::int AS done ${base}`,
       [activity, TONGZHOU_CONSENT_VERSION],
@@ -175,7 +187,7 @@ export async function agencyList(
       args,
     );
     const rows = await c.query(
-      `SELECT s.actor,s.record->>'version' AS version,s.record->'fields'->>'realName' AS name,s.record->'fields'->>'gender' AS gender,s.record->'fields'->>'birthYear' AS birthYear,s.record->'fields'->>'city' AS city,regexp_replace(s.record->'fields'->>'phone','^([0-9]{3})[0-9]{4}([0-9]{4})$','\\1****\\2') AS phone,s.record->>'updatedAt' AS updated,COALESCE(m.nickname,'') AS nickname,COALESCE(m.code,'') AS code,COALESCE(m.signed,false) AS signed,COALESCE(m.service,'none') AS service,COALESCE(m.published,false) AS published ${base}${filter} ORDER BY s.updated_at DESC,s.actor LIMIT 20 OFFSET $7`,
+      `SELECT s.actor,s.sources,s.latest_source,s.record->>'version' AS version,s.record->'fields'->>'realName' AS name,s.record->'fields'->>'gender' AS gender,s.record->'fields'->>'birthYear' AS birthYear,s.record->'fields'->>'city' AS city,regexp_replace(s.record->'fields'->>'phone','^([0-9]{3})[0-9]{4}([0-9]{4})$','\\1****\\2') AS phone,s.record->>'updatedAt' AS updated,COALESCE(m.nickname,'') AS nickname,COALESCE(m.code,'') AS code,COALESCE(m.signed,false) AS signed,COALESCE(m.service,'none') AS service,COALESCE(m.published,false) AS published ${base}${filter} ORDER BY s.updated_at DESC,s.actor LIMIT 20 OFFSET $7`,
       [...args, (page - 1) * 20],
     );
     return {
@@ -352,13 +364,13 @@ export async function agencyAction(
           ids.includes(gallery.userPhotoId);
         if (userSelected)
           await c.query(
-            "INSERT INTO dl_agency_user_photo_snapshots(activity_id,actor,id,bytes) SELECT activity_id,actor,id,bytes FROM dl_avatar_assets WHERE activity_id=$1 AND actor=$2 AND id=$3 AND attached",
+            "INSERT INTO dl_agency_user_photo_snapshots(activity_id,actor,id,bytes) SELECT activity_id,$2,id,bytes FROM dl_avatar_assets WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) AND id=$3 AND attached",
             [activity, actor, gallery.userPhotoId],
           );
         const cover = preview.photo
           ? (
               await c.query(
-                "SELECT thumbnail FROM dl_agency_photos WHERE id=$1 AND activity_id=$2 AND actor=$3 UNION ALL SELECT bytes AS thumbnail FROM dl_agency_user_photo_snapshots WHERE id=$1 AND activity_id=$2 AND actor=$3",
+                "SELECT thumbnail FROM dl_agency_photos WHERE id=$1 AND activity_id=$2 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$2 AND member_actor=$3 AND active) UNION ALL SELECT bytes AS thumbnail FROM dl_agency_user_photo_snapshots WHERE id=$1 AND activity_id=$2 AND actor=$3",
                 [ids[0], activity, actor],
               )
             ).rows[0]?.thumbnail
@@ -410,10 +422,10 @@ export async function agencyAction(
 export async function publishedProfile(
   slug: string,
 ): Promise<{ profile: PublicProfile; photo: Buffer | null }> {
-  if (!/^[A-Za-z0-9_-]{32}$/.test(slug))
+  if (!/^(?:[A-Za-z0-9_-]{24}|[A-Za-z0-9_-]{32})$/.test(slug))
     throw new HttpError(404, "页面不存在或已下架。");
   const r = await database().query(
-    `SELECT m.snapshot,m.photo FROM dl_agency_profiles m JOIN dl_tongzhou_submissions s USING(activity_id,actor) WHERE m.slug=$1 AND m.published=true AND ${predicate}`,
+    `SELECT m.snapshot,m.photo FROM dl_agency_profiles alias JOIN dl_agency_sources origin USING(activity_id,actor) JOIN dl_agency_profiles m ON m.activity_id=origin.activity_id AND m.actor=origin.member_actor JOIN dl_agency_members s ON s.activity_id=m.activity_id AND s.actor=m.actor WHERE alias.slug=$1 AND m.published=true AND ${predicate}`,
     [slug, TONGZHOU_CONSENT_VERSION],
   );
   if (!r.rowCount || !r.rows[0].snapshot)
@@ -428,10 +440,13 @@ export async function publishedGalleryPhoto(
   slug: string,
   id: string,
 ): Promise<Buffer> {
-  if (!/^[A-Za-z0-9_-]{32}$/.test(slug) || !/^[a-f0-9-]{36}$/.test(id))
+  if (
+    !/^(?:[A-Za-z0-9_-]{24}|[A-Za-z0-9_-]{32})$/.test(slug) ||
+    !/^[a-f0-9-]{36}$/.test(id)
+  )
     throw new HttpError(404, "照片不可查看。");
   const r = await database().query(
-    `SELECT p.bytes FROM dl_agency_profiles m JOIN dl_tongzhou_submissions s USING(activity_id,actor) JOIN (SELECT id,activity_id,actor,bytes FROM dl_agency_photos UNION ALL SELECT id,activity_id,actor,bytes FROM dl_agency_user_photo_snapshots) p ON p.activity_id=m.activity_id AND p.actor=m.actor WHERE m.slug=$1 AND ${predicate} AND m.published AND m.snapshot->'photos' ? $3 AND p.id=$3::uuid`,
+    `SELECT p.bytes FROM dl_agency_profiles alias JOIN dl_agency_sources origin USING(activity_id,actor) JOIN dl_agency_profiles m ON m.activity_id=origin.activity_id AND m.actor=origin.member_actor JOIN dl_agency_members s ON s.activity_id=m.activity_id AND s.actor=m.actor JOIN (SELECT id,activity_id,actor,bytes,false AS user_snapshot FROM dl_agency_photos UNION ALL SELECT id,activity_id,actor,bytes,true AS user_snapshot FROM dl_agency_user_photo_snapshots) p ON p.activity_id=m.activity_id AND (p.actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=m.activity_id AND member_actor=m.actor AND active) OR (p.user_snapshot AND p.actor=m.actor)) WHERE alias.slug=$1 AND ${predicate} AND m.published AND m.snapshot->'photos' ? $3 AND p.id=$3::uuid`,
     [slug, TONGZHOU_CONSENT_VERSION, id],
   );
   if (!r.rowCount) throw new HttpError(404, "照片不可查看。");

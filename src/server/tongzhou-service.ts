@@ -77,7 +77,7 @@ export async function agencyRecords(
     "activity_id=$1 AND organization_id='tongzhou' AND record->>'status'='active' AND record->'consent'->>'version'=$2";
   if (id) {
     const r = await database().query(
-      `SELECT record FROM dl_tongzhou_submissions WHERE ${predicate} AND actor=$3`,
+      `SELECT record FROM dl_agency_members WHERE ${predicate} AND actor=$3`,
       [activity, TONGZHOU_CONSENT_VERSION, id],
     );
     if (!r.rowCount) throw new HttpError(404, "资料已撤回、删除或不可查看。");
@@ -86,11 +86,11 @@ export async function agencyRecords(
   const filter =
     " AND (strpos(record->'fields'->>'realName',$3)>0 OR strpos(record->'fields'->>'city',$3)>0)";
   const count = await database().query(
-    `SELECT count(*) FROM dl_tongzhou_submissions WHERE ${predicate}${filter}`,
+    `SELECT count(*) FROM dl_agency_members WHERE ${predicate}${filter}`,
     [activity, TONGZHOU_CONSENT_VERSION, query],
   );
   const r = await database().query(
-    `SELECT actor,record->>'version' AS version,record->'fields'->>'realName' AS name,record->'fields'->>'city' AS city,record->'fields'->>'gender' AS gender,regexp_replace(record->'fields'->>'phone','^([0-9]{3})[0-9]{4}([0-9]{4})$','\\1****\\2') AS phone,record->>'updatedAt' AS updated FROM dl_tongzhou_submissions WHERE ${predicate}${filter} ORDER BY updated_at DESC,actor LIMIT 20 OFFSET $4`,
+    `SELECT actor,record->>'version' AS version,record->'fields'->>'realName' AS name,record->'fields'->>'city' AS city,record->'fields'->>'gender' AS gender,regexp_replace(record->'fields'->>'phone','^([0-9]{3})[0-9]{4}([0-9]{4})$','\\1****\\2') AS phone,record->>'updatedAt' AS updated FROM dl_agency_members WHERE ${predicate}${filter} ORDER BY updated_at DESC,actor LIMIT 20 OFFSET $4`,
     [activity, TONGZHOU_CONSENT_VERSION, query, (page - 1) * 20],
   );
   return { records: r.rows, total: Number(count.rows[0].count), page };
@@ -173,11 +173,28 @@ export async function tongzhouCommand(
       [activity, session.actor, JSON.stringify(next)],
     );
     if (c.type !== "tongzhou-submit") {
-      await client.query("UPDATE dl_agency_profiles SET published=false,snapshot=NULL,photo=NULL,version=version+1,updated_at=now() WHERE activity_id=$1 AND actor=$2", [activity,session.actor]);
-      await client.query("DELETE FROM dl_agency_user_photo_snapshots WHERE activity_id=$1 AND actor=$2", [activity,session.actor]);
-      await client.query("DELETE FROM dl_agency_photos WHERE activity_id=$1 AND actor=$2", [activity,session.actor]);
-      await client.query("UPDATE dl_agency_albums SET version=version+1 WHERE activity_id=$1 AND actor=$2", [activity,session.actor]);
-      await client.query("UPDATE dl_agency_profiles SET photo_ids='[]' WHERE activity_id=$1 AND actor=$2", [activity,session.actor]);
+      await client.query(
+        "UPDATE dl_agency_profiles SET published=false,snapshot=NULL,photo=NULL,version=version+1,updated_at=now() WHERE activity_id=$1 AND actor=$2",
+        [activity, session.actor],
+      );
+      await client.query(
+        "DELETE FROM dl_agency_user_photo_snapshots WHERE activity_id=$1 AND actor=$2",
+        [activity, session.actor],
+      );
+      // Another authorized entry keeps the shared staff album; the withdrawn
+      // source's photos remain hidden by the agency source projection.
+      await client.query(
+        "DELETE FROM dl_agency_photos WHERE activity_id=$1 AND actor=$2 AND NOT EXISTS (SELECT 1 FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=COALESCE((SELECT member_actor FROM dl_agency_source_links WHERE activity_id=$1 AND actor=$2),$2) AND actor<>$2 AND active)",
+        [activity, session.actor],
+      );
+      await client.query(
+        "UPDATE dl_agency_albums SET version=version+1 WHERE activity_id=$1 AND actor=$2",
+        [activity, session.actor],
+      );
+      await client.query(
+        "UPDATE dl_agency_profiles SET photo_ids='[]' WHERE activity_id=$1 AND actor=$2",
+        [activity, session.actor],
+      );
     }
     await client.query(
       "INSERT INTO dl_private_commands(activity_id,actor,command_id,payload_hash) VALUES($1,$2,$3,$4)",
