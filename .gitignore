@@ -34,3 +34,7 @@ miniapp/project.private.config.json
 docs/verification/
 assets/uat/
 miniapp/release/
+
+# Platform-specific compiler plugin caches
+.swc/
+miniapp/.swc/
