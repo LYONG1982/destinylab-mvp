@@ -240,7 +240,7 @@ export class PlayerLayer {
       !!failed || node.img.dataset.failed === "true",
     );
     node.img.hidden = !!failed || node.img.dataset.failed === "true";
-    node.img.alt = `${player.nickname}的虚拟头像`;
+    node.img.alt = `${player.nickname}的${player.avatar.startsWith("/api/avatar/") ? "上传照片" : "虚拟头像"}`;
     node.el.dataset.avatar = player.avatar;
     node.el.dataset.playerField = player.field || "neutral";
     node.el.dataset.playerGender = player.gender;

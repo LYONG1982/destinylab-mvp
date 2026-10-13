@@ -95,6 +95,55 @@ export function LiveOperatorPanel({
           活动 {state.live.activity} · {problem ? "连接中断" : "数据已同步"}
         </strong>
         <span>大屏当前展示第一题</span>
+        {typeof document !== "undefined" &&
+          document.documentElement.dataset.mini === "true" &&
+          (["registration", "encounter"] as const).map((entry) => (
+            <div key={entry}>
+              <Button
+                kind="secondary"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setMessage("");
+                  try {
+                    const response = await fetch(
+                      `/api/mini/code?activity=${encodeURIComponent(state.live!.activity)}&entry=${entry}`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: "{}",
+                      },
+                    );
+                    const result = await response.json();
+                    if (!response.ok)
+                      throw new Error(result.error || "生成失败。");
+                    setMessage(
+                      `${entry === "registration" ? "报名" : "现场互动"}小程序码已准备，可查看或下载。`,
+                    );
+                  } catch (e) {
+                    setMessage(e instanceof Error ? e.message : "生成失败。");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                生成{entry === "registration" ? "报名" : "现场互动"}码
+              </Button>
+              <a
+                href={`/api/mini/code?activity=${encodeURIComponent(state.live!.activity)}&entry=${entry}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                查看{entry === "registration" ? "报名" : "现场互动"}码
+              </a>
+              <a
+                href={`/api/mini/code?activity=${encodeURIComponent(state.live!.activity)}&entry=${entry}`}
+                download={`遇见-${entry}.png`}
+              >
+                下载
+              </a>
+            </div>
+          ))}
         <Button
           kind="text"
           onClick={() =>
@@ -104,6 +153,7 @@ export function LiveOperatorPanel({
           退出登录
         </Button>
       </div>
+      {message && <p role="status">{message}</p>}
       <details>
         <summary>题目统计与相遇点配置</summary>
         <div className="live-settings">
@@ -158,8 +208,9 @@ export function LiveOperatorPanel({
               />
             </label>
             <p>
-              请先确认现场已放置对应编号标识。当前 {state.points.length}{" "}
-              个相遇点。
+              默认 Meet01–Meet20，可继续添加编号。当前 {state.points.length}{" "}
+              个相遇点，{state.points.filter((p) => !p.closed).length}{" "}
+              个已启用。
             </p>
             <Button type="submit" disabled={busy}>
               {busy ? "正在保存…" : "添加相遇点"}

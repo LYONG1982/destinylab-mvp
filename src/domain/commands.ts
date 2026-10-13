@@ -361,6 +361,15 @@ export function applyCommand(
       log("HELP_STATUS", h.reply, h.invitationId, h.participantId);
       break;
     }
+    case "point-status": {
+      admin();
+      const point = s.points.find((p) => p.id === c.pointId);
+      ensure(point, "相遇点不存在。");
+      ensure(!point.occupant, "请先结束安排并确认场地空闲，再修改开放状态。");
+      point.closed = !c.enabled;
+      log("POINT_STATUS", `${point.name}${c.enabled ? "已启用" : "已停用"}`);
+      break;
+    }
     case "release": {
       admin();
       const p = s.points.find((p) => p.id === c.pointId);

@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "screenshots": "tsx scripts/screenshots.ts",
     "verify": "npm run lint && npm run typecheck && npm test && npm run build",
-    "live": "node scripts/live-run.mjs"
+    "live": "node scripts/live-run.mjs",
+    "test:mini:integration": "node --conditions=react-server --import tsx --test tests/mini/registration.test.ts && node --conditions=react-server --import tsx --test tests/mini/content.test.ts"
   },
   "dependencies": {
     "next": "16.3.8",
@@ -24,6 +25,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
+    "sharp": "0.35.5",
     "three": "0.186.1"
   },
   "devDependencies": {

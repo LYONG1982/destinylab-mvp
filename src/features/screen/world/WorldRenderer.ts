@@ -1,3 +1,4 @@
+import {allowedAvatarSource} from "@/domain/photo";
 import { PairConnection } from "./PairConnection";
 import * as THREE from "three";
 import { getImageProps } from "next/image";
@@ -263,10 +264,10 @@ export class WorldRenderer {
     this.layoutHistory();
   }
   private texture(path: string): THREE.Texture | null {
-    if (!/^\/assets\/avatars\/(male|female)\/\1_(0[1-9]|10)\.png$/.test(path) || this.failedTextures.has(path)) return null;
+    if (!allowedAvatarSource(path) || this.failedTextures.has(path)) return null;
     const existing = this.textures.get(path); if (existing) return this.loadedTextures.has(path) ? existing : null;
     if (this.textures.size >= WORLD_LIMITS.textures) return null;
-    const image = getImageProps({ src: path, alt: "", width: 96, height: 96, quality: 75 }).props;
+    const image = getImageProps({ unoptimized: path.startsWith("/api/avatar/"), src: path, alt: "", width: 96, height: 96, quality: 75 }).props;
     const texture = this.loader.load(image.src, (loaded) => {
       if (this.disposed) { loaded.dispose(); return; }
       loaded.colorSpace = THREE.SRGBColorSpace;
@@ -284,6 +285,8 @@ export class WorldRenderer {
     texture.colorSpace = THREE.SRGBColorSpace; this.textures.set(path, texture); return null;
   }
   update(data: WorldData) {
+    const visiblePhotos = new Set([...data.participants.map(p => p.avatar), ...(data.meetScene?.qualifiedPairs || []).flatMap(p => [p.male.avatar,p.female.avatar])]);
+    for (const [path,texture] of this.textures) if(path.startsWith("/api/avatar/") && !visiblePhotos.has(path)) { texture.dispose(); this.textures.delete(path); this.loadedTextures.delete(path); this.failedTextures.delete(path); }
     if (this.disposed) return;
     const epochChanged = data.epoch !== this.data.epoch;
     this.data = data;

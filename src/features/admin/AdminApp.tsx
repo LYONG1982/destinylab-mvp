@@ -36,11 +36,17 @@ import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
 import { Motion } from "@/components/motion/Motion";
 import { LiveGate, LiveOperatorPanel } from "@/components/LiveControls";
 
+import { MemberWallSettings } from "@/features/member-wall/MemberWallSettings";
+
+import { RegistrationAdmin } from "@/features/registration/RegistrationAdmin";
+
 const NAV = [
+  ["registrations", "活动报名", "people"],
   ["dashboard", "现场总览", "grid"],
   ["encounters", "邀请相遇", "heart"],
   ["participants", "参与用户", "people"],
   ["partners", "相遇伙伴", "coffee"],
+  ["member-wall", "遇见卡牌墙", "screen"],
 ];
 export function AdminApp({ page }: { page: string }) {
   const { state, problem } = useDemo();
@@ -92,10 +98,12 @@ function AdminView({
             <span>{label}</span>
           </Link>
         ))}
-        {!s.live && <Link href="/demo">
-          <Icon name="help" />
-          <span>演示入口</span>
-        </Link>}
+        {!s.live && (
+          <Link href="/demo">
+            <Icon name="help" />
+            <span>演示入口</span>
+          </Link>
+        )}
       </nav>
       <header className="admin-topbar">
         <div>
@@ -121,8 +129,12 @@ function AdminView({
             <div className="eyebrow">DESTINY LAB · OPERATIONS</div>
             <h1>{title}</h1>
             <p>
-              {s.live ? "手机、运营与大屏共用现场数据" : "2026 年 11 月 7 日 · 鼓楼步行街"}{" "}
-              <span>／ {s.live ? "现场时间" : "演示时间"} {timeText(nowOf(s))}</span>
+              {s.live
+                ? "手机、运营与大屏共用现场数据"
+                : "2026 年 11 月 7 日 · 鼓楼步行街"}{" "}
+              <span>
+                ／ {s.live ? "现场时间" : "演示时间"} {timeText(nowOf(s))}
+              </span>
             </p>
           </div>
           <div className="admin-actions">
@@ -147,6 +159,9 @@ function AdminView({
         {problem && <Notice tone="error">{problem}</Notice>}
         {a.error && <Notice tone="error">{a.error}</Notice>}
         {success && <Notice tone="success">{success}</Notice>}
+        {page === "member-wall" && (
+          <MemberWallSettings activity={s.live?.activity || "meet"} />
+        )}
         {page === "dashboard" && (
           <>
             <div className="stats-grid">
@@ -222,7 +237,11 @@ function AdminView({
                     >
                       <span>{x.title}</span>
                       <div>
-                        <i style={{ width: `${m.scans ? (x.value / m.scans) * 100 : 0}%` }} />
+                        <i
+                          style={{
+                            width: `${m.scans ? (x.value / m.scans) * 100 : 0}%`,
+                          }}
+                        />
                       </div>
                       <strong>
                         <AnimatedCounter value={x.value} />
@@ -304,7 +323,9 @@ function AdminView({
                           <tr key={p.id}>
                             <td>
                               <strong>{p.name}</strong>
-                              <div className="fine">{p.location}</div>
+                              {p.location && (
+                                <div className="fine">{p.location}</div>
+                              )}
                             </td>
                             <td>
                               <Badge
@@ -342,7 +363,7 @@ function AdminView({
                                 className="table-action"
                                 disabled={
                                   (!!i && ACTIVE_STATUSES.includes(i.status)) ||
-                                  (!p.occupant && !p.closed)
+                                  !p.occupant
                                 }
                                 onClick={() =>
                                   confirm(
@@ -353,6 +374,25 @@ function AdminView({
                                 }
                               >
                                 确认空闲
+                              </button>
+                              <button
+                                className="table-action"
+                                disabled={a.busy || !!p.occupant}
+                                onClick={() =>
+                                  confirm(
+                                    `${p.closed ? "启用" : "停用"} ${p.name}？`,
+                                    p.closed
+                                      ? "启用后系统可将等待中的双方分配至此编号。"
+                                      : "停用后，此编号不再参与新的相遇分配。",
+                                    {
+                                      type: "point-status",
+                                      pointId: p.id,
+                                      enabled: p.closed,
+                                    },
+                                  )
+                                }
+                              >
+                                {p.closed ? "启用" : "停用"}
                               </button>
                             </td>
                           </tr>
@@ -542,8 +582,13 @@ function AdminView({
             </Notice>
           </>
         )}
+        {page === "registrations" && (
+          <RegistrationAdmin activity={s.live?.activity || "meet"} />
+        )}
         <p className="local-note">
-          {s.live ? "本活动数据由服务端保存 · 请妥善保管运营账号" : "本地演示数据 · 不包含真实联系方式 · 当前操作不会发送外部消息"}
+          {s.live
+            ? "本活动数据由服务端保存 · 请妥善保管运营账号"
+            : "本地演示数据 · 不包含真实联系方式 · 当前操作不会发送外部消息"}
         </p>
       </main>
       {selectedPerson && (

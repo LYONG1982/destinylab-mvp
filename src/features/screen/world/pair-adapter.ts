@@ -1,8 +1,6 @@
+import {avatarSource, allowedAvatarSource} from "@/domain/photo";
 import {
-  getAvatarById,
   validAvatar,
-  maleAvatars,
-  femaleAvatars,
 } from "@/config/avatars";
 import type { DemoState, Participant } from "@/domain/types";
 import type { MeetPair, MeetParticipant } from "./types";
@@ -13,7 +11,6 @@ export interface PairDisplayConsent {
   readonly revision: number | string;
   allows(invitationId: string, participantId: string): boolean;
 }
-const sources = new Set([...maleAvatars, ...femaleAvatars].map((a) => a.src));
 export function displayablePair(pair: MeetPair): boolean {
   return (
     (pair.status === "meet_confirmed" || pair.status === "mutual_confirmed") &&
@@ -25,10 +22,8 @@ export function displayablePair(pair: MeetPair): boolean {
     pair.male.id !== pair.female.id &&
     !!pair.male.nickname?.trim() &&
     !!pair.female.nickname?.trim() &&
-    sources.has(pair.male.avatar) &&
-    sources.has(pair.female.avatar) &&
-    pair.male.avatar.includes("/male/") &&
-    pair.female.avatar.includes("/female/") &&
+    allowedAvatarSource(pair.male.avatar) &&
+    allowedAvatarSource(pair.female.avatar) &&
     Number.isFinite(pair.confirmedAt) &&
     pair.confirmedAt > 0
   );
@@ -81,7 +76,7 @@ export function projectMeetPairs(
   const ref = (p: Participant): MeetParticipant => ({
     id: token(p.id),
     nickname: [...p.name.trim()].slice(0, 5).join(""),
-    avatar: getAvatarById(p.avatarId)!.src,
+    avatar: avatarSource(p, true),
     gender: p.gender,
     joinedAt: p.joinedAt,
     field: null,

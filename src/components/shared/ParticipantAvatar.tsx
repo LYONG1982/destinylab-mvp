@@ -12,18 +12,22 @@ const pixels: Record<AvatarSize, number> = {
 };
 export function ParticipantAvatar({
   avatarId,
+  photo,
   size = "md",
   alt,
   className = "",
 }: {
   avatarId: string | null;
+  photo?: import("@/domain/photo").PhotoAvatar | null;
   size?: AvatarSize;
   alt?: string;
   className?: string;
 }) {
   const avatar = getAvatarById(avatarId);
   const [failed, setFailed] = useState("");
+  const photoSrc = photo ? `/api/avatar/${photo.id}` : "";
   const classes = `avatar avatar-${size} ${className}`;
+  if (photoSrc && failed !== photoSrc) return <Image unoptimized className={`${classes} avatar-photo`} src={photoSrc} alt={alt || "用户上传照片，身份未核验"} width={pixels[size]} height={pixels[size]} onError={() => setFailed(photoSrc)} />;
   if (!avatar || failed === avatar.src)
     return (
       <span

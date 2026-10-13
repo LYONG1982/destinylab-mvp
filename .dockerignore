@@ -16,6 +16,7 @@
 !scripts/cloud-init.mjs
 !scripts/cloud-validation.mjs
 !scripts/live-init.ts
+!scripts/migrate-meet-points.ts
 !scripts/lib/
 !scripts/lib/**
 **/.env*
@@ -23,3 +24,5 @@
 **/*.key
 **/*.dump
 **/*.log
+
+.next-private

@@ -4230,3 +4230,21 @@ html[data-motion="false"] .match-detail-reveal {
 .live-access h1 { font-size: 28px; margin: 28px 0 8px; font-weight: 600; }
 .live-access > p { color: #78665c; margin-bottom: 24px; }
 @media (max-width: 640px) { .live-settings { grid-template-columns: 1fr; } .live-access { margin: 5vh auto; } }
+
+/* Optional private services and photo editor. */
+.question-page .tongzhou-entry { margin-top: 24px; padding: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; }
+.tongzhou-entry a[aria-disabled="true"] { opacity: .5; cursor: wait; }
+.photo-editor { display: grid; gap: 14px; }
+.photo-crop { position: relative; width: 240px; height: 240px; margin: 0 auto; overflow: hidden; touch-action: none; background: #ebe4de; }
+.photo-crop img { position: absolute; max-width: none; object-fit: contain; }
+.photo-crop span { position: absolute; inset: 0; border: 1px solid white; border-radius: 50%; box-shadow: 0 0 0 80px #0006; pointer-events: none; }
+.photo-editor input[type="range"] { width: 100%; }
+.photo-consent { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.photo-consent input { width: 20px; height: 20px; flex-shrink: 0; }
+.photo-current { text-align: center; }
+.avatar-photo { object-fit: cover; object-position: center; transform: none; }
+.agency-login { max-width: 420px; display: grid; gap: 18px; margin: 30px auto; }
+.agency-login label { display: grid; gap: 8px; }
+.agency-login input { width: 100%; border: 1px solid var(--line); padding: 12px; border-radius: 8px; }
+.agency-pagination { display:flex; align-items:center; justify-content:space-between; }
+.mobile-utility .button { min-height: 36px; width: auto; padding: 4px 8px; font-size: 12px; }

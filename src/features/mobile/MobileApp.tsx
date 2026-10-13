@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { TongzhouEntry } from "@/features/tongzhou/TongzhouMobile";
+import { AvatarEditor } from "@/components/shared/AvatarEditor";
+import {avatarDescription} from "@/domain/photo";
 import { AvatarSelector } from "@/components/shared/AvatarSelector";
-import { validAvatar } from "@/config/avatars";
+import { validAvatar, defaultAvatarId } from "@/config/avatars";
 import { AGES, QUESTIONS, STATUS_LABELS } from "@/data/questions";
 import type {
   DemoState,
@@ -307,6 +309,8 @@ function MobileFlow({
           <span>
             {me.name} · {me.gender === "male" ? "男生" : "女生"}
           </span>
+          {me.profileComplete && <AvatarEditor me={me}/>}
+          {s.live && me.profileComplete && ["03-profile", "05-discover", "10-next-step"].includes(page) && document.documentElement.dataset.memberWall === "true" && <Link href={`/mobile/member-wall-consent?activity=${encodeURIComponent(s.live.activity)}`}>我的遇见卡牌</Link>}
         </div>
       )}
       {page === "01-start" ? (
@@ -334,7 +338,7 @@ function MobileFlow({
               <Profile me={me} action={a} onNext={() => go("04-question")} />
             )}
             {page === "04-question" && (
-              <Questions me={me} action={a} onNext={() => go("05-discover")} />
+              <Questions state={s} me={me} action={a} onNext={() => go("05-discover")} />
             )}
             {page === "05-discover" && (
               <>
@@ -420,7 +424,7 @@ function MobileFlow({
                     我现在可以见面了
                   </Button>
                 )}
-                <p className="fine center">系统虚拟头像，不代表本人长相</p>
+                <p className="fine center">活动头像由用户选择或上传</p>
                 <TongzhouEntry state={s} actor={me.id} />
               </>
             )}
@@ -686,7 +690,7 @@ function MobileFlow({
                     >
                       <strong>{inv.code}</strong>
                     </Motion>
-                    <span>到场后核对昵称与缘分相遇码，不凭虚拟头像认人。</span>
+                    <span>到场后核对昵称与缘分相遇码，请勿仅凭头像认人。</span>
                   </div>
                 </div>
                 <MeetStatusTrack
@@ -797,7 +801,7 @@ function MobileFlow({
           <PersonCard p={target} />
           <p>
             TA
-            会看到你的昵称、默认头像、性别、年龄段和共同答案。联系方式不会自动分享。
+            会看到你的昵称、活动头像、性别、年龄段和共同答案。联系方式不会自动分享。
           </p>
           {!me.ready && (
             <Notice>
@@ -1145,9 +1149,9 @@ function Profile({
               onClick={() => {
                 if (v !== gender) {
                   setGender(v);
-                  setAvatarId(null);
+                  setAvatarId(me.photo ? defaultAvatarId(me.id, v) : null);
                   setAvatarMessage(
-                    `请重新选择一个${v === "male" ? "男生" : "女生"}头像。`,
+                    me.photo ? "" : `请重新选择一个${v === "male" ? "男生" : "女生"}头像。`,
                   );
                 }
               }}
@@ -1158,7 +1162,8 @@ function Profile({
           ))}
         </div>
       </fieldset>
-      <AvatarSelector
+      <AvatarEditor me={me} onSaved={() => setAvatarId(validAvatar(avatarId, gender) ? avatarId : defaultAvatarId(me.id, gender))}/>
+      {!me.photo && <AvatarSelector
         gender={gender}
         value={avatarId}
         disabled={a.busy}
@@ -1167,7 +1172,7 @@ function Profile({
           setAvatarId(id);
           setAvatarMessage("");
         }}
-      />
+      />}
       <Notice>
         本场将为你推荐愿意认识新朋友的{gender === "male" ? "女生" : "男生"}。
       </Notice>
@@ -1196,7 +1201,7 @@ function Profile({
       </fieldset>
       <p className="fine privacy-note">
         <Icon name="help" size={18} />
-        对方会看到昵称、默认头像、性别、年龄段和相同答案。你的昵称、所选虚拟头像及当前大屏问题的选择会在现场大屏展示。联系方式不会自动分享。
+        对方会看到昵称、活动头像、性别、年龄段和相同答案。昵称、系统头像及当前大屏问题的选择会在现场大屏展示；本人照片需单独允许上屏。联系方式不会自动分享。
       </p>
       <Button type="submit" disabled={a.busy}>
         继续答题
@@ -1206,6 +1211,7 @@ function Profile({
   );
 }
 function Questions({
+  state,
   me,
   action: a,
   onNext,
@@ -1213,10 +1219,13 @@ function Questions({
   me: Participant;
   action: Actions;
   onNext: () => void;
+  state: DemoState;
 }) {
+  const query = useSearchParams();
   const cityResponse = useCityResponse();
   const initial = QUESTIONS.findIndex((q, i) => i > 0 && !me.answers[q.id]);
-  const [index, setIndex] = useState(initial < 0 ? 1 : initial);
+  const requested = QUESTIONS.findIndex(q => q.id === query.get("q"));
+  const [index, setIndex] = useState(requested > 0 && (me.answers[QUESTIONS[requested].id] || requested === initial) ? requested : initial < 0 ? 1 : initial);
   const [selected, setSelected] = useState("");
   const transition = useRef<QuestionTransitionHandle>(null);
   const choosing = useRef(false);
@@ -1251,7 +1260,6 @@ function Questions({
       </div>
       <QuestionTransition ref={transition} questionKey={q.id}>
         <h1 tabIndex={-1}>{q.title}</h1>
-        <p className="question-note">没有标准答案，选择后自动继续。</p>
         <div className="answer-grid">
           {q.options.map((v, i) => (
             <button
@@ -1299,6 +1307,7 @@ function Questions({
         </div>
       </QuestionTransition>
       <p className="fine center">你的答案只用于发现共同话题</p>
+      <TongzhouEntry state={state} actor={me.id} questionId={q.id} disabled={a.busy} canLeave={() => !choosing.current && !transition.current?.busy()} />
     </div>
   );
 }
@@ -1336,7 +1345,7 @@ export function PersonCard({
         <p>
           {p.gender === "male" ? "男生" : "女生"} · {p.age} 岁
         </p>
-        <small>系统虚拟头像，不代表本人长相</small>
+        <small>{avatarDescription(p)}</small>
       </div>
     </div>
   );

@@ -28,6 +28,24 @@ function WorldQR({ joinUrl }: { joinUrl?: string }) {
   const [error, setError] = useState(false);
   useEffect(() => {
     let alive = true;
+    if (document.documentElement.dataset.mini === "true") {
+      const activity = new URL(joinUrl || location.href, location.origin).searchParams.get("activity") || document.documentElement.dataset.activity || "meet";
+      const controller = new AbortController();
+      let objectUrl = "", timer: ReturnType<typeof setTimeout>;
+      const update = async () => {
+        try {
+          const response = await fetch(`/api/mini/code?activity=${encodeURIComponent(activity)}`, { signal: controller.signal, cache: "no-store" });
+          if (!response.ok) throw new Error();
+          const blob = await response.blob();
+          if (!alive) return;
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          objectUrl = URL.createObjectURL(blob); setCode(objectUrl); setError(false);
+        } catch { if (alive) { setCode(""); setError(true); } }
+        if (alive) timer = setTimeout(update, 15000);
+      };
+      void update();
+      return () => { alive = false; controller.abort(); clearTimeout(timer); if (objectUrl) URL.revokeObjectURL(objectUrl); };
+    }
     let url = joinUrl || "http://localhost:3210/mobile/01-start";
     try {
       if (!joinUrl) url = localStorage.getItem("destinylab:qr-url") || url;
@@ -54,7 +72,7 @@ function WorldQR({ joinUrl }: { joinUrl?: string }) {
         <img src={code} width={1024} height={1024} alt="扫码加入" />
       ) : (
         <div className={styles.qrPlaceholder}>
-          {error ? "入口暂不可用" : ""}
+          {error ? "活动入口待配置" : ""}
         </div>
       )}
       <strong>你呢？</strong>

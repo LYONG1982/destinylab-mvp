@@ -81,7 +81,7 @@ export async function sessionFor(
     throw new HttpError(401, "会话已失效，请重新进入活动或登录。");
   return result.rows[0] as Session;
 }
-async function load(
+export async function load(
   client: PoolClient,
   activity: string,
   lock = false,
@@ -93,7 +93,7 @@ async function load(
   if (!result.rows[0]) throw new HttpError(404, "活动不存在或尚未开放。");
   return result.rows[0].state as DemoState;
 }
-async function save(
+export async function save(
   client: PoolClient,
   activity: string,
   before: DemoState,
@@ -267,14 +267,15 @@ export async function snapshot(
   }
   if (!session || session.role !== audience)
     throw new HttpError(401, "请先登录。");
+  const own = audience === "participant" && process.env.DESTINY_TONGZHOU_ENABLED === "true"
+    ? await database().query("SELECT record FROM dl_tongzhou_submissions WHERE activity_id=$1 AND actor=$2", [activity, session.actor]) : null;
+  const projected = audience === "operator" ? operatorProjection(state, activity) : mobileProjection(state, session.actor, activity);
+  projected.tongzhouSubmissions = own?.rows.map(r => r.record) || [];
   return {
     activity,
     revision: state.revision,
     actor: session.actor,
-    state:
-      audience === "operator"
-        ? operatorProjection(state, activity)
-        : mobileProjection(state, session.actor, activity),
+    state: projected,
   };
 }
 export async function execute(

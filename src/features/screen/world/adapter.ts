@@ -1,5 +1,6 @@
+import {avatarSource} from "@/domain/photo";
 import { projectMeetPairs, type PairDisplayConsent } from "./pair-adapter";
-import { getAvatarById, validAvatar } from "@/config/avatars";
+import { validAvatar } from "@/config/avatars";
 import { QUESTIONS } from "@/data/questions";
 import {
   available,
@@ -108,7 +109,7 @@ export class WorldAdapter {
         return {
           id,
           nickname: [...p.name.trim()].slice(0, 5).join(""),
-          avatar: getAvatarById(p.avatarId)!.src,
+          avatar: avatarSource(p, true),
           gender: p.gender,
           joinedAt: p.joinedAt,
           field: optionId(responses[p.id], question.id),

@@ -3,11 +3,89 @@ import { database, transaction } from "../src/server/db";
 import { emptyActivity } from "../src/server/state";
 import { activityId } from "../src/server/service";
 
+import { migrateRegistrationReceipts } from "../src/server/registration-receipt";
+
 async function main() {
   const id = activityId(process.env.DESTINY_ACTIVITY_ID || null);
   await database().query(
     await readFile(
       new URL("../database/001-live.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/002-private-services.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/003-wechat-identity.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/004-tongzhou-agency.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/005-agency-album.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/006-agency-user-photos.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/007-member-wall.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/008-registration.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/009-registration-receipts.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await migrateRegistrationReceipts();
+  await database().query(
+    await readFile(
+      new URL(
+        "../database/010-registration-profile-progress.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/011-registration-birth-date.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/012-mini-registration-entry.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  await database().query(
+    await readFile(
+      new URL("../database/013-mini-content-review.sql", import.meta.url),
       "utf8",
     ),
   );

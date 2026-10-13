@@ -1,5 +1,48 @@
 # 遇见-缘分实验室 · V1.0 数据模型、状态与适配边界
 
+## 2026-10-12 更新：正面年龄段（当前）
+
+PublicMemberCard新增ageRange:string|null，源于Participant.age，仅允许AGES中的22–25/26–29/30–33/34–37/38+，其他输入归null。客户端安全检查拒绝非法值。WALL_CONSENT_VERSION升级member-wall-2026-10-12-v4，复用既有版本列，无DDL。encounterCode保留后端/运营兼容，仅从卡片UI移除。
+
+## 2026-10-12 更新：背面四项答案（当前版本）
+
+PublicMemberCard.preferences最多四项，顺序q5/q6/q8/q9；正面tags仍为q3/q5。WALL_QUESTION_IDS为q3/q5/q6/q8/q9，WALL_CONSENT_VERSION为member-wall-2026-10-12-v3。复用原consent_version与question_ids列，无DDL迁移。v2不自动升级，不公开其未同意的q6/q9。
+
+## 2026-10-12 更新：六列分区与大字号
+
+dl_member_wall_sessions.visible_ids 仍用原 JSONB 列，内容为固定 24 项公开 ID/null 数组，slot%6<3 属男生区，否则属女生区；capacity 固定 24。公开分配卡片新增 slot（0–23），个人预览没有分配槽位可省略。旧配置 minColumns/maxColumns 读取并保存为 6；旧容量主屏需重新领取。无数据库结构迁移，许可仍为 v2。
+
+## 2026-10-12 更新：人数看板与男女卡片
+
+PublicMemberCard 新增 gender（male/female），由参与者资料投影，不从 avatarUrl 推断；safeWallCard 拒绝缺失或非法性别。WallSnapshot 新增 male/female 汇总，total 仍为全部参与者；eligible 保留供调度和后台使用。许可版本为 member-wall-2026-10-12-v2，沿用现有 consent_version 列，不新增迁移。
+
+## 2026-10-12 增量：卡牌墙专用数据
+
+迁移 `database/007-member-wall.sql` 增加四表，不改原答案/邀请/机构资料结构：
+
+| 表 | 关键含义 |
+| --- | --- |
+| dl_member_wall_consents | 活动/参与者唯一，epoch、独立公开 UUID 与遇见码、昵称、allowed、许可范围和版本、CAS 版本与授权/停止时间 |
+| dl_member_wall_config | 每活动模式、轮播开关、翻面/换人间隔、比例、列数、配置版本 |
+| dl_member_wall_exposure | 活动/公开 UUID 唯一，非负可见毫秒累计、最后展示时间 |
+| dl_member_wall_sessions | 每活动唯一主屏租约、token 哈希、窗口、批次、分配公开 ID、序号、容量、起始/心跳/换人/过期时间 |
+
+公开 DTO 仅包含独立公开 ID、遇见码、昵称、性别标识、静态虚拟头像地址、2 标签/3 偏好及公开有效标识。历史参与者没有许可记录即不公开；epoch 变更使原许可失效。API 不返回内部参与者 ID、真实照片或机构档案。完整字段与回退约束见 [运行说明](member-wall/OPERATIONS.md)。
+
+## 2026-10-11 · 私有服务增量
+
+增量迁移 `database/002-private-services.sql` 新增：
+
+- `dl_tongzhou_submissions`：按 activity_id/actor 唯一、固定 organization_id=tongzhou，record 保存现有 TongzhouSubmission 结构（内容、版本、状态、授权）；不进入 dl_activities.state。
+- `dl_agency_sessions`：独立机构令牌哈希、活动、机构与 8 小时有效期，不使用客户端 actor 或现场运营角色授权。
+- `dl_private_commands`：同活动同参与者的幂等键与请求摘要，不保存表单正文或图片。事务内锁活动行，检查 epoch、记录版本、幂等键后提交；只通过公共 revision 通知刷新。
+- `dl_avatar_assets`：UUID、活动、所有者、重编码 WebP bytea（最大 200 KiB）、创建时间与 attached。临时图片 24 小时后不可访问；上传时清理过期资产，并限制同参与者暂存数量。替换和删除时清除旧已绑定图片。
+
+Participant 兼容增加 `photo?: {id,screen}|null`、`avatarVersion?: number`；保留 avatarId 作为系统备用头像。客户端只通过专用 avatar 命令提交自有资产、版本及许可，不能提交任意 URL。手机本人投影附加自己的同舟记录，其他参与者、运营和屏幕投影不包含该集合。机构列表只返回必要索引及脱敏手机；详情重新校验有效授权。
+
+照片读取按当前目标活动的本人、活动推荐/相遇可见范围或运营会话判定；`?screen=1` 仅在当前允许上屏且资料完整、在场时公开。响应 no-store，Next 图片优化只允许静态 `/assets/**`，防止撤回后从优化缓存取回图片。图片 URL 不包含原始参与者编号。
+
+
 ## 2026-10-10 · PostgreSQL 权威数据与角色投影
 
 新增 `database/001-live.sql`，可重复执行且不会替换已有活动。MVP 以每活动一个 JSONB 业务聚合复用已验证的领域命令；`dl_activities` 的行锁串行化同活动修改，`state.revision` 与表内 revision 同事务更新。该取舍已验证 100 会话基本并发，不代表无限扩容能力。
@@ -200,3 +243,96 @@ Mock新增join(gender?, fieldId?)、burst(count, gender?, fieldId?)，仍不写�
 ## 2026-10-10 公网 10–20 人演练适配
 
 新增非特权容器、独立初始化、健康检查、数据库 TLS/连接池配置与远端测试库绑定保护。三端继续共用服务及 PostgreSQL，原有手机旅程、十题、双方确认和三幕大屏规则不变，数据库业务表结构不变。自动化使用独立测试库和 20 个浏览器身份；真人验收使用另一个空库。2026-10-10 已按确认计划创建 Render 免费应用和 PostgreSQL 两个独立数据库，完整 TLS 与跨库拒绝检查通过；公网 20 身份演练在集中答题时出现 HTTP 502，尚未进入配对及 30 分钟持续阶段；应用已暂停，测试数据与备份保留。真人空库未切换、实体手机未验收，服务端同步优化方案待确认。运行边界及步骤见 [CLOUD_UAT.md](CLOUD_UAT.md)。
+
+
+## 2026-10-11 小程序实施与 Mac UAT 增量
+
+增量迁移 `database/003-wechat-identity.sql` 新增 dl_wechat_identities、dl_wechat_participants、dl_mini_sessions、dl_wechat_codes_used、dl_wechat_entry_codes。appid/openid 唯一；身份与活动唯一映射参与者；业务令牌仅存哈希，7 天到期，重新登录轮换、退出撤销。微信 session_key 不落库或返回。活动码缓存短 scene 和图片；原业务事实继续存于统一服务既有表。 详细步骤、证据与限制见 [MINI_UAT.md](MINI_UAT.md)。
+
+
+## 2026-10-11 同舟机构工作台与个人宣传页
+
+增量 004-tongzhou-agency.sql 新增 dl_agency_profiles（机构跟进、发布草稿及发布快照、独立公开照片字节、唯一编号及随机 slug）和 dl_agency_actions（命令幂等哈希、机构账号、动作与公开许可确认）。以 activity_id/actor 关联既有填报，不修改原填报结构。跟进 version 与用户填报 version 分别校验。照片发布副本只经有效发布接口读取，原头像换图清理不会导致已发布页面引用悬空。撤回/删除填报时清除发布内容及照片，重新提交不自动恢复旧发布。
+
+
+## 2026-10-11 同舟三页签与独立相册
+
+迁移 005-agency-album.sql 新增 dl_agency_albums（活动/用户相册版本）与 dl_agency_photos（独立生活照、缩略图、尺寸、顺序、机构上传账号/时间），新增 dl_agency_profiles.photo_ids 与 source_album_version。照片服务端纠正方向、去元数据、按比例缩至最长 1920px，展示版不超过 2MiB、缩略图不超过 200KiB。资产内容不可编辑，只可追加/排序/移除。snapshot.photos 保存本次公开的照片 ID 顺序（第一张封面），公共照片路由同时验证有效填报、发布状态及此白名单；photo 字段仍保存兼容封面缩略图，旧单图快照可读。公开快照不随新上传/草稿变化；明确删除已公开照片时同时移除快照引用、兼容封面及私有资产。机构动作日志承载 photo-upload/reorder/delete，幂等键与版本防并发覆盖。原资料撤回/删除清除相册资产及发布内容，重新提交不恢复。
+
+
+## 2026-10-11 公开字段全选与用户照片展示
+
+迁移 006-agency-user-photos.sql 新增 dl_agency_user_photo_snapshots：activity_id、actor、id 联合主键及用户照片 bytes（不超过 200KiB），仅在明确发布时复制当前已确认的用户头像照片；重发替换副本、下架/原资料撤回删除清理。相册本身以当前 participant.photo + attached avatar 只读合并投影，不导入取消上传、不累积用户历次头像。AgencyGallery 增加 userPhotoId 与 source；保留机构 version，并以 expectedUserPhoto 校验预览/发布间换图。public snapshot.photos 白名单同时约束机构资产与用户发布副本，私有头像清理不会损坏已发布图片。
+
+
+## 2026-10-11 个人宣传页 V2 与昵称隐私规则
+
+本轮无需数据库迁移。PUBLIC_FIELDS 排除 realName/phone；旧客户端配置含这两个字段时 validateAgencyDraft 兼容接收后过滤；management 读取旧设置时过滤；publicProfile 生成快照时强制过滤；publishedProfile 对历史快照执行 safePublicProfile 后才向匿名 JSON/SSR 返回。原始机构资料、保存过的数据库记录及 slug 不改写。nickname/code、照片副本及快照生命周期沿用原契约。
+
+
+### 2026-10-11 发布可用性验收修复
+
+发布可用性修复仅调整前端交互，无数据库或 API 契约变动；服务端 confirmed、版本、照片许可校验保持不变。
+
+
+### 2026-10-11 发布成功专属链接交付
+
+发布链接交付优化不新增数据库字段；读取既有 management.url，由当前访问来源组成绝对 URL，slug 与发布权限保持不变。
+
+
+## 2026-10-11 宣传页隐藏编号与女生 UAT 样例
+
+无 schema 迁移。PublicProfile.code 为兼容保留；渲染不展示，safePublicProfile 将历史 title===code 归一为空。测试提交使用固定 actor 与 record._uatBatch 标记；仅指定局域网库/隔离测试库可导入。独立相册沿用 dl_agency_photos，发布沿用现有版本校验和快照服务；不写入 dl_activities.state 或现场参与者。
+
+
+## 2026-10-11 会员主页顶部照片柔焦优化
+
+无 schema、接口、快照或图片字节变化。新增的loading/ready/failed仅为封面组件本地展示状态，按URL重挂载重置；背景和主图复用同一个获准公开URL。
+
+
+## 2026-10-11 会员主页 V1.1 字体与排版
+
+本轮无数据模型、字段、接口、授权或快照变化。仅展示章节增加wide样式标记用于维持相册宽度；排序、空值处理及格式化规则保持原状。
+
+## 008 独立报名模型
+
+`dl_registration_config`按活动保存可编辑文案与开放状态；`dl_registrations`存私有资料JSON、随机凭证、同意版本/时间、状态、版本、现场participant/epoch关联及checkin_epoch；活动内手机号唯一且不用于身份自动合并。`dl_registration_sessions`用哈希HttpOnly会话绑定本人报名；`dl_registration_photos`保存重编码WebP/缩略图；`dl_registration_actions`提供幂等账本。资料不进入dl_activities.state或公共事件。
+
+明确同舟授权后，独立actor `registration:<uuid>`投影到既有机构提交和相册。机构备注、签约、服务、昵称与公开字段保留；用户更新下线旧公开快照。相册增补uploadedBy字段标明用户上传，保持原source存储类型及接口兼容。
+
+
+## 2026-10-12 六位数字签到凭证
+
+009-registration-receipts.sql为dl_registrations添加nullable legacy_receipt及唯一索引。receipt保持原唯一约束，新码由crypto.randomInt生成，INSERT ON CONFLICT(receipt)自动重试。受控迁移锁表后事务转换旧码，保留所有其他列；重复执行不再更改六码。
+
+
+## 2026-10-12 报名电子凭证与四站档案 V1.2
+
+010为dl_registrations追加profile_progress jsonb默认{}及profile_confirmed_at可空时间。profile更新接口按分区白名单合并、版本校验、幂等写入；DTO追加有效签到状态，原数据库status和六码不变。
+
+
+## 2026-10-12 第四站已保存档案预览维护
+
+本轮无模型或数据库变更。客户端停止preview/confirm写入，读取现有profileProgress与服务器快照；旧profileConfirmedAt及confirm接口保留兼容。具体见REGISTRATION_PREVIEW_UAT.md。
+
+
+## 2026-10-12 V1.3 电子遇见邀请函
+
+V1.3无数据库或API变更。票券继续读取config.title/date/location及record.nickname/receipt/effectiveStatus；日期与六码格式化仅在显示层，复制、查询、签到使用原始值。
+
+
+## 报名出生日期与文案迭代
+
+2026-10-13：dl_registrations 新增 nullable text birth_date（迁移 011，规范 YYYY-MM-DD）；API 私有记录新增 birthDate 与派生 zodiac，旧字段 birthYear 保留。生日不进入 TongzhouProfile、机构投影或公共白名单；版本控制、幂等与事务覆盖同次生日保存。无月日的历史记录保持 NULL。
+
+### 2026-10-13 小程序报名与双入口
+
+迁移 012 新增 dl_mini_identity_sessions、dl_wechat_registrations；原 entry code 表新增 entry_type 并扩展主键为活动/AppID/环境/入口。旧码回填 encounter，scene 不变；独立身份登录不写活动参与者。H5 与 mini 共用 registrationEnterActor 校验当前活动周期和工作人员签到。
+
+## 遇见地点默认值（2026-10-13）
+
+沿用 `state.points` 的 id/name/location/distance/occupant/closed 结构，无新字段。共享工厂默认生成 Meet01–Meet20，location 为空、distance=0（不作距离展示）。`point-status` 命令仅限运营，要求 occupant 为空。补齐按 name 去重并避免 id 冲突；保留旧 id、地址、占用、邀请及启停状态，不覆盖已有记录。
+
+## 小程序双入口与内容审核增量
+
+012 保留历史参与关联并增加独立微信身份会话、报名绑定及按入口区分的小程序码；013 增加 dl_mini_media_reviews 和 dl_mini_review_results，分别持久化照片审核及去重回调。真实生日仍只保存在报名私有记录中，不进入机构公共字段或大屏投影。

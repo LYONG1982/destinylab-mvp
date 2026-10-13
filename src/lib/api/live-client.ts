@@ -299,12 +299,14 @@ export async function command(command: LiveCommand, signal?: AbortSignal) {
   const id = pending.get(signature) || clientId();
   pending.set(signature, id);
   try {
-    const next = await request("command", {
+    const commandPath = command.type.startsWith("tongzhou-") ? "tongzhou" : command.type === "avatar" ? "avatar" : null;
+    const options: RequestInit = {
       method: "POST",
       body: signature,
       headers: { "Idempotency-Key": id },
       signal,
-    });
+    };
+    const next = commandPath ? await fetchTimed(`/api/${commandPath}/command?activity=${encodeURIComponent(activity())}`, { ...options, credentials: "same-origin", cache: "no-store", headers: {"Content-Type":"application/json", ...options.headers} }) : await request("command", options);
     pending.delete(signature);
     accept(next, ticket);
     return next.state as DemoState;

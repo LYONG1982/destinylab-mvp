@@ -157,6 +157,14 @@ function validateParticipant(value: RecordValue): LiveCommand {
 function validateOperator(value: RecordValue): LiveCommand {
   const type = string(value.type, "命令类型", 40);
   switch (type) {
+    case "point-status": {
+      exactKeys(value, ["type", "pointId", "enabled"]);
+      return {
+        type,
+        pointId: id(value.pointId, "相遇点编号"),
+        enabled: boolean(value.enabled, "相遇点开放状态"),
+      };
+    }
     case "pause": {
       exactKeys(value, ["type", "value"]);
       return { type, value: boolean(value.value, "现场暂停状态") };
