@@ -1,0 +1,11 @@
+{
+  "name": "destinylab-migration-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "pg": "8.23.1",
+    "server-only": "0.0.1",
+    "tsx": "4.23.15"
+  }
+}

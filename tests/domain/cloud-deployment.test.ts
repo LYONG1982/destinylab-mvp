@@ -11,7 +11,6 @@ const env = {
   DESTINY_PUBLIC_URL: "https://uat.example.invalid",
   DESTINY_CLOUD_TEST_ORIGIN: "https://uat.example.invalid",
   DATABASE_URL: "postgres://user:pass@db/destiny_cloud_test",
-  DESTINY_DATABASE_SSL: "verify-full",
   DESTINY_SESSION_SECRET: "s".repeat(32),
   DESTINY_OPERATOR_PASSWORD_HASH: `scrypt$${"a".repeat(32)}$${"b".repeat(128)}`,
   DESTINY_ACTIVITY_ID: "cloudtest-guard",
@@ -20,7 +19,6 @@ const env = {
 test("cloud public runtime rejects insecure transport and acceptance test token", () => {
   validateCloudEnvironment(env);
   for (const change of [
-    { DESTINY_DATABASE_SSL: "disable" },
     { DESTINY_ALLOW_LAN_HTTP: "true" },
     { DESTINY_PUBLIC_URL: "http://example.invalid" },
     { DESTINY_PUBLIC_URL: "https://uat.example.invalid/path" },
@@ -53,24 +51,15 @@ test("test writes require origin, independent database and actual remote binding
     verifyCloudTestBinding(target, { ok: true, testBinding: wrongDb.binding }),
   );
 });
-test("pg TLS verifies certificates and cannot be overridden by URL options", () => {
-  assert.deepEqual(databaseOptions(env.DATABASE_URL, env).ssl, {
-    rejectUnauthorized: true,
-  });
-  assert.throws(() =>
-    databaseOptions(`${env.DATABASE_URL}?sslmode=no-verify`, env),
+test("database pool uses PostgreSQL connection-string defaults", () => {
+  assert.equal(
+    databaseOptions(env.DATABASE_URL, env).connectionString,
+    env.DATABASE_URL,
   );
   assert.throws(() =>
     databaseOptions(env.DATABASE_URL, {
       ...env,
       DESTINY_DATABASE_POOL_MAX: "100",
     }),
-  );
-  assert.equal(
-    databaseOptions(env.DATABASE_URL, {
-      ...env,
-      DESTINY_DATABASE_SSL: "disable",
-    }).ssl,
-    false,
   );
 });

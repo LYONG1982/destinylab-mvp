@@ -22,8 +22,6 @@ export function validateCloudEnvironment(env) {
     db.pathname.length < 2
   )
     throw new Error("CLOUD_DATABASE_INVALID");
-  if (!local && env.DESTINY_DATABASE_SSL !== "verify-full")
-    throw new Error("CLOUD_DATABASE_TLS_REQUIRED");
   if (
     !env.DESTINY_SESSION_SECRET ||
     env.DESTINY_SESSION_SECRET.length < 32 ||

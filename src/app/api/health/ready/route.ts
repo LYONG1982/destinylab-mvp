@@ -1,6 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { database } from "@/server/db";
 import { liveConfig } from "@/server/config";
+import { logServerError } from "@/server/logging";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -38,7 +39,13 @@ export async function GET(request: Request) {
       },
       { headers },
     );
-  } catch {
+  } catch (error) {
+    logServerError(
+      "health.ready.failed",
+      error,
+      { route: "/api/health/ready", method: "GET" },
+      { throttleMs: 30000 },
+    );
     return Response.json({ ok: false }, { status: 503, headers });
   }
 }

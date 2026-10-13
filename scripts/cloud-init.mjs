@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { validateCloudEnvironment } from "./cloud-validation.mjs";
+import { logServerError } from "./lib/error-log.mjs";
 
 try {
   validateCloudEnvironment(process.env);
@@ -8,9 +9,11 @@ try {
     decodeURIComponent(new URL(process.env.DATABASE_URL).pathname.slice(1))
   )
     throw new Error("DATABASE_CONFIRMATION_REQUIRED");
-} catch {
-  console.error(
-    "Initialization refused: validate configuration and explicitly name DESTINY_INIT_DATABASE.",
+} catch (error) {
+  logServerError(
+    "database.initialization.refused",
+    "configuration_validation",
+    error,
   );
   process.exit(1);
 }

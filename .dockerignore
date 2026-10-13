@@ -18,6 +18,8 @@
 !scripts/live-init.ts
 !scripts/lib/
 !scripts/lib/**
+!migration/
+!migration/**
 **/.env*
 **/*.pem
 **/*.key

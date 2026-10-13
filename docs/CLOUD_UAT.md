@@ -9,7 +9,7 @@
 - 实际 origin：`https://destinylab-uat.onrender.com`。当前配置仍连接测试库，20 身份演练失败后应用已暂停，不作为真人入口分享。
 - PG `destinylab-uat-pg`：PostgreSQL 17、Free 0.1 CPU/256MB/1GB；到期日 2026-11-09，应在到期前导出备份。免费档不升级续费。
 - 测试库 `destiny_cloud_test` 与真人库 `destiny_uat` 分开，运行角色不拥有建库/建角色权限；双向跨库连接拒绝已实测。两库初始业务记录为零。
-- 使用受限外部数据库地址，`verify-full` 实测 TLSv1.3 且证书可信；来源限制为应用实际出口范围，迁移/备份期间临时增加本机公网 /32，操作后移除。平台出口范围由多个租户共享，不代表网络独占。没有采用内网自签名免校验路径。
+- 上述 Render 验收期间曾使用受限外部数据库地址，并实测 `verify-full`、TLSv1.3 和可信证书；这是当时的部署记录，不代表当前代码仍强制该模式。当前应用按 `DATABASE_URL` 和 PostgreSQL 驱动默认行为连接数据库。
 - 密钥、CLI 凭据、备份及浏览器存储均在仓库外受保护目录；CLI 遥测关闭。不要将 API 测试异常中的 Cookie 或请求头直接复制到普通日志/证据。
 
 技术演练配置可设置 `DESTINY_CLOUD_SOAK_SECONDS=1800`（允许 1800–3600，缺省 0）。保持 20 个上下文，每约 30 秒核对改答同步、人数、相遇数和轮换参与身份，生成受保护 `soak-progress.json`。公网基础流程时限 10 分钟，加上选定持续时间；超时调整不改变延迟观测目标。
@@ -35,9 +35,9 @@ docker build --platform linux/amd64 --target runner -t destinylab-uat:VERSION .
 docker build --platform linux/amd64 --target migration -t destinylab-migrate:VERSION .
 ```
 
-镜像不包含 .env、数据库备份或测试输出；运行时通过平台受保护变量注入。运行镜像使用 node 非特权用户，监听 0.0.0.0:8080，PORT 可由平台指定。必要变量见 `.env.example`。公网入口必须 HTTPS；`DESTINY_DATABASE_SSL=verify-full`；连接池建议先 6，允许 1–12；私有 CA 通过只读文件挂载并设置 `DESTINY_DATABASE_CA_FILE`，不能设置 rejectUnauthorized=false，也不能通过 DATABASE_URL 中 sslmode 覆盖明确 TLS 配置。
+镜像不包含 .env、数据库备份或测试输出；运行时通过平台受保护变量注入。运行镜像使用 node 非特权用户，监听 0.0.0.0:8080，PORT 可由平台指定。必要变量见 `.env.example`。公网入口必须 HTTPS；数据库连接由 `DATABASE_URL` 和 PostgreSQL 驱动默认行为决定，应用不再要求 `DESTINY_DATABASE_SSL` 或单独的 CA 文件变量。数据库服务若要求 TLS，应按服务商提供的连接串参数配置，并在实际 CCE 网络中验证连接；连接池建议先 6，允许 1–12。
 
-初始化与应用启动分开。管理员先建立独立数据库及迁移账号；`DESTINY_INIT_DATABASE` 必须准确等于配置中数据库名，再用 migration 目标单独执行。初始化只增量建表和创建零业务活动，已有活动保持不变。初始化不创建参与者、不导入 Mock，也不设置历史次数。业务账号仅授予本库本 schema 必要的表 SELECT/INSERT/UPDATE/DELETE 和序列权限；不授予 CREATEDB/CREATEROLE，不授予其他业务库连接及对象权限。云资源就绪后实际核验权限，而非仅依赖配置说明。
+初始化与应用启动分开。管理员先建立独立数据库及应用账号；当前部署选择由 `destinylab_app` 同时执行初始化并供应用运行，因此该账号应拥有目标数据库。`DESTINY_INIT_DATABASE` 必须准确等于配置中的数据库名，再用 migration 目标单独执行。初始化只增量建表和创建零业务活动，已有活动保持不变。初始化不创建参与者、不导入 Mock，也不设置历史次数。不要授予该账号 `CREATEDB`、`CREATEROLE` 或其他数据库权限。
 
 ## 两个数据库、分阶段发布
 

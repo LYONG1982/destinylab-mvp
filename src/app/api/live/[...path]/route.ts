@@ -1,5 +1,6 @@
 import { database } from "@/server/db";
 import { liveConfig } from "@/server/config";
+import { logServerError } from "@/server/logging";
 import { activityId, execute, HttpError, join, logout, operatorLogin,
   sessionCookie, sessionFor, snapshot } from "@/server/service";
 import type { Audience } from "@/lib/api/live-types";
@@ -10,9 +11,20 @@ type Context = { params: Promise<{ path: string[] }> };
 const headers = { "Cache-Control": "no-store, private", "X-Content-Type-Options": "nosniff", "Vary": "Cookie" };
 const json = (data: unknown, status = 200, extra: Record<string, string> = {}) =>
   Response.json(data, { status, headers: { ...headers, ...extra } });
-function fail(error: unknown) {
-  if (error instanceof HttpError) return json({ error: error.message }, error.status);
+function fail(error: unknown, method: string) {
+  if (error instanceof HttpError) {
+    if (error.status >= 500)
+      logServerError("api.live.failed", error, {
+        route: "/api/live/[...path]",
+        method,
+      });
+    return json({ error: error.message }, error.status);
+  }
   // Database connection strings, query errors and stack traces never cross this boundary.
+  logServerError("api.live.failed", error, {
+    route: "/api/live/[...path]",
+    method,
+  });
   return json({ error: "服务暂不可用，请稍后重试。" }, 503);
 }
 function enabled() {
@@ -86,7 +98,17 @@ export async function GET(request: Request, context: Context) {
             } else controller.enqueue(encoder.encode(": heartbeat\n\n"));
             if (Date.now() - started > 25000) return stop();
             timer = setTimeout(tick, 750);
-          } catch { stop(); }
+          } catch (error) {
+            if (!request.signal.aborted && !stopped &&
+                (!(error instanceof HttpError) || error.status >= 500))
+              logServerError("api.live.sse_poll_failed", error, {
+                route: "/api/live/events",
+                method: "GET",
+                activity,
+                audience: role,
+              });
+            stop();
+          }
         };
         controller.enqueue(encoder.encode("retry: 1000\n\n")); void tick();
       },
@@ -94,7 +116,7 @@ export async function GET(request: Request, context: Context) {
     });
     return new Response(stream, { headers: { ...headers, "Content-Type": "text/event-stream",
       "X-Accel-Buffering": "no", "Connection": "keep-alive" } });
-  } catch (e) { return fail(e); }
+  } catch (e) { return fail(e, "GET"); }
 }
 export async function POST(request: Request, context: Context) {
   try {
@@ -124,5 +146,5 @@ export async function POST(request: Request, context: Context) {
     if (Object.keys(input).some((k) => !["command", "epoch"].includes(k))) throw new HttpError(400, "请求包含无效字段。");
     await execute(activity, session, input.command, request.headers.get("idempotency-key") || "", input.epoch);
     return json(await snapshot(activity, role, session));
-  } catch (e) { return fail(e); }
+  } catch (e) { return fail(e, "POST"); }
 }
