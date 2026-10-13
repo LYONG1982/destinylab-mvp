@@ -1,6 +1,30 @@
 # 遇见 · 缘分实验室
 
-微信小程序开发候选版 `weapp-v1.4.0-rc.1`。用户端采用 Taro/React 原生小程序，运营后台、同舟机构后台和现场大屏保留 Web，共用 Next.js 服务与 PostgreSQL。
+微信小程序开发候选工程。用户端采用 Taro/React 原生小程序，运营后台、同舟机构后台和现场大屏保留 Web，共用 Next.js 服务与 PostgreSQL。
+
+## GitHub 与当前版本
+
+最新源码位于 [`codex/weapp-release-20261013`](https://github.com/LYONG1982/destinylab-mvp/tree/codex/weapp-release-20261013)，[草稿 PR #1](https://github.com/LYONG1982/destinylab-mvp/pull/1) 尚未合并默认分支。统一档案业务提交 `d42f156` 已于 2026-10-13 部署本地 UAT，并完成迁移至 **014**。
+
+[GitHub rc.1 预发布包](https://github.com/LYONG1982/destinylab-mvp/releases/tag/weapp-v1.4.0-rc.1) 保留原版本：镜像仅包含迁移至 013，不含后续统一档案优化。最新源码与历史下载包应分别核验；GitHub 发布不代表已部署公网或已上架微信。
+
+## 本地 UAT 入口与用途
+
+手机和 Mac 连接同一 Wi-Fi，Mac 保持运行。地址是 2026-10-13 的本机局域网地址，网络变化后需要重新核对；这些链接不是公网地址。
+
+| 入口 | 说明 | 本地地址 |
+| --- | --- | --- |
+| 手机报名 | 报名、邀请函、六位凭证、四站档案与相册 | [进入报名](http://192.168.43.70:3216/mobile/register?activity=meet) |
+| 活动遇见 | 答题、匹配、邀请与见面 | [进入活动](http://192.168.43.70:3216/mobile/01-start?activity=meet) |
+| 同舟后台 | 双来源统一档案、跟进备注、相册及个人主页发布 | [进入同舟后台](http://192.168.43.70:3216/agency/tongzhou?activity=meet) |
+| 运营报名管理 | 核验报名凭证、工作人员签到 | [报名管理与签到](http://192.168.43.70:3216/admin/registrations?activity=meet) |
+| 运营总览 | 现场数据与 Meet01–Meet20 配置 | [现场总览](http://192.168.43.70:3216/admin/dashboard?activity=meet) |
+| 现场大屏 | 现场状态与互动展示 | [主大屏](http://192.168.43.70:3216/screen?activity=meet) |
+| 遇见卡牌墙 | 参与者卡牌与偏好展示 | [卡牌墙](http://192.168.43.70:3216/display/member-wall?activity=meet) |
+
+个人专属主页由同舟后台发布后生成唯一 `/tongzhou/p/<slug>` 链接，使用实际发布返回的地址。账号密码仅存受保护配置，不放入代码或本说明。
+
+更多运营页面、互动流程子页面和原生小程序路径见 [全部入口及使用条件](docs/weapp/06-uat-entrypoints.md)。
 
 ## 功能与入口
 
@@ -35,6 +59,6 @@ npm run build:weapp --prefix miniapp
 
 [工程师部署手册](deploy/README.md) · [配置模板](.env.example) · [内容检测和回调](docs/weapp/10-content-security.md) · [实施状态](docs/weapp/08-implementation-status.md) · [依赖风险](docs/weapp/11-dependency-review.md)
 
-统一应用镜像同时提供 API、H5、后台、机构与大屏；数据库单独部署。增量迁移 001–013 由独立迁移镜像显式执行，不在应用启动时自动改库。配置、AppSecret、数据库备份和用户照片不进入 Git 或发布包。
+统一应用镜像同时提供 API、H5、后台、机构与大屏；数据库单独部署。最新源码的增量迁移 001–014 由对应版本独立迁移镜像显式执行，不在应用启动时自动改库。配置、AppSecret、数据库备份和用户照片不进入 Git 或发布包。
 
 代码与本地验证可独立交付。实际 AppID、主体、服务类目尚未确定，微信开发者工具、体验版、iOS/Android 真机与公网验收未完成；GitHub 开发预发布不等于微信上架。具体本地地址是时点信息，以 [UAT 入口](docs/weapp/06-uat-entrypoints.md) 为准。历史验收大目录未包含在发布源码中。
