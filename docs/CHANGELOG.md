@@ -1,5 +1,10 @@
 # 变更记录
 
+## 2026-10-14 · 缩小数据库迁移镜像依赖
+
+- 为一次性迁移镜像增加独立 `migration/package.json` 与锁文件，只安装 `pg`、`server-only` 和 `tsx`，不再继承包含 Next.js、React、图像处理和测试工具的完整应用依赖层。
+- 迁移阶段继续保留已有 `scripts/` 运维工具；应用 runner 和 builder 依赖保持不变。
+
 ## 2026-10-14 · PostgreSQL 连接参数
 
 - 移除 `DESTINY_DATABASE_SSL` 强制校验和 `DESTINY_DATABASE_CA_FILE` 文件加载；连接池只接收 `DATABASE_URL` 与既有池参数，由 PostgreSQL 驱动解析连接串参数并采用默认行为。

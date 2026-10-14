@@ -9,8 +9,14 @@ ENV NEXT_TELEMETRY_DISABLED=1 DESTINY_STANDALONE=true DESTINY_DATA_MODE=server
 COPY . .
 RUN npm run build
 
+# Keep the one-shot migration image limited to the packages it executes.
+FROM node:22.22.1-bookworm-slim AS migration-dependencies
+WORKDIR /app
+COPY migration/package.json migration/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
 # Migration is a separate explicit operation, never part of application startup.
-FROM dependencies AS migration
+FROM migration-dependencies AS migration
 ENV NODE_ENV=production DESTINY_DATA_MODE=server
 COPY src ./src
 COPY tsconfig.json ./
