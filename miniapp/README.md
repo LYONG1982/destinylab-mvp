@@ -11,7 +11,7 @@ TARO_APP_API_ORIGIN=http://127.0.0.1:3215 TARO_APP_ACTIVITY_ID=cloudtest-mini np
 npm run typecheck
 ```
 
-在微信开发者工具中导入 **miniapp 目录**（含 project.config.json，miniprogramRoot 指向 dist/）。当前 touristappid 只用于本地项目检查，不具备真实微信登录能力。实际 AppID、主体及类目均待确认，不能将当前构建视为体验版。
+在微信开发者工具中导入 **miniapp 目录**（含 project.config.json，miniprogramRoot 指向 dist/）。项目配置已设置 AppID `wxb6109798b16b5b12`。正式发布构建还需通过 `TARO_APP_ID` 提供相同 AppID，并配置 API 域名、隐私主体与联系渠道；配置 AppID 本身不代表已完成微信登录或体验版验收。
 
 未配置 API 地址的构建会明确提示并禁用登录，不提供虚构登录或演示身份后门。即使配置了本机 API，真实换码仍需有效 AppID 和服务端 AppSecret。AppSecret、业务令牌和数据库连接信息不进入客户端配置、Git 或构建产物。
 

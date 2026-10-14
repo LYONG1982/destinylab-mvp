@@ -1,5 +1,5 @@
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { resolve, relative } from "node:path";
+import { resolve, relative, sep } from "node:path";
 import { createHash } from "node:crypto";
 export async function checkMiniArtifact(directory) {
   const root = resolve(directory),
@@ -12,7 +12,7 @@ export async function checkMiniArtifact(directory) {
       else if (entry.name !== "artifact-manifest.json") {
         const bytes = await readFile(full);
         files.push({
-          path: relative(root, full),
+          path: relative(root, full).split(sep).join("/"),
           bytes: (await stat(full)).size,
           sha256: createHash("sha256").update(bytes).digest("hex"),
         });
