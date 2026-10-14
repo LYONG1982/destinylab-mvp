@@ -3,6 +3,8 @@
 版本：uat-20261011-192336。目标：Linux x86_64 / amd64，Docker Engine 与 Docker Compose v2。
 这是包含最新同舟后台和会员主页 V1.1 的 UAT 候选包，不代表正式上线或微信小程序发布完成。
 
+版本提示：本手册描述的是上述历史交付包，其环境要求只对应该包内镜像。当前分支源码已改为由 `DATABASE_URL` 和 PostgreSQL 驱动默认行为决定数据库连接；须用当前源码重新构建镜像后才适用，参见 [当前 UAT 部署说明](CLOUD_UAT.md)。
+
 ## 包内内容
 
 - images/application.tar.gz：统一应用镜像，包含后端 API、手机 Web、大屏、运营后台、同舟后台及公开主页。
