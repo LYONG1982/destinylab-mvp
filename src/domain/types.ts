@@ -89,6 +89,7 @@ export interface DemoState {
   wallAt: number;
   scenario: string;
   activityPaused: boolean;
+  fieldOpen?: boolean;
   participants: Participant[];
   invitations: Invitation[];
   points: MeetPoint[];
@@ -159,7 +160,7 @@ export type Command =
   | {
       type: "participant";
       participantId: string;
-      action: "pause" | "resume" | "leave" | "hint";
+      action: "pause" | "resume" | "leave" | "return" | "hint";
     }
   | { type: "help-status"; helpId: string; status: HelpRequest["status"] }
   | { type: "release"; pointId: string }

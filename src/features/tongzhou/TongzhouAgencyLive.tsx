@@ -16,6 +16,7 @@ import { PublicProfileCard } from "./PublicProfileCard";
 import { ProfileShare } from "./ProfileShare";
 import { submissionTime } from "./TongzhouDetails";
 import styles from "./agency.module.css";
+import { ActivitySwitch } from "@/features/admin/ActivityManagement";
 const SOURCE_LABELS: Record<string, string> = {
   registration: "报名入口",
   encounter: "活动遇见",
@@ -331,6 +332,7 @@ export function TongzhouAgencyLive() {
       ) : (
         <>
           <header className={styles.topbar}>
+            <ActivitySwitch activity={activity()} agency />
             <div className={styles.brand}>
               同舟婚恋<small>机构工作台 · {activity()}</small>
             </div>

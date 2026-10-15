@@ -1,0 +1,319 @@
+.admin-main {
+  padding: 28px 32px;
+}
+.admin-title {
+  margin-bottom: 20px;
+}
+.admin-title h1 {
+  font-size: 26px;
+}
+.admin-topbar {
+  min-height: 72px;
+}
+.admin-topbar > div {
+  gap: 16px;
+}
+.admin-title .eyebrow {
+  display: none;
+}
+.activity-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.activity-switch select {
+  max-width: 210px;
+  padding: 8px;
+  border: 1px solid #e4d9d3;
+  border-radius: 8px;
+  background: #fff;
+}
+.activity-management {
+  display: grid;
+  gap: 20px;
+}
+.management-panel {
+  padding: 24px;
+}
+.management-panel h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.management-panel p {
+  font-size: 14px;
+  color: #675e5a;
+  margin-bottom: 16px;
+}
+.management-panel form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.management-panel input:not([type="checkbox"]) {
+  padding: 12px;
+  border: 1px solid #d8ccc5;
+  border-radius: 8px;
+}
+.entry-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.entry-cards article {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #e7ddd6;
+  border-radius: 14px;
+  padding: 24px;
+}
+.entry-cards h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.entry-cards p,
+.entry-cards small {
+  font-size: 13px;
+  color: #71645d;
+}
+.entry-cards a {
+  display: block;
+  color: #800020;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.entry-cards img {
+  object-fit: contain;
+  align-self: center;
+}
+.activity-list > div {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+.activity-list span {
+  font-size: 13px;
+  color: #766;
+}
+.field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.field-actions > .notice {
+  width: 100%;
+}
+.danger-zone {
+  border-color: #b98a92;
+}
+.danger-zone button {
+  color: #800020;
+}
+.field-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: #20141670;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.field-confirm > div {
+  max-width: 560px;
+  background: #fffaf7;
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 20px 80px #0003;
+}
+.field-confirm h2 {
+  font-size: 22px;
+}
+.field-confirm p {
+  line-height: 1.7;
+  margin: 16px 0;
+}
+.field-confirm label {
+  display: block;
+  margin: 16px 0;
+}
+.field-confirm input:not([type="checkbox"]) {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+}
+.field-confirm button {
+  margin-right: 12px;
+}
+.participant-selection input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #800020;
+}
+.empty-list {
+  padding: 24px;
+  color: #766;
+}
+.reg-admin-summary {
+  min-height: 64px;
+  padding: 16px 20px !important;
+  gap: 32px !important;
+}
+.reg-admin-summary strong {
+  font-size: 26px !important;
+}
+.reg-admin-toolbar {
+  gap: 12px !important;
+  margin: 16px 0 !important;
+}
+.reg-admin-toolbar input {
+  min-height: 44px;
+}
+.reg-admin-toolbar select {
+  padding: 10px;
+  border: 1px solid #dfd4cc;
+  border-radius: 8px;
+  background: #fff;
+}
+.reg-admin .data-table th {
+  position: sticky;
+  top: 0;
+  font-size: 12px;
+}
+.reg-admin .data-table td {
+  font-size: 14px;
+}
+.reg-admin .table-scroll {
+  max-height: 65vh;
+}
+.reg-sync {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #746962;
+  margin: 8px 0 14px;
+}
+.reg-admin .reg-admin-hint {
+  font-size: 13px;
+}
+.reg-admin-summary span {
+  font-size: 13px;
+}
+.reg-admin-config {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e7ddd6;
+  border-radius: 14px;
+}
+.reg-admin-config .reg-admin-qr {
+  display: none;
+}
+.reg-admin-config summary {
+  font-size: 18px;
+  font-weight: 600;
+}
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid #800020;
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .admin-main {
+    padding: 24px;
+  }
+  .entry-cards {
+    grid-template-columns: 1fr;
+  }
+  .admin-topbar {
+    padding: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .reg-admin-summary {
+    gap: 16px !important;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 800px) {
+  .admin-main {
+    padding: 16px;
+  }
+  .admin-title h1 {
+    font-size: 24px;
+  }
+  .reg-admin-toolbar {
+    flex-wrap: wrap;
+  }
+  .reg-admin-toolbar input {
+    width: 100%;
+  }
+  .entry-cards article {
+    padding: 16px;
+  }
+  .entry-cards img {
+    width: 110px;
+    height: 110px;
+  }
+  .admin-topbar > div {
+    flex-wrap: wrap;
+  }
+  .data-table {
+    min-width: 760px;
+  }
+}
+
+/* Keep narrow admin pages inside the viewport; tables scroll within their panel. */
+.admin-shell {
+  min-width: 0;
+}
+.admin-topbar {
+  height: auto;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.admin-nav {
+  overflow-y: auto;
+}
+.admin-nav > a:last-child {
+  margin-top: 0;
+}
+.admin-main,
+.reg-admin,
+.management-panel,
+.panel {
+  min-width: 0;
+}
+.activity-list > div {
+  flex-wrap: wrap;
+}
+.admin-topbar .button,
+.activity-management .button,
+.field-actions .button {
+  width: auto;
+  flex-shrink: 0;
+}
+.admin-topbar .button {
+  min-height: 40px;
+}
+.admin-topbar > div:last-child {
+  flex-shrink: 0;
+}
+.activity-list {
+  max-height: 380px;
+  overflow-y: auto;
+  margin-top: 16px;
+}
+.field-confirm .notice {
+  margin: 12px 0;
+}

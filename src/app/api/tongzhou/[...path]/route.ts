@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+import { fieldActivities } from "@/server/field-service";
 import {
   galleryPhoto,
   galleryAction,
@@ -76,6 +78,7 @@ export async function GET(request: Request, context: Context) {
           },
         },
       );
+    if (path === "activities") return json(await fieldActivities());
     if (path !== "records") throw new HttpError(404, "入口不存在。");
     const query = url.searchParams.get("q") || "",
       page = Number(url.searchParams.get("page") || 1);
@@ -141,6 +144,28 @@ export async function POST(request: Request, context: Context) {
       const token = await agencyLogin(activity, input);
       return json({ ok: true }, 200, {
         "Set-Cookie": sessionCookie(activity, "agency", token, 28800),
+      });
+    }
+    if (path === "switch") {
+      await agencySession(request, activity);
+      const target = activityId(
+        typeof input.target === "string" ? input.target : "",
+      );
+      if (
+        !(
+          await database().query("SELECT id FROM dl_activities WHERE id=$1", [
+            target,
+          ])
+        ).rowCount
+      )
+        throw new HttpError(404, "活动不存在。");
+      const token = randomBytes(32).toString("base64url");
+      await database().query(
+        "INSERT INTO dl_agency_sessions(token_hash,activity_id,organization_id,expires_at) VALUES($1,$2,'tongzhou',now()+interval '8 hours')",
+        [digest(token), target],
+      );
+      return json({ ok: true }, 200, {
+        "Set-Cookie": sessionCookie(target, "agency", token, 8 * 3600),
       });
     }
     if (path === "logout") {

@@ -1,7 +1,5 @@
-import {avatarSource, allowedAvatarSource} from "@/domain/photo";
-import {
-  validAvatar,
-} from "@/config/avatars";
+import { avatarSource, allowedAvatarSource } from "@/domain/photo";
+import { validAvatar } from "@/config/avatars";
 import type { DemoState, Participant } from "@/domain/types";
 import type { MeetPair, MeetParticipant } from "./types";
 
@@ -70,6 +68,7 @@ export function projectMeetPairs(
   const old = new Map(previous?.invitations.map((i) => [i.id, i]) ?? []);
   const eligible = (p: Participant | undefined): p is Participant =>
     !!p &&
+    p.present &&
     p.profileComplete &&
     !!p.name.trim() &&
     validAvatar(p.avatarId, p.gender);

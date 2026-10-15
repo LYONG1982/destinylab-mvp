@@ -154,10 +154,7 @@ async function record(
       [r.activity_id],
     )
   ).rows[0]?.epoch;
-  const effectiveStatus =
-    r.status === "checked_in" && r.checkin_epoch !== epoch
-      ? "registered"
-      : r.status;
+  const effectiveStatus = r.status;
   const base = `/api/registration/photo?activity=${r.activity_id}${operator ? "&operator=1" : ""}`;
   return {
     id: r.id,
@@ -322,7 +319,7 @@ export async function registrationWrite(
   await rateLimit(`registration-write:${activity}:${hash}`, 40);
   try {
     return await transaction(async (c) => {
-      await load(c, activity, true);
+      const state = await load(c, activity, true);
       let id = await owner(c, activity, hash);
       if (!(await action(c, activity, hash, commandId, input, "save")))
         return record(c, await row(c, activity, id!));
@@ -395,6 +392,21 @@ export async function registrationWrite(
           birthDate,
         ],
       );
+      // The same verified WeChat identity can register after joining the field.
+      // Never infer identity from a phone number or copy private fields to the screen.
+      if (hash.startsWith("mini:")) {
+        const linked = (
+          await c.query(
+            "SELECT actor FROM dl_wechat_participants WHERE identity_id=$1 AND activity_id=$2 AND epoch=$3",
+            [hash.slice(5), activity, state.epoch],
+          )
+        ).rows[0];
+        if (linked && state.participants.some((p) => p.id === linked.actor))
+          await c.query(
+            "UPDATE dl_registrations SET participant_id=$2,participant_epoch=$3 WHERE id=$1",
+            [id, linked.actor, state.epoch],
+          );
+      }
       const r = await row(c, activity, id);
       await projectAgency(c, r);
       return record(c, r);
@@ -634,30 +646,50 @@ export async function registrationList(
   activity: string,
   q: string,
   page: number,
+  status = "",
 ) {
-  if (q.length > 80 || !Number.isSafeInteger(page) || page < 1 || page > 10000)
+  if (
+    q.length > 80 ||
+    !Number.isSafeInteger(page) ||
+    page < 1 ||
+    page > 10000 ||
+    !["", "registered", "checked_in", "cancelled"].includes(status)
+  )
     throw new HttpError(400, "查询无效。");
-  const where =
-    "activity_id=$1 AND (nickname ILIKE $2 OR fields->>'phone'=$3 OR receipt=$4 OR legacy_receipt=$4)";
-  const params = [activity, "%" + q + "%", q, normalizeRegistrationReceipt(q)];
-  const list = await database().query(
-    `SELECT id,nickname,fields->>'gender' AS gender,fields->>'birthYear' AS birth_year,fields->>'city' AS city,substring(fields->>'phone',1,3)||'****'||right(fields->>'phone',4) AS phone,status,created_at,agency_allowed FROM dl_registrations WHERE ${where} ORDER BY created_at DESC LIMIT 20 OFFSET $5`,
-    [...params, (page - 1) * 20],
-  );
-  const total = await database().query(
-    `SELECT count(*)::int AS n FROM dl_registrations WHERE ${where}`,
-    params,
-  );
-  const stats = await database().query(
-    "SELECT count(*)::int AS total,count(*) FILTER(WHERE status='checked_in')::int AS checked_in,count(*) FILTER(WHERE fields->>'gender'='男')::int AS male,count(*) FILTER(WHERE fields->>'gender'='女')::int AS female FROM dl_registrations WHERE activity_id=$1 AND status<>'cancelled'",
-    [activity],
-  );
-  return {
-    items: list.rows,
-    total: total.rows[0].n,
-    stats: stats.rows[0],
-    config: await registrationConfig(activity),
-  };
+  return transaction(async (c) => {
+    await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+    const where =
+      "activity_id=$1 AND (nickname ILIKE $2 OR fields->>'phone'=$3 OR receipt=$4 OR legacy_receipt=$4) AND ($5='' OR status=$5)";
+    const params = [
+      activity,
+      "%" + q + "%",
+      q,
+      normalizeRegistrationReceipt(q),
+      status,
+    ];
+    const list = await c.query(
+      `SELECT id,nickname,fields->>'gender' AS gender,fields->>'birthYear' AS birth_year,fields->>'city' AS city,substring(fields->>'phone',1,3)||'****'||right(fields->>'phone',4) AS phone,status,created_at,agency_allowed FROM dl_registrations WHERE ${where} ORDER BY created_at DESC,id LIMIT 20 OFFSET $6`,
+      [...params, (page - 1) * 20],
+    );
+    const total = await c.query(
+      `SELECT count(*)::int AS n FROM dl_registrations WHERE ${where}`,
+      params,
+    );
+    const stats = await c.query(
+      "SELECT count(*)::int AS total,count(*) FILTER(WHERE status='checked_in')::int AS checked_in,count(*) FILTER(WHERE fields->>'gender'='男')::int AS male,count(*) FILTER(WHERE fields->>'gender'='女')::int AS female FROM dl_registrations WHERE activity_id=$1 AND status<>'cancelled'",
+      [activity],
+    );
+    const config = await c.query(
+      "SELECT config FROM dl_registration_config WHERE activity_id=$1",
+      [activity],
+    );
+    return {
+      items: list.rows,
+      total: total.rows[0].n,
+      stats: stats.rows[0],
+      config: config.rows[0]?.config || DEFAULT_REGISTRATION_CONFIG,
+    };
+  });
 }
 export async function registrationDetail(activity: string, id: string) {
   return transaction(async (c) => record(c, await row(c, activity, id), true));
@@ -730,7 +762,7 @@ export async function registrationEnter(
   });
 }
 
-// Caller holds a transaction; mini and H5 share exactly the same admission rules.
+// Optional explicit H5 registration-to-field binding; check-in is not a field prerequisite.
 export async function registrationEnterActor(
   c: PoolClient,
   activity: string,
@@ -745,11 +777,9 @@ export async function registrationEnterActor(
   const r = await row(c, activity, id);
   if (expectedNickname !== undefined && r.nickname !== expectedNickname)
     throw new HttpError(409, "昵称已更新，请重新进入互动以完成检测。");
-  if (r.status !== "checked_in" || r.checkin_epoch !== before.epoch)
-    throw new HttpError(
-      409,
-      "请先由现场工作人员核验签到；活动重置后需重新签到。",
-    );
+  if (r.status === "cancelled")
+    throw new HttpError(409, "报名已取消，请使用独立现场入口或联系工作人员。");
+  if (before.fieldOpen === false) throw new HttpError(409, "现场尚未开放。");
   let actor = r.participant_epoch === before.epoch ? r.participant_id : null;
   if (actor && !before.participants.some((p) => p.id === actor))
     throw new HttpError(409, "参与状态已变化，请联系工作人员。");

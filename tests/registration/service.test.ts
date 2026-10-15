@@ -31,9 +31,11 @@ import {
 } from "../../src/server/registration-service";
 import { agencyDetail, agencyList } from "../../src/server/agency-service";
 if (
-  !["/destiny_wall_test", "/destiny_weapp_release_test"].includes(
-    new URL(process.env.DATABASE_URL!).pathname,
-  ) ||
+  ![
+    "/destiny_wall_test",
+    "/destiny_weapp_release_test",
+    "/destiny_admin_20261015_test",
+  ].includes(new URL(process.env.DATABASE_URL!).pathname) ||
   !["127.0.0.1", "localhost"].includes(
     new URL(process.env.DATABASE_URL!).hostname,
   )
@@ -188,10 +190,8 @@ test("registration isolated lifecycle, consent projection, uploads, idempotency,
   const data = () =>
     db.query("SELECT state FROM dl_activities WHERE id=$1", [activity]);
   assert.equal((await data()).rows[0].state.participants.length, 0);
-  await assert.rejects(
-    registrationEnter(activity, s.token_hash, request(cookie)),
-    /核验签到/,
-  );
+  // Registration does not implicitly create a field participant.
+  assert.equal((await data()).rows[0].state.participants.length, 0);
   const other = await registrationSession(request(), activity, true);
   await assert.rejects(
     registrationWrite(activity, other.token_hash, input, randomUUID()),
@@ -520,13 +520,10 @@ test("registration isolated lifecycle, consent projection, uploads, idempotency,
     activity,
     JSON.stringify(reset),
   ]);
-  await assert.rejects(
-    registrationEnter(activity, s.token_hash, request(cookie)),
-    /重新签到/,
-  );
+  // A new field round leaves the independent check-in record untouched.
   assert.equal(
     (await registrationView(activity, s.token_hash)).record?.effectiveStatus,
-    "registered",
+    "checked_in",
   );
   await registrationManage(
     activity,
@@ -626,7 +623,7 @@ test("registration isolated lifecycle, consent projection, uploads, idempotency,
   );
   await assert.rejects(
     registrationEnter(activity, third.token_hash, request()),
-    /核验签到/,
+    /报名已取消/,
   );
   if (process.env.REGISTRATION_TEST_DIR)
     writeFileSync(

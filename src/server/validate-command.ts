@@ -9,7 +9,13 @@ type RecordValue = Record<string, unknown>;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/;
 const GENDERS = ["male", "female"] as const;
 const NEXT_CHOICES = ["WALK", "MERCHANT", "END"] as const;
-const PARTICIPANT_ACTIONS = ["pause", "resume", "leave", "hint"] as const;
+const PARTICIPANT_ACTIONS = [
+  "pause",
+  "resume",
+  "leave",
+  "return",
+  "hint",
+] as const;
 const HELP_STATUSES = ["ACK", "RESOLVED"] as const;
 
 function invalid(message: string): never {

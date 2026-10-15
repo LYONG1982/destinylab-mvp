@@ -19,6 +19,10 @@ export async function GET(request: Request) {
       [activity],
     );
     if (!result.rows[0]) throw new Error("ACTIVITY_MISSING");
+    stage = "field_management_schema_check";
+    await database().query(
+      "SELECT dl_wechat_participants.epoch FROM dl_field_archives,dl_field_actions,dl_field_removed,dl_agency_retained_photos,dl_wechat_participants LIMIT 0",
+    );
     if (process.env.DESTINY_TONGZHOU_ENABLED === "true") {
       stage = "agency_configuration_validation";
       if (

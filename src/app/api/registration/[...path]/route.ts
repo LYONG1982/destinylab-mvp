@@ -47,6 +47,7 @@ export async function GET(request: Request, context: Context) {
               activity,
               url.searchParams.get("q") || "",
               Number(url.searchParams.get("page") || 1),
+              url.searchParams.get("status") || "",
             ),
       );
     }

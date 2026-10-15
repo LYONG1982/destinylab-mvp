@@ -96,6 +96,17 @@ export async function GET(request: Request, context: Context) {
         },
       });
     }
+    if (path === "enter") {
+      const identity = await miniIdentity(request, activity);
+      await body(request);
+      return json(
+        await snapshot(
+          activity,
+          "participant",
+          await miniEnter(identity, activity),
+        ),
+      );
+    }
     if (path.startsWith("registration/")) {
       registrationEnabled();
       const who = `mini:${await miniIdentity(request, activity)}`;
@@ -166,6 +177,17 @@ export async function POST(request: Request, context: Context) {
       await miniIdentity(request, activity);
       await miniLogout(request, activity);
       return json({ ok: true });
+    }
+    if (path === "enter") {
+      const identity = await miniIdentity(request, activity);
+      await body(request);
+      return json(
+        await snapshot(
+          activity,
+          "participant",
+          await miniEnter(identity, activity),
+        ),
+      );
     }
     if (path.startsWith("registration/")) {
       registrationEnabled();

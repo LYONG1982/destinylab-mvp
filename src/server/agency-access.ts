@@ -29,12 +29,20 @@ export async function agencyCurrent(
   const participant = state.participants.find(
     (p) => actors.includes(p.id) && p.photo?.id,
   );
+  const retained = participant
+    ? null
+    : (
+        await client.query(
+          "SELECT a.actor,a.id FROM dl_agency_retained_photos a WHERE a.activity_id=$1 AND a.actor=ANY($2::text[]) ORDER BY a.created_at DESC LIMIT 1",
+          [activity, actors],
+        )
+      ).rows[0];
   return {
     sourceActor: r.rows[0].source_actor as string,
     sources: r.rows[0].sources as string[],
     latestSource: r.rows[0].latest_source as string,
-    photoActor: participant?.id || actor,
+    photoActor: participant?.id || retained?.actor || actor,
     record: r.rows[0].record as TongzhouSubmission,
-    photo: participant?.photo?.id || null,
+    photo: participant?.photo?.id || retained?.id || null,
   };
 }

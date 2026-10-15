@@ -34,19 +34,27 @@ import {
 } from "@/components/ui";
 import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
 import { Motion } from "@/components/motion/Motion";
-import { LiveGate, LiveOperatorPanel } from "@/components/LiveControls";
+import { LiveGate } from "@/components/LiveControls";
 
 import { MemberWallSettings } from "@/features/member-wall/MemberWallSettings";
 
 import { RegistrationAdmin } from "@/features/registration/RegistrationAdmin";
 
+import {
+  ActivityManagement,
+  ActivitySwitch,
+  FieldActions,
+} from "./ActivityManagement";
+import * as live from "@/lib/api/live-client";
+import "./management.css";
 const NAV = [
   ["registrations", "活动报名", "people"],
   ["dashboard", "现场总览", "grid"],
   ["encounters", "邀请相遇", "heart"],
-  ["participants", "参与用户", "people"],
+  ["participants", "现场参与者", "people"],
   ["partners", "相遇伙伴", "coffee"],
   ["member-wall", "遇见卡牌墙", "screen"],
+  ["activities", "活动管理", "grid"],
 ];
 export function AdminApp({ page }: { page: string }) {
   const { state, problem } = useDemo();
@@ -90,7 +98,7 @@ function AdminView({
         {NAV.map(([href, label, icon]) => (
           <Link
             key={href}
-            href={`/admin/${href}`}
+            href={`/admin/${href}?activity=${encodeURIComponent(s.live?.activity || "meet")}`}
             className={page === href ? "active" : ""}
             aria-current={page === href ? "page" : undefined}
           >
@@ -113,44 +121,49 @@ function AdminView({
             {s.live ? `活动 ${s.live.activity}` : "银川鼓楼"}
           </strong>
           <span className="activity-status">
-            {s.activityPaused ? "新邀请已暂停" : "活动运行中"}
+            {s.fieldOpen === false
+              ? "现场已关闭"
+              : s.activityPaused
+                ? "新邀请已暂停"
+                : "现场已开放"}
           </span>
         </div>
         <div>
-          <small>SOCIAL</small>
+          {s.live && <ActivitySwitch activity={s.live.activity} />}
           <Badge>{s.live ? "实时活动" : "本地演示"}</Badge>
-          <span className="fine">现场运营</span>
+          {s.live && (
+            <Button
+              kind="text"
+              onClick={() =>
+                void live.signOut().catch((e) => setSuccess(e.message))
+              }
+            >
+              退出登录
+            </Button>
+          )}
         </div>
       </header>
       <main className="admin-main">
-        <LiveOperatorPanel state={s} problem={problem} />
         <div className="admin-title">
           <div>
             <div className="eyebrow">DESTINY LAB · OPERATIONS</div>
             <h1>{title}</h1>
-            <p>
-              {s.live
-                ? "手机、运营与大屏共用现场数据"
-                : "2026 年 11 月 7 日 · 鼓楼步行街"}{" "}
-              <span>
-                ／ {s.live ? "现场时间" : "演示时间"} {timeText(nowOf(s))}
-              </span>
-            </p>
+            {page !== "registrations" && (
+              <p>
+                {s.live
+                  ? "手机、运营与大屏共用现场数据"
+                  : "2026 年 11 月 7 日 · 鼓楼步行街"}{" "}
+                <span>
+                  ／ {s.live ? "现场时间" : "演示时间"} {timeText(nowOf(s))}
+                </span>
+              </p>
+            )}
           </div>
           <div className="admin-actions">
-            <Button
-              kind="secondary"
-              onClick={() =>
-                confirm(
-                  s.activityPaused ? "恢复新邀请？" : "暂停新邀请？",
-                  "这只影响新邀请，已经接受的相遇可以继续。",
-                  { type: "pause", value: !s.activityPaused },
-                )
-              }
+            <Link
+              href={`/screen?activity=${encodeURIComponent(s.live?.activity || "meet")}`}
+              target="_blank"
             >
-              {s.activityPaused ? "恢复新邀请" : "暂停新邀请"}
-            </Button>
-            <Link href="/screen" target="_blank">
               <Icon name="screen" size={17} />
               查看大屏
             </Link>
@@ -159,6 +172,9 @@ function AdminView({
         {problem && <Notice tone="error">{problem}</Notice>}
         {a.error && <Notice tone="error">{a.error}</Notice>}
         {success && <Notice tone="success">{success}</Notice>}
+        {page === "activities" && (
+          <ActivityManagement state={s} problem={problem} />
+        )}
         {page === "member-wall" && (
           <MemberWallSettings activity={s.live?.activity || "meet"} />
         )}
@@ -233,7 +249,7 @@ function AdminView({
                     <Link
                       className="funnel-row"
                       key={x.title}
-                      href={`/admin/participants?stage=${x.filter}`}
+                      href={`/admin/participants?stage=${x.filter}&activity=${encodeURIComponent(s.live?.activity || "meet")}`}
                     >
                       <span>{x.title}</span>
                       <div>
@@ -1006,84 +1022,31 @@ function ParticipantList({
           列表展示已建立参与资料的人。首答统计另外包含未建立资料的匿名回答；邀请和相遇统计以次数计，此表按参与者去重。
         </p>
       )}
-      <section className="panel">
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>参与者</th>
-                <th>性别 / 年龄段</th>
-                <th>加入时间</th>
-                <th>在场状态</th>
-                <th>当前阶段</th>
-                <th>发出邀请</th>
-                <th>真实见面</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.slice((currentPage - 1) * 12, currentPage * 12).map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <div className="table-person">
-                      <Avatar person={p} size="xs" />
-                      <strong>{p.name}</strong>
-                    </div>
-                  </td>
-                  <td>
-                    {p.gender === "male" ? "男生" : "女生"} · {p.age}
-                  </td>
-                  <td>{timeText(p.joinedAt)}</td>
-                  <td>
-                    <Badge tone={p.present ? "success" : "neutral"}>
-                      {p.present ? "在场" : "已离场"}
-                    </Badge>
-                  </td>
-                  <td>{phase(s, p)}</td>
-                  <td>{s.invitations.filter((i) => i.from === p.id).length}</td>
-                  <td>
-                    {
-                      s.invitations.filter(
-                        (i) => i.realMeetAt && [i.from, i.to].includes(p.id),
-                      ).length
-                    }
-                  </td>
-                  <td>
-                    <button
-                      className="table-action"
-                      onClick={() => onOpen(p.id)}
-                    >
-                      查看详情
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!list.length && (
-          <Empty title="没有符合条件的参与者">换一个昵称或筛选条件试试</Empty>
-        )}
-        <div className="pagination">
-          <button
-            aria-label="上一页"
-            disabled={currentPage === 1}
-            onClick={() => setPage(currentPage - 1)}
-          >
-            ‹
-          </button>
-          <span>
-            {currentPage} / {totalPages}
-          </span>
-          <button
-            aria-label="下一页"
-            disabled={currentPage === totalPages}
-            onClick={() => setPage(currentPage + 1)}
-          >
-            ›
-          </button>
-        </div>
-      </section>
+      <ParticipantSelection
+        key={`${s.epoch}:${term}:${stage}:${currentPage}`}
+        state={s}
+        people={list.slice((currentPage - 1) * 12, currentPage * 12)}
+        onOpen={onOpen}
+      />
+      <div className="pagination">
+        <Button
+          kind="text"
+          disabled={currentPage <= 1}
+          onClick={() => setPage(currentPage - 1)}
+        >
+          上一页
+        </Button>
+        <span>
+          {currentPage} / {totalPages}
+        </span>
+        <Button
+          kind="text"
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage(currentPage + 1)}
+        >
+          下一页
+        </Button>
+      </div>
     </>
   );
 }
@@ -1108,5 +1071,93 @@ function EventRow({
       <time>{timeText(at)}</time>
       <span>{text}</span>
     </div>
+  );
+}
+
+function ParticipantSelection({
+  state,
+  people,
+  onOpen,
+}: {
+  state: DemoState;
+  people: Participant[];
+  onOpen: (id: string) => void;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const ids = selected.filter((id) => people.some((p) => p.id === id));
+  return (
+    <section className="panel participant-selection">
+      {state.live && (
+        <FieldActions state={state} ids={ids} onDone={() => setSelected([])} />
+      )}
+      <div className="table-scroll">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  aria-label="选择本页全部参与者"
+                  type="checkbox"
+                  checked={!!people.length && ids.length === people.length}
+                  onChange={(e) =>
+                    setSelected(e.target.checked ? people.map((p) => p.id) : [])
+                  }
+                />
+              </th>
+              <th>参与者</th>
+              <th>性别 / 年龄段</th>
+              <th>在场状态</th>
+              <th>当前阶段</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {people.map((p) => (
+              <tr key={p.id}>
+                <td>
+                  <input
+                    aria-label={`选择${p.name || "匿名参与者"}`}
+                    type="checkbox"
+                    checked={ids.includes(p.id)}
+                    onChange={(e) =>
+                      setSelected(
+                        e.target.checked
+                          ? [...ids, p.id]
+                          : ids.filter((id) => id !== p.id),
+                      )
+                    }
+                  />
+                </td>
+                <td>
+                  <div className="table-person">
+                    <Avatar person={p} size="xs" />
+                    <strong>{p.name || "尚未填写昵称"}</strong>
+                  </div>
+                </td>
+                <td>
+                  {p.gender === "male" ? "男生" : "女生"} · {p.age || "未填写"}
+                </td>
+                <td>{p.present ? "在场" : "已离场"}</td>
+                <td>{phase(state, p)}</td>
+                <td>
+                  <button className="table-action" onClick={() => onOpen(p.id)}>
+                    查看详情
+                  </button>
+                  <button
+                    className="table-action"
+                    onClick={() => setSelected([p.id])}
+                  >
+                    选择并管理
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!people.length && (
+          <p className="empty-list">暂无符合条件的现场参与者</p>
+        )}
+      </div>
+    </section>
   );
 }

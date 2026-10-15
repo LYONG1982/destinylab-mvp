@@ -28,6 +28,7 @@ async function main() {
     "012-mini-registration-entry.sql",
     "013-mini-content-review.sql",
     "014-agency-unified-members.sql",
+    "015-field-management.sql",
   ];
 
   for (const migration of migrations.slice(0, 9)) {

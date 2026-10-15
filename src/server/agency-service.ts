@@ -364,7 +364,7 @@ export async function agencyAction(
           ids.includes(gallery.userPhotoId);
         if (userSelected)
           await c.query(
-            "INSERT INTO dl_agency_user_photo_snapshots(activity_id,actor,id,bytes) SELECT activity_id,$2,id,bytes FROM dl_avatar_assets WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) AND id=$3 AND attached",
+            "INSERT INTO dl_agency_user_photo_snapshots(activity_id,actor,id,bytes) SELECT activity_id,$2,id,bytes FROM dl_avatar_assets WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) AND id=$3 AND attached UNION SELECT activity_id,$2,id,bytes FROM dl_agency_retained_photos WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) AND id=$3",
             [activity, actor, gallery.userPhotoId],
           );
         const cover = preview.photo

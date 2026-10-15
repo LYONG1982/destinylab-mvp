@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { TongzhouEntry } from "@/features/tongzhou/TongzhouMobile";
 import { AvatarEditor } from "@/components/shared/AvatarEditor";
-import {avatarDescription} from "@/domain/photo";
+import { avatarDescription } from "@/domain/photo";
 import { AvatarSelector } from "@/components/shared/AvatarSelector";
 import { validAvatar, defaultAvatarId } from "@/config/avatars";
 import { AGES, QUESTIONS, STATUS_LABELS } from "@/data/questions";
@@ -61,13 +61,34 @@ import { RouteDraw } from "@/components/motion/RouteDraw";
 import { DestinyTrack } from "@/components/motion/DestinyTrack";
 import { useCityResponse } from "@/components/motion/CityResponseToast";
 import { motionTiming } from "@/lib/motion-tokens";
-import { LiveGate, PairDisplayPermission, PastDisplayPermissions } from "@/components/LiveControls";
+import {
+  LiveGate,
+  PairDisplayPermission,
+  PastDisplayPermissions,
+} from "@/components/LiveControls";
 
 type Actions = ReturnType<typeof useAction>;
 export function MobileApp({ page }: { page: string }) {
   const { state, actor, problem } = useDemo();
   if (!state) return <LiveGate problem={problem} />;
   const me = person(state, actor);
+  if (me && (!me.present || state.fieldOpen === false))
+    return (
+      <main className="live-access">
+        <h1>{!me.present ? "你已离场" : "现场暂未开放"}</h1>
+        <p>
+          {!me.present
+            ? "请联系工作人员恢复入场。"
+            : "请等待工作人员开放现场。"}
+        </p>
+        <a href={`/mobile/tongzhou?activity=${state.live?.activity || "meet"}`}>
+          同舟专业服务
+        </a>
+        <a href={`/mobile/register?activity=${state.live?.activity || "meet"}`}>
+          我的报名资料
+        </a>
+      </main>
+    );
   if (!me)
     return (
       <div className="loading">
@@ -309,8 +330,17 @@ function MobileFlow({
           <span>
             {me.name} · {me.gender === "male" ? "男生" : "女生"}
           </span>
-          {me.profileComplete && <AvatarEditor me={me}/>}
-          {s.live && me.profileComplete && ["03-profile", "05-discover", "10-next-step"].includes(page) && document.documentElement.dataset.memberWall === "true" && <Link href={`/mobile/member-wall-consent?activity=${encodeURIComponent(s.live.activity)}`}>我的遇见卡牌</Link>}
+          {me.profileComplete && <AvatarEditor me={me} />}
+          {s.live &&
+            me.profileComplete &&
+            ["03-profile", "05-discover", "10-next-step"].includes(page) &&
+            document.documentElement.dataset.memberWall === "true" && (
+              <Link
+                href={`/mobile/member-wall-consent?activity=${encodeURIComponent(s.live.activity)}`}
+              >
+                我的遇见卡牌
+              </Link>
+            )}
         </div>
       )}
       {page === "01-start" ? (
@@ -324,8 +354,9 @@ function MobileFlow({
           <div className="mobile-content">
             {notices}
             <PastDisplayPermissions state={s} />
-            {inv && ["08-mutual", "09-meet", "10-next-step"].includes(page) &&
-              <PairDisplayPermission state={s} invitation={inv} actor={me.id} />}
+            {inv && ["08-mutual", "09-meet", "10-next-step"].includes(page) && (
+              <PairDisplayPermission state={s} invitation={inv} actor={me.id} />
+            )}
             {page === "02-result" && (
               <Result
                 state={s}
@@ -338,7 +369,12 @@ function MobileFlow({
               <Profile me={me} action={a} onNext={() => go("04-question")} />
             )}
             {page === "04-question" && (
-              <Questions state={s} me={me} action={a} onNext={() => go("05-discover")} />
+              <Questions
+                state={s}
+                me={me}
+                action={a}
+                onNext={() => go("05-discover")}
+              />
             )}
             {page === "05-discover" && (
               <>
@@ -1026,7 +1062,8 @@ function Result({
           </Motion>
         </div>
         <div className="sample-note">
-          {state.live ? "现场回答" : "演示样本"} · {stats(state).answered} 人回答
+          {state.live ? "现场回答" : "演示样本"} · {stats(state).answered}{" "}
+          人回答
         </div>
         <h3>其他人的选择</h3>
         {dist.map((d) => (
@@ -1151,7 +1188,9 @@ function Profile({
                   setGender(v);
                   setAvatarId(me.photo ? defaultAvatarId(me.id, v) : null);
                   setAvatarMessage(
-                    me.photo ? "" : `请重新选择一个${v === "male" ? "男生" : "女生"}头像。`,
+                    me.photo
+                      ? ""
+                      : `请重新选择一个${v === "male" ? "男生" : "女生"}头像。`,
                   );
                 }
               }}
@@ -1162,17 +1201,28 @@ function Profile({
           ))}
         </div>
       </fieldset>
-      <AvatarEditor me={me} onSaved={() => setAvatarId(validAvatar(avatarId, gender) ? avatarId : defaultAvatarId(me.id, gender))}/>
-      {!me.photo && <AvatarSelector
-        gender={gender}
-        value={avatarId}
-        disabled={a.busy}
-        message={avatarMessage}
-        onChange={(id) => {
-          setAvatarId(id);
-          setAvatarMessage("");
-        }}
-      />}
+      <AvatarEditor
+        me={me}
+        onSaved={() =>
+          setAvatarId(
+            validAvatar(avatarId, gender)
+              ? avatarId
+              : defaultAvatarId(me.id, gender),
+          )
+        }
+      />
+      {!me.photo && (
+        <AvatarSelector
+          gender={gender}
+          value={avatarId}
+          disabled={a.busy}
+          message={avatarMessage}
+          onChange={(id) => {
+            setAvatarId(id);
+            setAvatarMessage("");
+          }}
+        />
+      )}
       <Notice>
         本场将为你推荐愿意认识新朋友的{gender === "male" ? "女生" : "男生"}。
       </Notice>
@@ -1224,8 +1274,15 @@ function Questions({
   const query = useSearchParams();
   const cityResponse = useCityResponse();
   const initial = QUESTIONS.findIndex((q, i) => i > 0 && !me.answers[q.id]);
-  const requested = QUESTIONS.findIndex(q => q.id === query.get("q"));
-  const [index, setIndex] = useState(requested > 0 && (me.answers[QUESTIONS[requested].id] || requested === initial) ? requested : initial < 0 ? 1 : initial);
+  const requested = QUESTIONS.findIndex((q) => q.id === query.get("q"));
+  const [index, setIndex] = useState(
+    requested > 0 &&
+      (me.answers[QUESTIONS[requested].id] || requested === initial)
+      ? requested
+      : initial < 0
+        ? 1
+        : initial,
+  );
   const [selected, setSelected] = useState("");
   const transition = useRef<QuestionTransitionHandle>(null);
   const choosing = useRef(false);
@@ -1307,7 +1364,13 @@ function Questions({
         </div>
       </QuestionTransition>
       <p className="fine center">你的答案只用于发现共同话题</p>
-      <TongzhouEntry state={state} actor={me.id} questionId={q.id} disabled={a.busy} canLeave={() => !choosing.current && !transition.current?.busy()} />
+      <TongzhouEntry
+        state={state}
+        actor={me.id}
+        questionId={q.id}
+        disabled={a.busy}
+        canLeave={() => !choosing.current && !transition.current?.busy()}
+      />
     </div>
   );
 }
@@ -1443,52 +1506,59 @@ function NextStep({
               description: "每一次认真相遇，都有意义",
             },
           ] as const
-        ).filter((v) => !s.live || v.value !== "MERCHANT" || s.merchants.some((m) => m.id === "cloud" && m.active)).map((v, index) => (
-          <Motion key={v.value} delay={index * motionTiming.cardGap}>
-            <button
-              className={`next-card ${choice === v.value ? "selected" : ""}`}
-              aria-pressed={choice === v.value}
-              disabled={
-                a.busy ||
-                (v.value === "MERCHANT" &&
-                  !s.merchants.some((m) => m.id === "cloud" && m.active))
-              }
-              onClick={() =>
-                a.run(
-                  { type: "next", invitationId: inv.id, choice: v.value },
-                  () => setShowMerchants(v.value === "MERCHANT"),
-                )
-              }
-            >
-              <span className={`next-picture ${v.value.toLowerCase()}`}>
-                {v.value === "WALK" ? (
-                  <Ambient className="city-walk">
+        )
+          .filter(
+            (v) =>
+              !s.live ||
+              v.value !== "MERCHANT" ||
+              s.merchants.some((m) => m.id === "cloud" && m.active),
+          )
+          .map((v, index) => (
+            <Motion key={v.value} delay={index * motionTiming.cardGap}>
+              <button
+                className={`next-card ${choice === v.value ? "selected" : ""}`}
+                aria-pressed={choice === v.value}
+                disabled={
+                  a.busy ||
+                  (v.value === "MERCHANT" &&
+                    !s.merchants.some((m) => m.id === "cloud" && m.active))
+                }
+                onClick={() =>
+                  a.run(
+                    { type: "next", invitationId: inv.id, choice: v.value },
+                    () => setShowMerchants(v.value === "MERCHANT"),
+                  )
+                }
+              >
+                <span className={`next-picture ${v.value.toLowerCase()}`}>
+                  {v.value === "WALK" ? (
+                    <Ambient className="city-walk">
+                      <Icon name={v.icon} size={36} />
+                    </Ambient>
+                  ) : (
                     <Icon name={v.icon} size={36} />
-                  </Ambient>
-                ) : (
-                  <Icon name={v.icon} size={36} />
-                )}
-                {v.value === "MERCHANT" && (
-                  <Ambient className="city-steam">
-                    <svg
-                      viewBox="0 0 36 24"
-                      width="36"
-                      height="24"
-                      aria-hidden="true"
-                    >
-                      <path d="M11 22C6 15 17 13 11 4M23 22C18 15 29 13 23 4" />
-                    </svg>
-                  </Ambient>
-                )}
-              </span>
-              <span>
-                <strong>{v.title}</strong>
-                <small>{v.description}</small>
-              </span>
-              <Icon name="arrow" size={18} />
-            </button>
-          </Motion>
-        ))}
+                  )}
+                  {v.value === "MERCHANT" && (
+                    <Ambient className="city-steam">
+                      <svg
+                        viewBox="0 0 36 24"
+                        width="36"
+                        height="24"
+                        aria-hidden="true"
+                      >
+                        <path d="M11 22C6 15 17 13 11 4M23 22C18 15 29 13 23 4" />
+                      </svg>
+                    </Ambient>
+                  )}
+                </span>
+                <span>
+                  <strong>{v.title}</strong>
+                  <small>{v.description}</small>
+                </span>
+                <Icon name="arrow" size={18} />
+              </button>
+            </Motion>
+          ))}
       </div>
       {choice && (
         <p className="fine">
