@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import type { DemoState } from "@/domain/types";
 import { Button, Notice } from "@/components/ui";
 import { LiveOperatorPanel } from "@/components/LiveControls";
 import { RegistrationAdmin } from "@/features/registration/RegistrationAdmin";
 import * as live from "@/lib/api/live-client";
+import { AdminDialog } from "./AdminPrimitives";
 
 type Activity = {
   id: string;
@@ -36,6 +37,12 @@ const labels: Record<string, string> = {
   open: "开放现场",
   close: "关闭现场",
   create: "创建活动",
+};
+const confirmations: Record<string, string> = {
+  leave: "确认离场",
+  return: "确认恢复",
+  remove: "确认移除",
+  reset: "确认清零",
 };
 export async function fieldApi<T>(
   activity: string,
@@ -147,6 +154,7 @@ export function FieldActions({
   onDone?: () => void;
 }) {
   const activity = state.live?.activity || "meet";
+  const previewTrigger = useRef<HTMLElement | null>(null);
   const [task, setTask] = useState<{
       action: string;
       preview: string;
@@ -163,6 +171,10 @@ export function FieldActions({
     [cleared, setCleared] = useState(false);
   async function preview(action: string) {
     if (busy) return;
+    previewTrigger.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     setBusy(true);
     setError("");
     setMessage("");
@@ -198,41 +210,78 @@ export function FieldActions({
         <Button
           disabled={busy || state.fieldOpen !== false}
           kind="secondary"
+          className="admin-danger-action"
           onClick={() => preview("reset")}
         >
           结束本轮并清零现场
         </Button>
-      ) : (
+      ) : ids.length ? (
         <>
-          <span>已选 {ids.length} 人</span>
-          {["leave", "return", "remove"].map((a) => (
+          <span className="field-selection-count" role="status">
+            已选 <strong>{ids.length}</strong> 人
+          </span>
+          <div className="field-routine-actions">
+            {["leave", "return"].map((a) => (
+              <Button
+                key={a}
+                kind="secondary"
+                disabled={busy || !ids.length}
+                onClick={() => preview(a)}
+              >
+                {labels[a]}
+              </Button>
+            ))}
+          </div>
+          <div className="field-remove-action">
             <Button
-              key={a}
               kind="secondary"
-              disabled={busy || !ids.length}
-              onClick={() => preview(a)}
+              className="admin-danger-action"
+              disabled={busy}
+              onClick={() => preview("remove")}
             >
-              {labels[a]}
+              从本场移除
             </Button>
-          ))}
+          </div>
         </>
+      ) : (
+        <span className="field-selection-hint">
+          勾选名单，可批量标记离场或恢复入场。
+        </span>
       )}
-      {error && <Notice tone="error">{error}</Notice>}
+      {error && !task && <Notice tone="error">{error}</Notice>}
       {message && <Notice tone="success">{message}</Notice>}
       {task && (
-        <div
-          className="field-confirm"
-          role="dialog"
-          aria-modal="true"
-          aria-label={labels[task.action]}
+        <AdminDialog
+          title={labels[task.action]}
+          variant="confirm"
+          busy={busy}
+          returnFocus={previewTrigger}
+          onClose={() => {
+            setTask(null);
+            setError("");
+          }}
         >
-          <div>
-            <h2>{labels[task.action]}</h2>
-            {error && <Notice tone="error">{error}</Notice>}
-            <p>
-              影响 {task.count} 位参与者、{task.invitations}{" "}
-              条相遇记录。报名、同舟档案、已授权照片与公开主页保持不变。
-            </p>
+          <div className="field-confirm-content">
+            <div className="field-impact">
+              <span>
+                影响参与者
+                <strong>
+                  {task.count}
+                  <small> 人</small>
+                </strong>
+              </span>
+              <span>
+                关联相遇记录
+                <strong>
+                  {task.invitations}
+                  <small> 条</small>
+                </strong>
+              </span>
+            </div>
+            <div className="field-retention">
+              <strong>报名与同舟档案保留</strong>
+              <p>已授权照片、跟进记录与公开主页保持不变。</p>
+            </div>
             <p>
               {task.action === "leave"
                 ? "离场后不能自行恢复；已使用的遇见地点仍需工作人员确认空闲。"
@@ -262,50 +311,66 @@ export function FieldActions({
                 </label>
               </>
             )}
-            <Button
-              disabled={
-                busy ||
-                (task.action === "reset" &&
-                  (confirmation !== activity || !cleared))
-              }
-              onClick={async () => {
-                setBusy(true);
-                setError("");
-                try {
-                  await fieldApi(
-                    activity,
-                    "action",
-                    {
-                      action: task.action,
-                      ids: task.ids,
-                      epoch: task.epoch,
-                      preview: task.preview,
-                      confirmation,
-                      cleared,
-                    },
-                    task.id,
-                  );
-                  setMessage("操作已由服务器确认。");
-                  setTask(null);
-                  onDone?.();
-                  live.retry();
-                } catch (e) {
-                  setError((e as Error).message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              {busy ? "正在处理…" : "确认操作"}
-            </Button>
-            <Button kind="text" disabled={busy} onClick={() => setTask(null)}>
-              取消
-            </Button>
             {error && (
-              <p role="alert">{error}。如状态已变化，请取消后重新预览。</p>
+              <Notice tone="error">
+                {error}。如状态已变化，请取消后重新预览。
+              </Notice>
             )}
+            <div className="field-confirm-buttons">
+              <Button
+                className={
+                  task.action === "remove" || task.action === "reset"
+                    ? "admin-danger-confirm"
+                    : undefined
+                }
+                disabled={
+                  busy ||
+                  (task.action === "reset" &&
+                    (confirmation !== activity || !cleared))
+                }
+                onClick={async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    await fieldApi(
+                      activity,
+                      "action",
+                      {
+                        action: task.action,
+                        ids: task.ids,
+                        epoch: task.epoch,
+                        preview: task.preview,
+                        confirmation,
+                        cleared,
+                      },
+                      task.id,
+                    );
+                    setMessage("操作已由服务器确认。");
+                    setTask(null);
+                    onDone?.();
+                    live.retry();
+                  } catch (e) {
+                    setError((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? "正在处理…" : confirmations[task.action]}
+              </Button>
+              <Button
+                kind="text"
+                disabled={busy}
+                onClick={() => {
+                  setTask(null);
+                  setError("");
+                }}
+              >
+                取消
+              </Button>
+            </div>
           </div>
-        </div>
+        </AdminDialog>
       )}
     </section>
   );

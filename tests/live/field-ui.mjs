@@ -60,7 +60,7 @@ await page.getByRole("button", { name: "刷新", exact: true }).click();
 await expect(page.getByText("UAT模拟读取失败，请重试")).toBeVisible();
 await page.screenshot({ path: dir + "/registrations-error.png" });
 await page.unroute("**/api/registration/records?**");
-await page.getByRole("button", { name: "刷新", exact: true }).click();
+await page.getByRole("button", { name: "重试", exact: true }).click();
 await expect(page.getByText("UAT模拟读取失败，请重试")).toHaveCount(0);
 await page.goto(url("/admin/participants"));
 await expect(
@@ -72,7 +72,7 @@ await expect(page.getByRole("dialog")).toBeVisible();
 await page.screenshot({ path: dir + "/leave-preview.png" });
 await page
   .getByRole("dialog")
-  .getByRole("button", { name: "确认操作" })
+  .getByRole("button", { name: /^确认(离场|恢复|移除|清零)$/ })
   .click();
 await expect(page.getByRole("dialog")).toHaveCount(0);
 await expect(page.locator("tbody tr").first()).toContainText("已离场");
@@ -80,7 +80,7 @@ await page.getByRole("checkbox", { name: "选择本页全部参与者" }).check(
 await page.getByRole("button", { name: "恢复入场", exact: true }).click();
 await page
   .getByRole("dialog")
-  .getByRole("button", { name: "确认操作" })
+  .getByRole("button", { name: /^确认(离场|恢复|移除|清零)$/ })
   .click();
 await expect(page.locator("tbody tr").first()).toContainText("在场");
 const mobileContext = await browser.newContext({
@@ -96,7 +96,7 @@ await page.getByRole("checkbox", { name: "选择本页全部参与者" }).check(
 await page.getByRole("button", { name: "标记离场", exact: true }).click();
 await page
   .getByRole("dialog")
-  .getByRole("button", { name: "确认操作" })
+  .getByRole("button", { name: /^确认(离场|恢复|移除|清零)$/ })
   .click();
 await expect(mobile.getByText("你已离场", { exact: false })).toBeVisible();
 await mobile.reload();
@@ -105,7 +105,7 @@ await page.getByRole("checkbox", { name: "选择本页全部参与者" }).check(
 await page.getByRole("button", { name: "恢复入场", exact: true }).click();
 await page
   .getByRole("dialog")
-  .getByRole("button", { name: "确认操作" })
+  .getByRole("button", { name: /^确认(离场|恢复|移除|清零)$/ })
   .click();
 await expect(mobile.getByText("你已离场", { exact: false })).toHaveCount(0);
 await page.goto(url("/admin/activities"));
@@ -138,7 +138,7 @@ await page
 await page.screenshot({ path: dir + "/reset-preview.png" });
 await page
   .getByRole("dialog")
-  .getByRole("button", { name: "确认操作" })
+  .getByRole("button", { name: /^确认(离场|恢复|移除|清零)$/ })
   .click();
 await expect(page.getByRole("dialog")).toHaveCount(0);
 await expect(
@@ -164,7 +164,7 @@ await page.getByRole("checkbox", { name: "选择本页全部参与者" }).check(
 await page.getByRole("button", { name: "从本场移除", exact: true }).click();
 await page
   .getByRole("dialog")
-  .getByRole("button", { name: "确认操作" })
+  .getByRole("button", { name: /^确认(离场|恢复|移除|清零)$/ })
   .click();
 await expect(page.locator("tbody tr")).toHaveCount(0);
 await mobile.reload();

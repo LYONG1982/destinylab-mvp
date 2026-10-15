@@ -13,6 +13,10 @@ import {
   normalizeRegistrationReceipt,
 } from "@/domain/registration-receipt";
 import { registrationApi } from "./client";
+import {
+  AdminDialog,
+  RegistrationStatus,
+} from "@/features/admin/AdminPrimitives";
 import "./registration.css";
 type Listing = {
   items: {
@@ -57,6 +61,7 @@ export function RegistrationAdmin({
   const loading =
     refreshing || settledKey !== [activity, query, page, status].join("|");
   const lock = useRef(false);
+  const detailTrigger = useRef<HTMLButtonElement | null>(null);
   const refresh = useCallback(async () => {
     const d = await registrationApi<Listing>(
       activity,
@@ -141,12 +146,12 @@ export function RegistrationAdmin({
   }
   return (
     <section className="reg-admin">
-      {error && (
+      {error && !detail && (
         <p className="reg-admin-error" role="alert">
           {error}
         </p>
       )}
-      {message && (
+      {message && !detail && (
         <p className="reg-admin-hint" role="status">
           {message}
         </p>
@@ -220,7 +225,7 @@ export function RegistrationAdmin({
             </select>
             <button
               type="button"
-              className="button button-secondary"
+              className="button button-text"
               disabled={busy || loading}
               onClick={() => {
                 setTerm("");
@@ -232,7 +237,7 @@ export function RegistrationAdmin({
               重置
             </button>
             <button
-              className="button button-secondary"
+              className="button button-primary"
               disabled={busy || loading}
             >
               查询
@@ -252,7 +257,7 @@ export function RegistrationAdmin({
                 })
               }
             >
-              刷新
+              {error ? "重试" : "刷新"}
             </button>
             <a
               className="reg-admin-link"
@@ -264,36 +269,58 @@ export function RegistrationAdmin({
             </a>
           </form>
           <section className="panel">
-            <div className="table-scroll">
-              <table className="data-table">
+            <div
+              className="table-scroll admin-roster-scroll"
+              role="region"
+              aria-label="报名名单，可横向滚动"
+              tabIndex={0}
+              aria-busy={loading}
+            >
+              <table className="data-table admin-roster registration-roster">
                 <thead>
                   <tr>
                     {[
                       "昵称",
+                      "报名状态",
                       "性别 / 出生年份",
                       "常住城市",
                       "联系电话",
-                      "报名状态",
                       "同舟服务",
                       "报名时间",
                       "操作",
                     ].map((x) => (
-                      <th key={x}>{x}</th>
+                      <th
+                        key={x}
+                        scope="col"
+                        className={
+                          x === "昵称"
+                            ? "roster-identity"
+                            : x === "操作"
+                              ? "roster-actions"
+                              : undefined
+                        }
+                      >
+                        {x}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {data?.items.map((r) => (
                     <tr key={r.id}>
+                      <td className="roster-identity">
+                        <strong className="roster-name" title={r.nickname}>
+                          {r.nickname}
+                        </strong>
+                      </td>
                       <td>
-                        <strong>{r.nickname}</strong>
+                        <RegistrationStatus status={r.status} />
                       </td>
                       <td>
                         {r.gender} · {r.birth_year}
                       </td>
                       <td>{r.city}</td>
                       <td>{r.phone}</td>
-                      <td>{REGISTRATION_STATUS[r.status]}</td>
                       <td>{r.agency_allowed ? "已选择" : "未选择"}</td>
                       <td>
                         {new Date(r.created_at).toLocaleString("zh-CN", {
@@ -303,11 +330,12 @@ export function RegistrationAdmin({
                           minute: "2-digit",
                         })}
                       </td>
-                      <td>
+                      <td className="roster-actions">
                         <button
                           className="table-action"
                           disabled={busy}
-                          onClick={() =>
+                          onClick={(event) => {
+                            detailTrigger.current = event.currentTarget;
                             void run(async () => {
                               setDetail(
                                 await registrationApi(
@@ -317,8 +345,8 @@ export function RegistrationAdmin({
                               );
                               setReceipt("");
                               setLegacyReceipt(false);
-                            })
-                          }
+                            });
+                          }}
                         >
                           查看详情
                         </button>
@@ -447,23 +475,17 @@ export function RegistrationAdmin({
         </details>
       )}
       {detail && (
-        <div className="reg-admin-drawer-wrap">
-          <aside
-            className="reg-admin-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label="报名详情"
-          >
-            <button
-              className="reg-admin-close"
-              aria-label="关闭详情"
-              onClick={() => setDetail(null)}
-            >
-              ×
-            </button>
+        <AdminDialog
+          title="报名详情"
+          variant="drawer"
+          busy={busy}
+          returnFocus={detailTrigger}
+          onClose={() => setDetail(null)}
+        >
+          <div className="reg-admin-drawer-content">
             <h2>{detail.nickname}</h2>
             <p className="reg-admin-hint">
-              {REGISTRATION_STATUS[detail.status]} ·{" "}
+              <RegistrationStatus status={detail.status} /> ·{" "}
               {detail.agencyAllowed
                 ? "已选择同舟专业服务"
                 : "尚未选择同舟专业服务"}
@@ -567,8 +589,8 @@ export function RegistrationAdmin({
                 </p>
               )}
             </div>
-          </aside>
-        </div>
+          </div>
+        </AdminDialog>
       )}
     </section>
   );

@@ -47,6 +47,7 @@ import {
 } from "./ActivityManagement";
 import * as live from "@/lib/api/live-client";
 import "./management.css";
+import { PhaseStatus, PresenceStatus } from "./AdminPrimitives";
 const NAV = [
   ["registrations", "活动报名", "people"],
   ["dashboard", "现场总览", "grid"],
@@ -617,7 +618,7 @@ function AdminView({
                 {selectedPerson.gender === "male" ? "男生" : "女生"} ·{" "}
                 {selectedPerson.age} 岁
               </p>
-              <Badge>{phase(s, selectedPerson)}</Badge>
+              <PhaseStatus label={phase(s, selectedPerson)} />
             </div>
           </div>
           <div className="detail-meta">
@@ -627,7 +628,7 @@ function AdminView({
             </div>
             <div>
               <small>在场状态</small>
-              <strong>{selectedPerson.present ? "在场" : "已离场"}</strong>
+              <PresenceStatus present={selectedPerson.present} />
             </div>
             <div>
               <small>发出邀请</small>
@@ -1090,11 +1091,16 @@ function ParticipantSelection({
       {state.live && (
         <FieldActions state={state} ids={ids} onDone={() => setSelected([])} />
       )}
-      <div className="table-scroll">
-        <table className="data-table">
+      <div
+        className="table-scroll admin-roster-scroll"
+        role="region"
+        aria-label="现场名单，可横向滚动"
+        tabIndex={0}
+      >
+        <table className="data-table admin-roster participant-roster">
           <thead>
             <tr>
-              <th>
+              <th className="roster-select" scope="col">
                 <input
                   aria-label="选择本页全部参与者"
                   type="checkbox"
@@ -1104,17 +1110,21 @@ function ParticipantSelection({
                   }
                 />
               </th>
-              <th>参与者</th>
-              <th>性别 / 年龄段</th>
+              <th className="roster-identity" scope="col">
+                参与者
+              </th>
               <th>在场状态</th>
+              <th>性别 / 年龄段</th>
               <th>当前阶段</th>
-              <th>操作</th>
+              <th className="roster-actions" scope="col">
+                操作
+              </th>
             </tr>
           </thead>
           <tbody>
             {people.map((p) => (
               <tr key={p.id}>
-                <td>
+                <td className="roster-select">
                   <input
                     aria-label={`选择${p.name || "匿名参与者"}`}
                     type="checkbox"
@@ -1128,18 +1138,27 @@ function ParticipantSelection({
                     }
                   />
                 </td>
-                <td>
+                <td className="roster-identity">
                   <div className="table-person">
                     <Avatar person={p} size="xs" />
-                    <strong>{p.name || "尚未填写昵称"}</strong>
+                    <strong
+                      className="roster-name"
+                      title={p.name || "尚未填写昵称"}
+                    >
+                      {p.name || "尚未填写昵称"}
+                    </strong>
                   </div>
+                </td>
+                <td>
+                  <PresenceStatus present={p.present} />
                 </td>
                 <td>
                   {p.gender === "male" ? "男生" : "女生"} · {p.age || "未填写"}
                 </td>
-                <td>{p.present ? "在场" : "已离场"}</td>
-                <td>{phase(state, p)}</td>
                 <td>
+                  <PhaseStatus label={phase(state, p)} />
+                </td>
+                <td className="roster-actions">
                   <button className="table-action" onClick={() => onOpen(p.id)}>
                     查看详情
                   </button>
