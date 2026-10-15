@@ -8,7 +8,8 @@ import { digest, execute } from "../../src/server/service";
 import { wallAdmin, wallClaim, wallConfigure, wallConsent, wallMe, wallScreenCommand, wallSnapshot } from "../../src/server/member-wall-service";
 import { DEFAULT_WALL_CONFIG, WALL_CONSENT_VERSION } from "../../src/domain/member-wall";
 import { QUESTIONS } from "../../src/data/questions";
-if (new URL(process.env.DATABASE_URL!).pathname !== "/destiny_wall_test" || process.env.DESTINY_PUBLIC_URL !== "http://127.0.0.1:3241" || !process.env.WALL_TEST_SECRETS)
+import { fieldPreview, fieldAction } from "../../src/server/field-service";
+if (!["/destiny_wall_test", "/destiny_admin_20261015_test"].includes(new URL(process.env.DATABASE_URL!).pathname) || process.env.DESTINY_PUBLIC_URL !== "http://127.0.0.1:3241" || !process.env.WALL_TEST_SECRETS)
   throw Error("Dedicated local wall test database required");
 const db = database(), activity = "wall-" + randomUUID().slice(0,8), op = { actor: "operator", role: "operator" as const };
 const state = emptyActivity();
@@ -33,7 +34,7 @@ test("isolated authorization, lease, privacy, fairness, replay and freshness end
     const changed=structuredClone(originalState);Object.assign(changed.participants[0],change);
     await db.query('UPDATE dl_activities SET state=$2 WHERE id=$1',[activity,JSON.stringify(changed)]);
     assert.equal((await wallSnapshot(activity)).eligible,48);
-    assert.deepEqual(counts(await wallSnapshot(activity)),{total:50,male:change.gender ? 16:17,female:33});
+    assert.deepEqual(counts(await wallSnapshot(activity)),{total:change.present === false ? 49:50,male:change.gender || change.present === false ? 16:17,female:33});
   }
   const edited=structuredClone(originalState);edited.participants[0].gender="female";
   await db.query('UPDATE dl_activities SET state=$2 WHERE id=$1',[activity,JSON.stringify(edited)]);
@@ -71,7 +72,9 @@ test("isolated authorization, lease, privacy, fairness, replay and freshness end
   assert.ok(lease.snapshot.cards.every(c=>c.avatarUrl.startsWith('/assets/avatars/')));
   await assert.rejects(wallClaim(activity,op,{owner:randomUUID(),capacity:24}),/已有主屏/);
   await assert.rejects(wallScreenCommand(activity,"heartbeat",{token:"bad",sequence:1,batch:lease.snapshot.batch,elapsedMs:5000}),/主屏/);
-  await assert.rejects(wallScreenCommand('walltest',"heartbeat",{token:lease.token,sequence:1,batch:lease.snapshot.batch,elapsedMs:5000}),/失效/);
+  const foreign="wall-foreign-"+randomUUID().slice(0,8);
+  await db.query("INSERT INTO dl_activities(id,state) VALUES($1,$2)",[foreign,JSON.stringify(emptyActivity())]);
+  await assert.rejects(wallScreenCommand(foreign,"heartbeat",{token:lease.token,sequence:1,batch:lease.snapshot.batch,elapsedMs:5000}),/失效/);
   await assert.rejects(wallScreenCommand(activity,"rotate",{token:lease.token,batch:lease.snapshot.batch,capacity:24}),/周期/);
   await db.query("UPDATE dl_member_wall_sessions SET heartbeat_at=now()-interval '5 seconds' WHERE activity_id=$1",[activity]);
   await wallScreenCommand(activity,"heartbeat",{token:lease.token,sequence:1,batch:lease.snapshot.batch,elapsedMs:5000});
@@ -128,4 +131,21 @@ test("unbalanced groups preserve vacancies, filter changed gender and credit onl
   await db.query("UPDATE dl_member_wall_sessions SET started_at=now()-interval '42 seconds',rotated_at=now()-interval '42 seconds' WHERE activity_id=$1",[id]);
   const next=await wallScreenCommand(id,"rotate",{token:lease.token,batch:heartbeat.batch,capacity:24});
   assert.equal(next.cards.length,17);assert.equal(next.cards.filter(c=>c.gender==="female").length,5);assert.ok(next.cards.every(c=>c.gender===(c.slot%6<3?"male":"female")));
+});
+
+test("field removal prunes the active wall lease and exposure without reshuffling slots", async () => {
+  const id="wall-remove-"+randomUUID().slice(0,8),s=emptyActivity();
+  s.participants=state.participants.slice(0,24).map(p=>({...p,id:randomUUID(),gender:p.gender,photo:null}));
+  await db.query("INSERT INTO dl_activities(id,state) VALUES($1,$2)",[id,JSON.stringify(s)]);
+  for(const [i,p] of s.participants.entries())await wallConsent(id,{actor:p.id,role:"participant"},{allow:true,nickname:`清禾${i}`,expectedVersion:0,consentVersion:WALL_CONSENT_VERSION});
+  const cfg=await wallAdmin(id,op);
+  await wallConfigure(id,op,{expectedVersion:cfg.configVersion,config:{...DEFAULT_WALL_CONFIG,mode:"real"}});
+  const lease=await wallClaim(id,op,{owner:randomUUID(),capacity:24}),card=lease.snapshot.cards[0];
+  const actor=(await db.query("SELECT participant_id FROM dl_member_wall_consents WHERE public_id=$1",[card.id])).rows[0].participant_id;
+  const beforeSlots=(await db.query("SELECT visible_ids FROM dl_member_wall_sessions WHERE activity_id=$1",[id])).rows[0].visible_ids;
+  const input={action:"remove",ids:[actor],epoch:s.epoch},preview=await fieldPreview(id,input);
+  await fieldAction(id,{...input,preview:preview.token},randomUUID());
+  const after=await wallSnapshot(id);assert.equal(after.total,23);assert.equal(after.cards.some(c=>c.id===card.id),false);
+  const afterSlots=(await db.query("SELECT visible_ids FROM dl_member_wall_sessions WHERE activity_id=$1",[id])).rows[0].visible_ids;
+  assert.deepEqual(afterSlots,beforeSlots.map((x:string)=>x===card.id?"":x));
 });

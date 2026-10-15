@@ -4,7 +4,7 @@
 
 ## GitHub 与当前版本
 
-最新源码位于 [`codex/weapp-release-20261013`](https://github.com/LYONG1982/destinylab-mvp/tree/codex/weapp-release-20261013)，[草稿 PR #1](https://github.com/LYONG1982/destinylab-mvp/pull/1) 尚未合并默认分支。本次更新增加独立活动管理、现场离场/恢复/批量移除与清零，并保留报名和同舟档案；部署使用增量迁移 **015**，见 [活动管理部署与验证说明](docs/weapp/14-field-management.md)。
+最新源码位于 [`codex/weapp-release-20261013`](https://github.com/LYONG1982/destinylab-mvp/tree/codex/weapp-release-20261013)，[草稿 PR #1](https://github.com/LYONG1982/destinylab-mvp/pull/1) 尚未合并默认分支。本次更新增加独立活动管理、现场离场/恢复/批量移除与清零，并保留报名和同舟档案；本地 UAT 已部署并完成增量迁移 **015**，见 [活动管理部署与验证说明](docs/weapp/14-field-management.md)。
 
 [GitHub rc.1 预发布包](https://github.com/LYONG1982/destinylab-mvp/releases/tag/weapp-v1.4.0-rc.1) 保留原版本：镜像仅包含迁移至 013，不含后续统一档案优化。最新源码与历史下载包应分别核验；GitHub 发布不代表已部署公网或已上架微信。
 
