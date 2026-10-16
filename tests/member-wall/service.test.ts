@@ -149,3 +149,28 @@ test("field removal prunes the active wall lease and exposure without reshufflin
   const afterSlots=(await db.query("SELECT visible_ids FROM dl_member_wall_sessions WHERE activity_id=$1",[id])).rows[0].visible_ids;
   assert.deepEqual(afterSlots,beforeSlots.map((x:string)=>x===card.id?"":x));
 });
+
+
+test("operator diagnostics are mutually exclusive and never enter public projection", async () => {
+  const id = "wall-diagnostics-" + randomUUID().slice(0,8), s = emptyActivity();
+  s.participants = Array.from({length:6},()=>({...newParticipant(),gender:"female" as const,profileComplete:true,paused:false}));
+  await db.query("INSERT INTO dl_activities(id,state) VALUES($1,$2)",[id,JSON.stringify(s)]);
+  for (const p of s.participants) await wallConsent(id,{role:"participant",actor:p.id},{allow:true,nickname:"测试",expectedVersion:0,consentVersion:WALL_CONSENT_VERSION});
+  const current=(await db.query("SELECT state FROM dl_activities WHERE id=$1",[id])).rows[0].state;
+  current.participants[0].present=false; current.participants[2].paused=true; current.participants[3].profileComplete=false;
+  await db.query("UPDATE dl_activities SET state=$2 WHERE id=$1",[id,JSON.stringify(current)]);
+  await db.query("UPDATE dl_member_wall_consents SET allowed=false WHERE activity_id=$1 AND participant_id=$2",[id,s.participants[1].id]);
+  await db.query("UPDATE dl_member_wall_consents SET nickname='13800138000' WHERE activity_id=$1 AND participant_id=$2",[id,s.participants[4].id]);
+  const admin=await wallAdmin(id,op);
+  assert.equal(admin.total,5); assert.equal(admin.eligible,1); assert.equal(admin.diagnostics.authorizedPresent,4);
+  assert.deepEqual(admin.diagnostics.excluded,{left:1,consent:1,paused:1,profile:1,invalid:1});
+  assert.equal(admin.diagnostics.screen.status,"idle"); assert.equal('diagnostics' in await wallSnapshot(id),false);
+  await assert.rejects(wallAdmin(id,{role:"participant",actor:s.participants[5].id}),/运营/);
+  const lease=await wallClaim(id,op,{owner:randomUUID(),capacity:24});
+  const live=await wallAdmin(id,op); assert.equal(live.diagnostics.onScreen,1); assert.equal(live.diagnostics.screen.status,"active");
+  assert.equal(JSON.stringify(live).includes(lease.token),false); assert.equal('token_hash' in live.diagnostics.screen,false);
+  await db.query("UPDATE dl_member_wall_sessions SET expires_at=now()-interval '1 second' WHERE activity_id=$1",[id]);
+  assert.equal((await wallAdmin(id,op)).diagnostics.screen.status,"expired");
+  await wallConfigure(id,op,{expectedVersion:0,config:{...DEFAULT_WALL_CONFIG,mode:"demo"}});
+  assert.equal((await wallAdmin(id,op)).diagnostics.screen.status,"demo");
+});

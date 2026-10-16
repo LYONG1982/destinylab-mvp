@@ -86,3 +86,5 @@
 .grid>article:nth-child(6n+4){grid-column:5}
 .grid>article:nth-child(6n+5){grid-column:6}
 .grid>article:nth-child(6n){grid-column:7}
+
+.previewWatermark{position:absolute;z-index:8;top:12px;left:50%;transform:translateX(-50%);padding:6px 16px;border:1px solid #b99476;border-radius:6px;background:#fff6e8;color:#702436;font-size:14px;font-weight:600;pointer-events:none}

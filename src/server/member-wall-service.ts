@@ -295,6 +295,59 @@ export async function wallConsent(
   });
   return wallMe(activity, session);
 }
+function wallDiagnostics(ctx: Context) {
+  const snapshot = publicSnapshot(ctx);
+  const excluded = { left: 0, consent: 0, paused: 0, profile: 0, invalid: 0 };
+  let authorizedPresent = 0;
+  for (const p of ctx.state.participants) {
+    const g = ctx.grants.find((g) => g.participant_id === p.id);
+    if (p.present !== true) {
+      excluded.left++;
+      continue;
+    }
+    const authorized =
+      g?.allowed &&
+      g.epoch === ctx.state.epoch &&
+      g.consent_version === WALL_CONSENT_VERSION &&
+      JSON.stringify(g.question_ids) === JSON.stringify(WALL_QUESTION_IDS);
+    if (!authorized) {
+      excluded.consent++;
+      continue;
+    }
+    authorizedPresent++;
+    if (p.paused !== false) {
+      excluded.paused++;
+      continue;
+    }
+    if (p.profileComplete !== true || !["male", "female"].includes(p.gender)) {
+      excluded.profile++;
+      continue;
+    }
+    if (!ctx.candidates.some((c) => c.id === g.public_id)) excluded.invalid++;
+  }
+  const screen = ctx.screen;
+  const status =
+    ctx.config.mode === "demo"
+      ? "demo"
+      : snapshot.activeScreen
+        ? "active"
+        : !screen
+          ? "idle"
+          : !compatibleScreen(screen) || screen.epoch !== ctx.state.epoch
+            ? "incompatible"
+            : "expired";
+  return {
+    authorizedPresent,
+    onScreen: snapshot.cards.length,
+    excluded,
+    screen: {
+      status,
+      window: screen ? digest(screen.owner).slice(0, 8) : null,
+      heartbeatAt: screen?.heartbeat_at.getTime() ?? null,
+      expiresAt: screen?.expires_at.getTime() ?? null,
+    },
+  };
+}
 export async function wallAdmin(activity: string, session: Session) {
   wallEnabled();
   operator(session);
@@ -302,6 +355,7 @@ export async function wallAdmin(activity: string, session: Session) {
     const ctx = await context(c, activity);
     return {
       ...publicSnapshot(ctx),
+      diagnostics: wallDiagnostics(ctx),
       exposure: ctx.candidates.map((x) => ({
         code: x.card.encounterCode,
         nickname: x.card.nickname,

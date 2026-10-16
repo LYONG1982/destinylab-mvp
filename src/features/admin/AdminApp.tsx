@@ -135,6 +135,7 @@ function AdminView({
           {s.live && (
             <Button
               kind="text"
+              data-wall-leave
               onClick={() =>
                 void live.signOut().catch((e) => setSuccess(e.message))
               }
@@ -145,31 +146,33 @@ function AdminView({
         </div>
       </header>
       <main className="admin-main">
-        <div className="admin-title">
-          <div>
-            <div className="eyebrow">DESTINY LAB · OPERATIONS</div>
-            <h1>{title}</h1>
-            {page !== "registrations" && (
-              <p>
-                {s.live
-                  ? "手机、运营与大屏共用现场数据"
-                  : "2026 年 11 月 7 日 · 鼓楼步行街"}{" "}
-                <span>
-                  ／ {s.live ? "现场时间" : "演示时间"} {timeText(nowOf(s))}
-                </span>
-              </p>
-            )}
+        {page !== "member-wall" && (
+          <div className="admin-title">
+            <div>
+              <div className="eyebrow">DESTINY LAB · OPERATIONS</div>
+              <h1>{title}</h1>
+              {page !== "registrations" && (
+                <p>
+                  {s.live
+                    ? "手机、运营与大屏共用现场数据"
+                    : "2026 年 11 月 7 日 · 鼓楼步行街"}{" "}
+                  <span>
+                    ／ {s.live ? "现场时间" : "演示时间"} {timeText(nowOf(s))}
+                  </span>
+                </p>
+              )}
+            </div>
+            <div className="admin-actions">
+              <Link
+                href={`/screen?activity=${encodeURIComponent(s.live?.activity || "meet")}`}
+                target="_blank"
+              >
+                <Icon name="screen" size={17} />
+                查看大屏
+              </Link>
+            </div>
           </div>
-          <div className="admin-actions">
-            <Link
-              href={`/screen?activity=${encodeURIComponent(s.live?.activity || "meet")}`}
-              target="_blank"
-            >
-              <Icon name="screen" size={17} />
-              查看大屏
-            </Link>
-          </div>
-        </div>
+        )}
         {problem && <Notice tone="error">{problem}</Notice>}
         {a.error && <Notice tone="error">{a.error}</Notice>}
         {success && <Notice tone="success">{success}</Notice>}
@@ -177,7 +180,10 @@ function AdminView({
           <ActivityManagement state={s} problem={problem} />
         )}
         {page === "member-wall" && (
-          <MemberWallSettings activity={s.live?.activity || "meet"} />
+          <MemberWallSettings
+            key={s.live?.activity || "meet"}
+            activity={s.live?.activity || "meet"}
+          />
         )}
         {page === "dashboard" && (
           <>
