@@ -6,6 +6,7 @@ import { Button, Notice } from "@/components/ui";
 import { LiveOperatorPanel } from "@/components/LiveControls";
 import { RegistrationAdmin } from "@/features/registration/RegistrationAdmin";
 import * as live from "@/lib/api/live-client";
+import { clientId } from "@/lib/client-id";
 import { AdminDialog } from "./AdminPrimitives";
 
 type Activity = {
@@ -58,7 +59,7 @@ export async function fieldApi<T>(
       headers: input
         ? {
             "Content-Type": "application/json",
-            "Idempotency-Key": id || crypto.randomUUID(),
+            "Idempotency-Key": id || clientId(),
           }
         : undefined,
       body: input ? JSON.stringify(input) : undefined,
@@ -191,7 +192,7 @@ export function FieldActions({
         invitations: p.invitations,
         ids: [...ids],
         epoch: state.epoch,
-        id: crypto.randomUUID(),
+        id: clientId(),
       });
       setConfirmation("");
       setCleared(false);

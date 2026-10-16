@@ -1,19 +1,36 @@
 import { chromium, expect as baseExpect } from "@playwright/test";
+import { isIP } from "node:net";
 import { readFile, writeFile } from "node:fs/promises";
 
 const dir = process.env.ADMIN_VISUAL_EVIDENCE;
 const origin = process.env.ADMIN_VISUAL_ORIGIN || "http://127.0.0.1:3235";
+const target = new URL(origin);
+const ip = target.hostname.split(".").map(Number);
+const privateIPv4 =
+  isIP(target.hostname) === 4 &&
+  (ip[0] === 10 ||
+    (ip[0] === 172 && ip[1] >= 16 && ip[1] <= 31) ||
+    (ip[0] === 192 && ip[1] === 168));
 if (
   !dir ||
   !process.env.ADMIN_VISUAL_LOGIN ||
-  new URL(origin).hostname !== "127.0.0.1"
+  target.protocol !== "http:" ||
+  target.port !== "3235" ||
+  target.username ||
+  target.password ||
+  target.pathname !== "/" ||
+  target.search ||
+  target.hash ||
+  !(target.hostname === "127.0.0.1" || privateIPv4)
 )
-  throw Error("Protected synthetic loopback fixtures required");
+  throw Error(
+    "Protected synthetic fixtures on local HTTP test port 3235 required",
+  );
 const fixture = JSON.parse(await readFile(dir + "/fixture.json", "utf8"));
 const login = JSON.parse(
   await readFile(process.env.ADMIN_VISUAL_LOGIN, "utf8"),
 );
-if (!fixture.activity.startsWith("visual-"))
+if (!/^visual-[a-f0-9]{8}$/.test(fixture.activity))
   throw Error("Synthetic activity only");
 const expect = baseExpect.configure({ timeout: 12000 });
 const browser = await chromium.launch({ channel: "chrome", headless: true });
@@ -21,6 +38,19 @@ const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
 });
 const page = await context.newPage();
+let browserCapabilities;
+const actionRequests = [];
+page.on("request", (request) => {
+  if (
+    new URL(request.url()).pathname === "/api/field/action" &&
+    request.method() === "POST"
+  ) {
+    actionRequests.push({
+      action: request.postDataJSON().action,
+      id: request.headers()["idempotency-key"],
+    });
+  }
+});
 const errors = [],
   widths = [],
   contrasts = [];
@@ -98,6 +128,16 @@ async function layout(kind) {
 }
 try {
   await page.goto(url("/admin/registrations"));
+  browserCapabilities = await page.evaluate(() => ({
+    secureContext: window.isSecureContext,
+    randomUUID: typeof crypto.randomUUID,
+    getRandomValues: typeof crypto.getRandomValues,
+  }));
+  expect(browserCapabilities.getRandomValues).toBe("function");
+  if (privateIPv4) {
+    expect(browserCapabilities.secureContext).toBe(false);
+    expect(browserCapabilities.randomUUID).toBe("undefined");
+  }
   await page.getByLabel("运营账号").fill("uat-operator");
   await page.getByLabel("密码", { exact: true }).fill(login.operator);
   await page.getByRole("button", { name: "登录", exact: true }).click();
@@ -236,6 +276,9 @@ try {
   await page.unroute(actionRoute);
   await dialog.getByRole("button", { name: "确认离场", exact: true }).click();
   await expect(dialog).toHaveCount(0);
+  const leaveAttempts = actionRequests.filter((r) => r.action === "leave");
+  expect(leaveAttempts).toHaveLength(2);
+  expect(leaveAttempts[0].id).toBe(leaveAttempts[1].id);
   await expect(
     page.locator(".participant-roster tbody td:nth-child(3) .badge", {
       hasText: "已离场",
@@ -271,15 +314,71 @@ try {
     .check();
   await expect(confirm).toBeEnabled();
   await page.screenshot({ path: dir + "/reset-preview.png" });
-  await page.getByRole("button", { name: "取消", exact: true }).click();
+  const beforeReset = await (
+    await page.request.get(url("/api/field/overview"))
+  ).json();
+  expect(beforeReset.open).toBe(false);
+  const resetResponse = page.waitForResponse(
+    (r) =>
+      r.url().includes("/api/field/action?") &&
+      r.request().postDataJSON()?.action === "reset",
+  );
+  await confirm.click();
+  const resetResult = await (await resetResponse).json();
+  expect(resetResult.ok).toBe(true);
+  expect(resetResult.count).toBe(2);
+  expect(resetResult.previousEpoch).toBe(beforeReset.epoch);
+  expect(resetResult.epoch).not.toBe(beforeReset.epoch);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const afterReset = await (
+    await page.request.get(url("/api/field/overview"))
+  ).json();
+  expect(afterReset.epoch).toBe(resetResult.epoch);
+  expect(afterReset.open).toBe(false);
+  expect(
+    afterReset.archives.some(
+      (a) => a.action === "reset" && a.epoch === beforeReset.epoch,
+    ),
+  ).toBe(true);
+  await page.getByRole("button", { name: "开放现场", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "关闭现场", exact: true }),
+  ).toBeVisible();
+  const createdActivity = fixture.activity + "-new";
+  await page.getByLabel("新活动标识").fill(createdActivity);
+  await page.getByRole("button", { name: "创建活动", exact: true }).click();
+  const createdRow = page
+    .locator(".activity-list > div")
+    .filter({ hasText: createdActivity });
+  await expect(createdRow).toContainText("报名关闭 · 现场关闭");
+  await createdRow.getByRole("button", { name: "管理", exact: true }).click();
+  await expect(page).toHaveURL(
+    origin + "/admin/activities?activity=" + createdActivity,
+  );
+  await expect(
+    page.getByRole("button", { name: "开放现场", exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("切换活动").selectOption(fixture.activity);
+  await expect(page).toHaveURL(url("/admin/activities"));
+  await page.goto(url("/admin/participants"));
+  await expect(rows()).toHaveCount(0);
   await page.goto(url("/admin/registrations"));
   await expect(rows()).toHaveCount(3);
   expect(errors).toEqual([]);
+  for (const request of actionRequests) {
+    expect(request.id).toMatch(
+      /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/,
+    );
+  }
   await writeFile(
     dir + "/results.json",
     JSON.stringify(
       {
         activity: fixture.activity,
+        origin,
+        browserCapabilities,
+        actionRequests,
+        resetResult,
         widths,
         contrasts,
         errors,
@@ -293,6 +392,10 @@ try {
           "batch-leave-restore",
           "remove",
           "reset-guards",
+          "reset-executed-new-epoch",
+          "close-open-create-switch",
+          "failed-action-retry-same-id",
+          "uuid-v4-format",
           "registration-retained",
         ],
       },
