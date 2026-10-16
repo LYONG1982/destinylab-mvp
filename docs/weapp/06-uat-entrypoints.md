@@ -1,8 +1,8 @@
 # UAT 全部入口清单
 
-核对日期：2026-10-15。本地 UAT 已更新到本轮活动管理业务提交 `cd48df8`，数据库迁移至 **015**，保持原数据库和账号。Mac 地址为 http://192.168.43.70:3216，活动为 `meet`；手机与 Mac 须处于同一局域网，Mac 保持运行。
+核对日期：2026-10-16。本地 UAT 使用卡牌墙后台 UX 业务版本 `a4d4a38`（交付基线 `5bda10a`），迁移为 **015**，原数据库和账号保持不变。此前验收地址为 http://192.168.43.70:3216，活动为 `meet`。正式发布复核时Mac已换到192.168.130.201，旧地址不可达；服务仍在运行且回环就绪检查通过。下表保留验收时的地址与结果，使用新网络前需同步运行时origin并复验，勿将旧链接发给手机用户。
 
-本轮27个主要业务入口 HTTP 200，就绪检查通过；交互验收在隔离数据库的合成活动执行，未对原 meet 活动执行清理。迁移前已备份、恢复演练，9张保留业务表内容一致。辅助演示入口的HTTP列沿用上轮核验；HTTP 200 不替代登录、业务流程或真机验收。
+最新卡牌墙迭代已验证13个主要入口、登录页及模拟预览；下表其余子路由的HTTP结果沿用10月15日27入口核验，不表示全部页面已于今天重做端到端验收。交互测试使用隔离库和合成活动，没有清理原 meet 活动。发布交接见 [v1.4.0](../releases/v1.4.0.md)。
 
 ## 优先使用的三个入口
 
@@ -16,10 +16,10 @@
 
 ## GitHub 与部署范围
 
-- 最新代码：[候选分支](https://github.com/LYONG1982/destinylab-mvp/tree/codex/weapp-release-20261013)；[草稿 PR #1](https://github.com/LYONG1982/destinylab-mvp/pull/1) 尚未合并默认分支 `codex/cloud-uat`。
-- 本地 UAT：已部署活动管理、现场维护和迁移015；具体部署与验证见 [现场管理交接](14-field-management.md)。
-- [rc.1 预发布包](https://github.com/LYONG1982/destinylab-mvp/releases/tag/weapp-v1.4.0-rc.1)：历史镜像仅包含至 013，不含统一档案优化。需从候选分支构建新版应用和迁移镜像；不能混用本地最新验证结果。
-- GitHub 托管源代码和发布附件，没有替代腾讯云/本机运行后端；当前提供并验证的业务地址均为局域网 UAT 入口。
+- 正式源码交付分支：[`codex/cloud-uat`](https://github.com/LYONG1982/destinylab-mvp/tree/codex/cloud-uat)，固定版本见 [v1.4.0 Release](https://github.com/LYONG1982/destinylab-mvp/releases/tag/v1.4.0)，合并记录见 [PR #1](https://github.com/LYONG1982/destinylab-mvp/pull/1)。
+- 本地 UAT 已包含活动管理、现场维护、LAN兼容修复和卡牌墙后台UX；数据库015，本轮无新增迁移。
+- [rc.1预发布包](https://github.com/LYONG1982/destinylab-mvp/releases/tag/weapp-v1.4.0-rc.1) 是历史镜像，仅到013。本版发布源码，部署须按v1.4.0标签重建统一应用及迁移镜像。
+- GitHub托管源码，没有替代运行后端。本次不部署公网，亦不代表微信体验版或真机验收完成。
 
 ## 手机用户端（H5）
 

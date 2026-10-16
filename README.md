@@ -4,15 +4,17 @@
 
 ## GitHub 与当前版本
 
-最新源码位于 [`codex/weapp-release-20261013`](https://github.com/LYONG1982/destinylab-mvp/tree/codex/weapp-release-20261013)，[草稿 PR #1](https://github.com/LYONG1982/destinylab-mvp/pull/1) 尚未合并默认分支。本次更新增加独立活动管理、现场离场/恢复/批量移除与清零，并保留报名和同舟档案；本地 UAT 已部署并完成增量迁移 **015**，见 [活动管理部署与验证说明](docs/weapp/14-field-management.md)。
+本次正式源码迭代为 **v1.4.0**，统一交付报名、现场互动、运营后台、同舟机构和两套大屏。默认交付分支为 [`codex/cloud-uat`](https://github.com/LYONG1982/destinylab-mvp/tree/codex/cloud-uat)，版本内容固定以 [v1.4.0 Release](https://github.com/LYONG1982/destinylab-mvp/releases/tag/v1.4.0) 为准。
 
-[GitHub rc.1 预发布包](https://github.com/LYONG1982/destinylab-mvp/releases/tag/weapp-v1.4.0-rc.1) 保留原版本：镜像仅包含迁移至 013，不含后续统一档案优化。最新源码与历史下载包应分别核验；GitHub 发布不代表已部署公网或已上架微信。
+本版包含迁移 **001–015**、双来源同舟档案、独立活动管理、批量离场/恢复/移除与现场清零、LAN HTTP 兼容修复，以及卡牌墙配置与独立模拟预览。部署人员请先读 [v1.4.0 部署与入口说明](docs/releases/v1.4.0.md)。
+
+这是源码版本；须从本标签重新构建应用和迁移镜像。[历史 rc.1 包](https://github.com/LYONG1982/destinylab-mvp/releases/tag/weapp-v1.4.0-rc.1) 仅含至013，不能当作本版镜像。小程序源码随工程交付，实际 AppID、主体、服务类目和微信真机验收仍未完成；GitHub 发布不代表公网系统更新或微信上架。
 
 ## 本地 UAT 入口与用途
 
 新增运营栏目：`/admin/activities?activity=meet`。报名与现场独立，现场不要求先报名/签到；现场清零不删除报名和已授权同舟档案。
 
-手机和 Mac 连接同一 Wi-Fi，Mac 保持运行。地址是 2026-10-13 的本机局域网地址，网络变化后需要重新核对；这些链接不是公网地址。
+手机和 Mac 连接同一 Wi-Fi，Mac 保持运行。下表为此前验收使用的局域网地址。正式发布复核时Mac已换到192.168.130.201，原192.168.43.70地址失效；本机服务仍在运行、就绪检查通过，但须同步运行时入口配置并复验后才能使用新网络的手机入口。以下历史链接不是当前可用入口或公网地址。
 
 | 入口 | 说明 | 本地地址 |
 | --- | --- | --- |
@@ -31,7 +33,7 @@
 ## 功能与入口
 
 - **报名入口**：`pages/registration/index`，姓名与昵称、分列生日及星座、六位报名凭证、电子邀请函、四站档案、私有相册、同舟服务。
-- **现场互动入口**：`pages/encounter/index`，工作人员签到后入场，十题互动、推荐、邀请、见面与后续服务。报名码和互动码分别生成。
+- **现场互动入口**：`pages/encounter/index`，可独立主动入场，无需先报名或签到；十题互动、推荐、邀请、见面与后续服务。报名码和互动码分别生成。
 - **Web 运营**：`/admin/registrations`、`/admin/dashboard`、`/admin/member-wall`；默认 Meet01–Meet20，可配置启停，不预设具体地址。
 - **同舟机构**：`/agency/tongzhou`，资料列表、抽屉详情、备注、相册、公开字段及专属主页发布。
 - **大屏**：`/screen`、`/display/member-wall`；H5 兼容报名入口 `/mobile/register`。
