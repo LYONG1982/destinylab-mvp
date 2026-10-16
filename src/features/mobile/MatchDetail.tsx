@@ -36,7 +36,7 @@ export function CandidateCard({
           )}
         </div>
       </div>
-      <p className="match-avatar-note">系统虚拟头像，不代表本人长相</p>
+      <p className="match-avatar-note">头像由用户选择或上传，身份未核验</p>
     </section>
   );
 }

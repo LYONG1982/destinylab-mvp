@@ -1,0 +1,38 @@
+{
+  "name": "destiny-lab-miniapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WeChat Mini Program client for Destiny Lab",
+  "scripts": {
+    "dev:weapp": "taro build --type weapp --watch",
+    "build:weapp": "taro build --type weapp && node ../scripts/check-mini-artifact.mjs dist",
+    "typecheck": "tsc --noEmit",
+    "build:release": "node ../scripts/build-mini-release.mjs"
+  },
+  "dependencies": {
+    "@tarojs/components": "4.3.0",
+    "@tarojs/plugin-framework-react": "4.3.0",
+    "@tarojs/plugin-platform-weapp": "4.3.0",
+    "@tarojs/react": "4.3.0",
+    "@tarojs/runtime": "4.3.0",
+    "@tarojs/taro": "4.3.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "7.27.1",
+    "@tarojs/cli": "4.3.0",
+    "@tarojs/taro-loader": "4.3.0",
+    "@tarojs/webpack5-runner": "4.3.0",
+    "@types/node": "22.20.4",
+    "@types/react": "18.3.24",
+    "babel-preset-taro": "4.3.0",
+    "typescript": "5.9.3",
+    "webpack": "5.91.0"
+  },
+  "overrides": {
+    "@tarojs/components": {
+      "swiper": "12.1.2"
+    }
+  }
+}

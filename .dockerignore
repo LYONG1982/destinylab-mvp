@@ -1,6 +1,9 @@
 **
 !package.json
 !package-lock.json
+!migration/
+!migration/package.json
+!migration/package-lock.json
 !next.config.ts
 !tsconfig.json
 !next-env.d.ts
@@ -16,12 +19,13 @@
 !scripts/cloud-init.mjs
 !scripts/cloud-validation.mjs
 !scripts/live-init.ts
+!scripts/migrate-meet-points.ts
 !scripts/lib/
 !scripts/lib/**
-!migration/
-!migration/**
 **/.env*
 **/*.pem
 **/*.key
 **/*.dump
 **/*.log
+
+.next-private

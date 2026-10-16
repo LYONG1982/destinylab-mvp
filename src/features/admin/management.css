@@ -1,0 +1,649 @@
+.admin-main {
+  padding: 28px 32px;
+}
+.admin-title {
+  margin-bottom: 20px;
+}
+.admin-title h1 {
+  font-size: 26px;
+}
+.admin-topbar {
+  min-height: 72px;
+}
+.admin-topbar > div {
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-title .eyebrow {
+  display: none;
+}
+.activity-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.activity-switch select {
+  max-width: 210px;
+  padding: 8px;
+  border: 1px solid #e4d9d3;
+  border-radius: 8px;
+  background: #fff;
+}
+.activity-management {
+  display: grid;
+  gap: 20px;
+}
+.management-panel {
+  padding: 24px;
+}
+.management-panel h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.management-panel p {
+  font-size: 14px;
+  color: #675e5a;
+  margin-bottom: 16px;
+}
+.management-panel form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.management-panel input:not([type="checkbox"]) {
+  padding: 12px;
+  border: 1px solid #d8ccc5;
+  border-radius: 8px;
+}
+.entry-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.entry-cards article {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  background: #fff;
+  border: 1px solid #e7ddd6;
+  border-radius: 14px;
+  padding: 24px;
+}
+.entry-cards h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.entry-cards p,
+.entry-cards small {
+  font-size: 13px;
+  color: #71645d;
+}
+.entry-cards a {
+  display: block;
+  color: #800020;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.entry-cards img {
+  object-fit: contain;
+  align-self: center;
+}
+.activity-list > div {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+.activity-list span {
+  font-size: 13px;
+  color: #766;
+}
+.field-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.field-actions > .notice {
+  width: 100%;
+}
+.danger-zone {
+  border-color: #b98a92;
+}
+.danger-zone button {
+  color: #800020;
+}
+.participant-selection input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #800020;
+}
+.empty-list {
+  padding: 24px;
+  color: #766;
+}
+.reg-admin-summary {
+  min-height: 64px;
+  padding: 16px 20px !important;
+  gap: 32px !important;
+}
+.reg-admin-summary strong {
+  font-size: 26px !important;
+}
+.reg-admin-toolbar {
+  gap: 12px !important;
+  margin: 16px 0 !important;
+}
+.reg-admin-toolbar input {
+  min-height: 44px;
+}
+.reg-admin-toolbar select {
+  padding: 10px;
+  border: 1px solid #dfd4cc;
+  border-radius: 8px;
+  background: #fff;
+}
+.reg-admin .data-table th {
+  position: sticky;
+  top: 0;
+  font-size: 12px;
+}
+.reg-admin .data-table td {
+  font-size: 14px;
+}
+.reg-admin .table-scroll {
+  max-height: 65vh;
+}
+.reg-sync {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #746962;
+  margin: 8px 0 14px;
+}
+.reg-admin .reg-admin-hint {
+  font-size: 13px;
+}
+.reg-admin-summary span {
+  font-size: 13px;
+}
+.reg-admin-config {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e7ddd6;
+  border-radius: 14px;
+}
+.reg-admin-config .reg-admin-qr {
+  display: none;
+}
+.reg-admin-config summary {
+  font-size: 18px;
+  font-weight: 600;
+}
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid #800020;
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .admin-main {
+    padding: 24px;
+  }
+  .entry-cards {
+    grid-template-columns: 1fr;
+  }
+  .admin-topbar {
+    padding: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .reg-admin-summary {
+    gap: 16px !important;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 800px) {
+  .admin-main {
+    padding: 16px;
+  }
+  .admin-title h1 {
+    font-size: 24px;
+  }
+  .reg-admin-toolbar {
+    flex-wrap: wrap;
+  }
+  .reg-admin-toolbar input {
+    width: 100%;
+  }
+  .entry-cards article {
+    padding: 16px;
+  }
+  .entry-cards img {
+    width: 110px;
+    height: 110px;
+  }
+  .admin-topbar > div {
+    flex-wrap: wrap;
+  }
+  .data-table {
+    min-width: 760px;
+  }
+}
+
+/* Keep narrow admin pages inside the viewport; tables scroll within their panel. */
+.admin-shell {
+  min-width: 0;
+}
+.admin-topbar {
+  height: auto;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.admin-nav {
+  overflow-y: auto;
+}
+.admin-nav > a:last-child {
+  margin-top: 0;
+}
+.admin-main,
+.reg-admin,
+.management-panel,
+.panel {
+  min-width: 0;
+}
+.activity-list > div {
+  flex-wrap: wrap;
+}
+.admin-topbar .button,
+.activity-management .button,
+.field-actions .button {
+  width: auto;
+  flex-shrink: 0;
+}
+.admin-topbar .button {
+  min-height: 40px;
+}
+.admin-topbar > div:last-child {
+  flex-shrink: 0;
+}
+.activity-list {
+  max-height: 380px;
+  overflow-y: auto;
+  margin-top: 16px;
+}
+
+/* Operational refinements stay inside the admin shell, including native dialogs. */
+.admin-shell .admin-status .badge {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+.admin-shell .admin-status .badge-neutral {
+  color: #675e5a;
+}
+.admin-shell .reg-admin-toolbar .button,
+.admin-shell .field-actions .button {
+  width: auto;
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.admin-shell .reg-admin-toolbar input {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.admin-shell .reg-admin-toolbar .button-text {
+  color: #6d625c;
+}
+.admin-shell .pagination .button {
+  width: auto;
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.admin-shell .pagination > span {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.admin-shell .reg-admin-toolbar .reg-admin-link {
+  font-size: 13px;
+}
+.admin-shell .field-actions {
+  min-height: 64px;
+  border-bottom: 1px solid #eee8e2;
+}
+.admin-shell .field-selection-hint {
+  color: #6d625c;
+  font-size: 13px;
+}
+.admin-shell .field-selection-count {
+  font-size: 14px;
+}
+.admin-shell .field-selection-count strong {
+  color: var(--wine);
+  font-size: 18px;
+}
+.admin-shell .field-routine-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-shell .field-remove-action {
+  margin-left: auto;
+  padding-left: 16px;
+  border-left: 1px solid #e7ddd6;
+}
+.admin-shell .button.admin-danger-action {
+  border-color: #bb8188;
+  color: #952d3a;
+  background: #fff;
+}
+.admin-shell .button.admin-danger-action:hover:not(:disabled) {
+  background: #fceeee;
+  border-color: #952d3a;
+}
+.admin-shell .button.admin-danger-confirm {
+  color: #fff;
+  background: #952d3a;
+}
+.admin-shell .admin-roster-scroll {
+  position: relative;
+  isolation: isolate;
+  max-height: 65vh;
+}
+.admin-shell .admin-roster {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.admin-shell .registration-roster {
+  min-width: 1020px;
+}
+.admin-shell .participant-roster {
+  min-width: 800px;
+}
+.admin-shell .admin-roster th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  font-size: 12px;
+}
+.admin-shell .admin-roster td {
+  font-size: 14px;
+  background: #fff;
+}
+.admin-shell .admin-roster tbody tr:hover td {
+  background: #fdfbf8;
+}
+.admin-shell .admin-roster :is(th, td) {
+  padding: 12px;
+}
+.admin-shell .admin-roster .roster-identity {
+  position: sticky;
+  left: 0;
+  width: 156px;
+  z-index: 2;
+  box-shadow: 1px 0 0 #e9e1dc;
+}
+.admin-shell .admin-roster .roster-actions {
+  position: sticky;
+  right: 0;
+  width: 116px;
+  z-index: 2;
+  box-shadow:
+    -1px 0 0 #e9e1dc,
+    -5px 0 8px #302c2906;
+}
+.admin-shell .admin-roster .roster-select {
+  position: sticky;
+  left: 0;
+  width: 44px;
+  z-index: 2;
+  padding: 12px 10px;
+}
+.admin-shell .participant-roster .roster-identity {
+  left: 44px;
+  width: 180px;
+}
+.admin-shell
+  .admin-roster
+  th:is(.roster-identity, .roster-actions, .roster-select) {
+  z-index: 4;
+}
+.admin-shell .admin-roster .roster-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-shell .admin-roster .table-person {
+  min-width: 0;
+}
+.admin-shell .admin-roster .table-person .roster-name {
+  flex: 1;
+  min-width: 0;
+}
+.admin-shell .admin-roster .table-action {
+  font-size: 13px;
+  min-height: 36px;
+  border-radius: 6px;
+}
+.admin-shell .admin-roster .table-action:hover:not(:disabled) {
+  background: #f3e5e8;
+}
+.admin-shell .participant-roster .roster-actions .table-action {
+  display: block;
+  width: 100%;
+}
+.admin-shell :is(button, a, select, input, .admin-roster-scroll):focus-visible {
+  outline: 2px solid #800020;
+  outline-offset: -2px;
+}
+.admin-shell .admin-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  border: 1px solid #e7ddd6;
+  border-radius: 16px;
+  padding: 28px;
+  background: #fffaf7;
+  color: #302c29;
+  box-shadow: 0 20px 80px #0003;
+  overflow: auto;
+}
+.admin-shell .admin-dialog::backdrop {
+  background: #20141670;
+}
+.admin-shell .admin-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.admin-shell .admin-dialog-heading h2 {
+  font-size: 22px;
+  margin: 0;
+}
+.admin-shell .admin-dialog-close {
+  border: 0;
+  background: transparent;
+  color: #675e5a;
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+.admin-shell .admin-dialog-confirm {
+  width: 560px;
+}
+.admin-shell .admin-dialog-drawer {
+  inset: 0 0 0 auto;
+  width: min(70vw, 950px);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  border-radius: 0;
+  padding: 32px;
+}
+.admin-shell .reg-admin-drawer-content h2 {
+  color: var(--wine);
+  font: 26px var(--serif);
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
+}
+.admin-shell .field-impact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: #f5ebe7;
+  padding: 18px;
+  border-radius: 12px;
+}
+.admin-shell .field-impact span {
+  color: #675e5a;
+  font-size: 13px;
+}
+.admin-shell .field-impact strong {
+  display: block;
+  color: var(--wine);
+  font-size: 32px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+.admin-shell .field-impact small {
+  font-size: 14px;
+  font-weight: 400;
+}
+.admin-shell .field-retention {
+  padding: 16px 0;
+  border-bottom: 1px solid #e7ddd6;
+}
+.admin-shell .field-retention strong {
+  color: #316149;
+  font-size: 15px;
+}
+.admin-shell .field-confirm-content p {
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 16px 0;
+}
+.admin-shell .field-retention p {
+  margin: 4px 0 0;
+  color: #675e5a;
+}
+.admin-shell .field-confirm-content label {
+  display: block;
+  font-size: 14px;
+  line-height: 1.75;
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.admin-shell .field-confirm-content input:not([type="checkbox"]) {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #b9aaa2;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+.admin-shell .field-confirm-content input[type="checkbox"] {
+  margin-right: 8px;
+  accent-color: var(--wine);
+}
+.admin-shell .field-confirm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.admin-shell .field-confirm-content .notice {
+  margin-top: 16px;
+}
+@media (max-width: 800px) {
+  .admin-shell .admin-roster .table-action,
+  .admin-shell .reg-admin-toolbar .button,
+  .admin-shell .field-actions .button {
+    min-height: 44px;
+  }
+  .admin-shell .pagination .button {
+    min-height: 44px;
+  }
+  .admin-shell .filter-bar,
+  .admin-shell .filter-bar > div {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .admin-shell .filter-bar input {
+    width: auto;
+    min-width: 0;
+    flex: 1;
+  }
+  .admin-shell .admin-dialog-drawer {
+    width: 100%;
+    padding: 24px;
+  }
+}
+@media (max-width: 600px) {
+  .admin-shell .admin-main {
+    padding: 12px;
+  }
+  .admin-shell .reg-sync {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .admin-shell .admin-title {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .admin-shell .field-remove-action {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+    flex-basis: 100%;
+    border-top: 1px solid #e7ddd6;
+    padding-top: 10px;
+  }
+  .admin-shell .admin-dialog {
+    padding: 20px;
+  }
+  .admin-shell .registration-roster .roster-identity {
+    width: 124px;
+  }
+  /* At very narrow widths, keep actions pinned and let identity scroll naturally. */
+  .admin-shell .participant-roster :is(td, th).roster-identity,
+  .admin-shell .participant-roster :is(td, th).roster-select {
+    position: static;
+    box-shadow: none;
+  }
+}
+@media (max-width: 430px) {
+  .admin-shell .registration-roster :is(td, th).roster-identity {
+    position: static;
+    box-shadow: none;
+  }
+  .admin-shell .reg-admin-toolbar select {
+    max-width: 100%;
+  }
+  .admin-shell .activity-switch select {
+    max-width: 170px;
+  }
+  .admin-shell .admin-topbar {
+    padding: 12px;
+  }
+}

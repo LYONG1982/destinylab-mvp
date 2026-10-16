@@ -16,6 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" data-data-mode={process.env.DESTINY_DATA_MODE === "server" ? "server" : "mock"}
+      data-tongzhou={process.env.DESTINY_TONGZHOU_ENABLED === "true" ? "true" : "false"}
+      data-avatars={process.env.DESTINY_AVATARS_ENABLED === "true" ? "true" : "false"}
+      data-mini={process.env.DESTINY_MINI_ENABLED === "true" ? "true" : "false"}
+      data-member-wall={process.env.DESTINY_MEMBER_WALL_ENABLED === "true" ? "true" : "false"}
       data-activity={process.env.DESTINY_ACTIVITY_ID || "meet"}>
       <body style={motionCssVars}>
         <MotionRoot>{children}</MotionRoot>

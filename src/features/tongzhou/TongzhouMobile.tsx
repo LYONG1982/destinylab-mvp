@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import {useSearchParams} from "next/navigation";
+import {isLive} from "@/lib/api/live-client";
+import { useEffect, useRef, useState } from "react";
 import {
   Brand,
   Button,
@@ -30,18 +32,25 @@ import { submissionTime, TongzhouDetails } from "./TongzhouDetails";
 export function TongzhouEntry({
   state,
   actor,
+  questionId,
+  disabled,
+  canLeave,
 }: {
   state: DemoState;
   actor: string;
+  questionId?: string;
+  disabled?: boolean;
+  canLeave?: () => boolean;
 }) {
   const submitted = ownTongzhouSubmission(state, actor)?.status === "active";
-  if (state.live) return null;
+  if (state.live && document.documentElement.dataset.tongzhou === "false") return null;
   return (
     <aside className="tongzhou-entry">
       <div className="eyebrow">TONGZHOU · 同舟婚恋</div>
-      <p>想让专业顾问进一步了解你？</p>
-      <Link href="/mobile/tongzhou">
-        {submitted ? "查看我的填报" : "填写资料，申请同舟婚恋联系"}
+      <p>同舟专业婚恋服务</p>
+      <span className="fine">填写资料，让同舟顾问了解你的婚恋需求，为后续联系与服务做好准备。</span>
+      <Link href={questionId ? `/mobile/tongzhou?from=questions&q=${questionId}` : "/mobile/tongzhou"} aria-disabled={disabled} onClick={e=>{if(disabled || canLeave?.() === false)e.preventDefault();}}>
+        {submitted ? "查看我的填报" : "申请同舟专业婚恋服务"}
         <Icon name="arrow" size={17} />
       </Link>
       <small>自愿填报，后续由同舟在线下联系与服务</small>
@@ -84,7 +93,9 @@ function TongzhouPage({
   const [editing, setEditing] = useState(!submission);
   const [confirm, setConfirm] = useState<"withdraw" | "delete" | null>(null);
   const a = useAction(me.id);
-  const back = `/mobile/${routeFor(state, me)}`;
+  const query = useSearchParams();
+  const returningQuestion = query.get("from") === "questions" && /^q([2-9]|10)$/.test(query.get("q") || "") ? query.get("q") : null;
+  const back = returningQuestion ? `/mobile/04-question?q=${returningQuestion}` : `/mobile/${routeFor(state, me)}`;
   const status = submission?.status;
   return (
     <main className="mobile-shell tongzhou-mobile">
@@ -99,7 +110,7 @@ function TongzhouPage({
       <div className="mobile-utility">
         <Link className="back-link" href={back}>
           <Icon name="back" size={16} />
-          返回现场
+          {returningQuestion ? "返回继续答题" : "返回现场"}
         </Link>
         <span>{me.name}的填报</span>
       </div>
@@ -112,7 +123,7 @@ function TongzhouPage({
       </div>
       <div className="mobile-content">
         <Notice>
-          本地演示，请勿填写真实个人信息。资料仅保存在此浏览器，尚未发送给同舟。
+          {state.live ? "自愿提交，授权后仅同舟婚恋可查看本次填报。你可以随时修改、撤回授权或删除资料。" : "本地演示，请勿填写真实个人信息。资料仅保存在此浏览器，尚未发送给同舟。"}
         </Notice>
         {editing ? (
           <TongzhouForm
@@ -138,10 +149,10 @@ function TongzhouPage({
               </h2>
               <p>
                 {status === "active"
-                  ? "你可以随时修改或撤回。本地同舟视角可查看本次授权资料，后续服务在线下完成。"
+                  ? state.live ? "同舟婚恋已可查看本次授权资料。你可以随时修改或撤回，后续由同舟联系与服务。" : "你可以随时修改或撤回。本地同舟视角可查看本次授权资料，后续服务在线下完成。"
                   : status === "withdrawn"
                     ? "同舟资料名单中已移除本次填报，你仍可查看或删除自己的资料。"
-                    : "本地填报内容已清除，如有需要可以重新填写。"}
+                    : "填报内容已清除，如有需要可以重新填写。"}
               </p>
               {submission && (
                 <small>更新时间：{submissionTime(submission.updatedAt)}</small>
@@ -183,7 +194,7 @@ function TongzhouPage({
           </>
         )}
         <Link className="button button-secondary" href={back}>
-          返回现场探索 / 当前任务
+          {returningQuestion ? "返回继续答题" : "返回现场探索 / 当前任务"}
         </Link>
       </div>
       <Footer />
@@ -197,7 +208,7 @@ function TongzhouPage({
         >
           <p>
             {confirm === "delete"
-              ? "本地填报内容将被清除，同舟资料视角同步停止展示。现有现场答题和相遇记录保留。"
+              ? "填报内容将被清除，同舟后台同步停止展示。现有现场答题和相遇记录保留。"
               : "撤回后，同舟资料视角将停止展示你的填报。你仍可查看、删除，或自行重新授权。"}
           </p>
           {a.error && <Notice tone="error">{a.error}</Notice>}
@@ -250,6 +261,14 @@ function TongzhouForm({
           gender: me.gender === "male" ? "男" : "女",
         },
   );
+  const dirty = JSON.stringify(fields) !== JSON.stringify(submission?.fields || {...emptyTongzhouProfile(),gender:me.gender === "male" ? "男" : "女"});
+  useEffect(() => {
+    if (!dirty) return;
+    const unload = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    const click = (e: MouseEvent) => { if ((e.target as Element).closest("a[href]") && !window.confirm("资料尚未提交，确定放弃本次填写并离开？")) { e.preventDefault(); e.stopPropagation(); } };
+    window.addEventListener("beforeunload", unload); document.addEventListener("click", click, true);
+    return () => { window.removeEventListener("beforeunload", unload); document.removeEventListener("click", click, true); };
+  }, [dirty]);
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<TongzhouField, string>>>(
     {},
@@ -374,9 +393,9 @@ function TongzhouForm({
             <span>7 项必填</span>
           </div>
           <p className="fine">带 * 为必填，仅用于同舟了解与联系。</p>
-          <Button kind="text" type="button" onClick={example}>
+          {!isLive() && <Button kind="text" type="button" onClick={example}>
             填入虚构示例
-          </Button>
+          </Button>}
           <div className="tongzhou-fields">
             {TONGZHOU_FIELDS.filter((field) => field.required).map(renderField)}
           </div>
@@ -418,7 +437,7 @@ function TongzhouForm({
             接收方：同舟婚恋。仅使用本次填报资料开展线下联系、需求了解与人工婚恋服务；不包含活动十题答案，不在现场推荐卡或大屏展示。
           </p>
           <p className="fine">
-            当前为本地演示。正式经营主体全称、联系渠道及保存期限将在正式启用前补齐。
+            {isLive() ? "资料保留至你主动删除；撤回授权后同舟停止查看。提交手机号仅用于后续联系，不用于登录或自动分享。" : "当前为本地演示。正式经营主体全称、联系渠道及保存期限将在正式启用前补齐。"}
           </p>
           <label>
             <input

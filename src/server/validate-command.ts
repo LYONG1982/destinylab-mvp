@@ -9,7 +9,13 @@ type RecordValue = Record<string, unknown>;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/;
 const GENDERS = ["male", "female"] as const;
 const NEXT_CHOICES = ["WALK", "MERCHANT", "END"] as const;
-const PARTICIPANT_ACTIONS = ["pause", "resume", "leave", "hint"] as const;
+const PARTICIPANT_ACTIONS = [
+  "pause",
+  "resume",
+  "leave",
+  "return",
+  "hint",
+] as const;
 const HELP_STATUSES = ["ACK", "RESOLVED"] as const;
 
 function invalid(message: string): never {
@@ -157,6 +163,14 @@ function validateParticipant(value: RecordValue): LiveCommand {
 function validateOperator(value: RecordValue): LiveCommand {
   const type = string(value.type, "命令类型", 40);
   switch (type) {
+    case "point-status": {
+      exactKeys(value, ["type", "pointId", "enabled"]);
+      return {
+        type,
+        pointId: id(value.pointId, "相遇点编号"),
+        enabled: boolean(value.enabled, "相遇点开放状态"),
+      };
+    }
     case "pause": {
       exactKeys(value, ["type", "value"]);
       return { type, value: boolean(value.value, "现场暂停状态") };

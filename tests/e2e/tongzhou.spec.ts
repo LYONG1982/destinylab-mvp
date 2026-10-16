@@ -181,6 +181,8 @@ test("updates sync to agency; withdrawal clears open detail and stale editor; de
 test("leaving, changing actor and resetting cancel delayed private submissions", async ({
   page,
 }) => {
+  // This case deliberately leaves a dirty form; accept the new discard prompt.
+  page.on("dialog", dialog => dialog.accept());
   await scenario(page);
   await form(page);
   await example(page);
@@ -277,7 +279,7 @@ test("M05 empty and M10 entries return to the existing journey without modifying
     const before = await saved(page);
     await page.goto(`/mobile/${route}?actor=p-shanfeng`);
     await page
-      .getByRole("link", { name: "填写资料，申请同舟婚恋联系" })
+      .getByRole("link", { name: "申请同舟专业婚恋服务" })
       .click();
     await expect(page).toHaveURL(/mobile\/tongzhou/);
     await page.getByRole("link", { name: "返回现场探索 / 当前任务" }).click();

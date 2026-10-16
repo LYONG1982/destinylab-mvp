@@ -10,10 +10,11 @@ try {
   )
     throw new Error("DATABASE_CONFIRMATION_REQUIRED");
 } catch (error) {
-  logServerError(
-    "database.initialization.refused",
-    "configuration_validation",
-    error,
+  logServerError("database.initialization.refused", error, {
+    stage: "configuration_validation",
+  });
+  console.error(
+    "Initialization refused: validate protected configuration and explicitly name DESTINY_INIT_DATABASE.",
   );
   process.exit(1);
 }
@@ -24,6 +25,22 @@ const child = spawn(
 );
 for (const signal of ["SIGTERM", "SIGINT"])
   process.on(signal, () => child.kill(signal));
-child.on("exit", (code) => {
+let spawnFailed = false;
+child.on("exit", (code, signal) => {
   process.exitCode = code ?? 1;
+  if (code !== 0 && !signal && !spawnFailed) {
+    const error = new Error(
+      `INITIALIZER_EXIT_${code ?? "signal"}${signal ? `_${signal}` : ""}`,
+    );
+    logServerError("database.initialization.failed", error, {
+      stage: "initializer_process_exit",
+    });
+  }
+});
+child.on("error", (error) => {
+  spawnFailed = true;
+  logServerError("database.initialization.failed", error, {
+    stage: "initializer_process_start",
+  });
+  process.exitCode = 1;
 });

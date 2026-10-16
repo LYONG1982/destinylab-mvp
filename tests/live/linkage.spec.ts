@@ -125,7 +125,7 @@ test("independent mobile journeys, operator, public screen, permission withdrawa
     await operator
       .getByRole("button", { name: "添加相遇点", exact: true })
       .click();
-    await expect(operator.getByRole("status")).toHaveText("相遇点已添加。");
+    await expect(operator.getByRole("group").getByRole("status")).toHaveText("相遇点已添加。");
     await display.goto(`/screen?activity=${activity}`);
     const world = display.getByTestId("destiny-world");
     await expect(world).toHaveAttribute("data-total", "0");

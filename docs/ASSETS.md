@@ -1,5 +1,12 @@
 # 素材清单与生成来源
 
+## 2026-10-11 · 用户相册头像
+
+新增真实服务照片路径 `/api/avatar/<asset-uuid>`，大屏用途使用 `?screen=1` 并逐次检查许可。照片由本人主动选择，客户端裁剪后服务端再次解码、去元数据并输出 512×512 WebP（不超过 200 KiB），不存原相册文件、不存 Base64。静态系统头像目录与编号保持。
+
+支持 JPG／PNG／WebP，输入最多 10 MiB 和 2400 万像素，拒绝动画及无效图片。HEIC 能否由系统相册转换须真机验证，不能转换时显示格式提示。新增直接依赖 sharp，用于服务器验证与重编码；不进入公开 Next image 优化缓存。
+
+
 ## ACT03 V2三对图的使用（2026-10-09）
 
 参考来源为资料目录`第三幕设计.png`与`Destiny_Field_ACT03_三对相遇_Codex实施提示词_V2.0.md`，只借鉴三组横向独立关系场和克制秋日质感。没有将参考图导入public作为背景，没有复制其中二维码、Logo、地点日期、建筑或额外文案。
@@ -49,3 +56,12 @@ Single square virtual avatar illustration for an elegant Chinese urban social ap
 ## 第三幕资产复用（2026-10-09）
 
 本轮没有新增生成素材。背景沿用`public/assets/destiny-field/ambient-act12-v2.png`；左右人物直接读取用户选择的现有男/女虚拟头像白名单，CSS圆形裁切不改原图。Connection为Three固定缓冲/池化点效果，失败时使用静态SVG曲线；文字和昵称均为DOM，二维码沿用现有生成组件及载荷。
+
+
+## 2026-10-11 宣传页隐藏编号与女生 UAT 样例
+
+新增 assets/uat/tongzhou-20261011/ 的 8 张 AI 合成人像，仅作 UAT 虚构测试。每人一张人物照、一张保持身份的生活照；生成来源与提示词规格见该目录 README.md。上传时复用原相册 WebP/缩略图处理；原图不放 public、不随生产镜像包含。
+
+## 2026-10-12 报名视觉
+
+public/assets/registration/city-dusk.png 为本轮基于用户海报视觉语言生成的无文字城市氛围图，1024×1536。用于报名首页，不复制原海报政府标志、主承办方信息或原二维码。docs/design/registration保存用户确认的七屏高保真参考。

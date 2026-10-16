@@ -35,9 +35,9 @@ docker build --platform linux/amd64 --target runner -t destinylab-uat:VERSION .
 docker build --platform linux/amd64 --target migration -t destinylab-migrate:VERSION .
 ```
 
-镜像不包含 .env、数据库备份或测试输出；运行时通过平台受保护变量注入。运行镜像使用 node 非特权用户，监听 0.0.0.0:8080，PORT 可由平台指定。必要变量见 `.env.example`。公网入口必须 HTTPS；数据库连接由 `DATABASE_URL` 和 PostgreSQL 驱动默认行为决定，应用不再要求 `DESTINY_DATABASE_SSL` 或单独的 CA 文件变量。数据库服务若要求 TLS，应按服务商提供的连接串参数配置，并在实际 CCE 网络中验证连接；连接池建议先 6，允许 1–12。
+镜像不包含 .env、数据库备份或测试输出；运行时通过平台受保护变量注入。运行镜像使用 node 非特权用户，监听 0.0.0.0:8080，PORT 可由平台指定。必要变量见 `.env.example`。公网入口必须 HTTPS；数据库连接方式由 `DATABASE_URL` 及 PostgreSQL 驱动默认行为决定，应用不再要求 `DESTINY_DATABASE_SSL` 或单独 CA 文件变量。基于当前源码重建的新部署应移除这两个旧变量和 CA 挂载；历史镜像仍按其版本文档配置。数据库服务如要求 TLS，按服务商支持的连接串参数配置，并在目标网络内实际验证。连接池建议先 6，允许 1–12。
 
-初始化与应用启动分开。管理员先建立独立数据库及应用账号；当前部署选择由 `destinylab_app` 同时执行初始化并供应用运行，因此该账号应拥有目标数据库。`DESTINY_INIT_DATABASE` 必须准确等于配置中的数据库名，再用 migration 目标单独执行。初始化只增量建表和创建零业务活动，已有活动保持不变。初始化不创建参与者、不导入 Mock，也不设置历史次数。不要授予该账号 `CREATEDB`、`CREATEROLE` 或其他数据库权限。
+初始化与应用启动分开。管理员先建立独立数据库及迁移账号；`DESTINY_INIT_DATABASE` 必须准确等于配置中数据库名，再用 migration 目标单独执行。初始化只增量建表和创建零业务活动，已有活动保持不变。初始化不创建参与者、不导入 Mock，也不设置历史次数。业务账号仅授予本库本 schema 必要的表 SELECT/INSERT/UPDATE/DELETE 和序列权限；不授予 CREATEDB/CREATEROLE，不授予其他业务库连接及对象权限。云资源就绪后实际核验权限，而非仅依赖配置说明。
 
 ## 两个数据库、分阶段发布
 

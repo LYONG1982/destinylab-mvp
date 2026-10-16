@@ -1,0 +1,55 @@
+name: Weapp verification
+# Manual dispatch preserves the zero-new-cost boundary on this private repository.
+# This workflow never deploys, publishes an image, or connects to a production DB.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: destiny_weapp_ci_test
+          POSTGRES_PASSWORD: isolated-ci-fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      DATABASE_URL: postgresql://postgres:isolated-ci-fixture@127.0.0.1:5432/destiny_weapp_ci_test
+      DESTINY_DATA_MODE: server
+      DESTINY_DATABASE_SSL: disable
+      DESTINY_PUBLIC_URL: http://127.0.0.1:3227
+      DESTINY_SESSION_SECRET: isolated-ci-session-secret-not-for-deployment
+      DESTINY_REGISTRATION_ENABLED: 'true'
+      DESTINY_TONGZHOU_ENABLED: 'true'
+      DESTINY_AVATARS_ENABLED: 'true'
+      DESTINY_MEMBER_WALL_ENABLED: 'true'
+      DESTINY_MINI_ENABLED: 'true'
+      DESTINY_WECHAT_APPID: wx0000000000000000
+      DESTINY_WECHAT_SECRET: 00000000000000000000000000000000
+      DESTINY_WECHAT_ENV_VERSION: trial
+      DESTINY_MINI_MODERATION: local-test
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.1'
+      - run: npm ci --no-audit --no-fund
+      - run: npm ci --prefix miniapp --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:mini:integration
+      - run: node --conditions=react-server --import tsx --test tests/agency/unified.test.ts
+      - run: node --conditions=react-server --import tsx --test tests/live/meet-points.test.ts
+      - run: node --conditions=react-server --import tsx --test tests/live/field-management.test.ts
+      - run: npm run typecheck --prefix miniapp
+      - run: npm run build:weapp --prefix miniapp
+      - run: npm run build

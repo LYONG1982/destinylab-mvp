@@ -20,9 +20,10 @@ function redact(value) {
       "$1[REDACTED]@",
     )
     .replace(
-      /((?:password|passwd|pwd)\s*[=:]\s*)(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi,
+      /("?(?:password|passwd|pwd|secret|token|authorization|x-yuanfen-proxy-key)"?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|(?:Bearer\s+)?[^\s,;]+)/gi,
       "$1[REDACTED]",
-    );
+    )
+    .slice(0, 12000);
 }
 
 function errorRecord(error) {
@@ -56,7 +57,7 @@ export function logServerError(event, error, context = {}, options = {}) {
   );
   const throttleMs = Number(options.throttleMs || 0);
   if (throttleMs > 0) {
-    const key = `${event}:${safeContext.route || ""}:${error?.code || error?.message || "unknown"}`;
+    const key = `${event}:${JSON.stringify(safeContext)}:${error?.code || error?.message || "unknown"}`;
     const now = Date.now();
     if (now - (recentEvents.get(key) || 0) < throttleMs) return;
     recentEvents.set(key, now);

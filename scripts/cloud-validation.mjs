@@ -6,6 +6,16 @@ export function validateCloudEnvironment(env) {
     throw new Error("CLOUD_MODE_INVALID");
   const origin = new URL(env.DESTINY_PUBLIC_URL || "");
   const local = ["127.0.0.1", "localhost", "[::1]"].includes(origin.hostname);
+  if (env.DESTINY_MINI_ENABLED === "true" && !local) {
+    if (
+      (env.DESTINY_MINI_MODERATION || "wechat") !== "wechat" ||
+      !/^wx[a-f0-9]{16}$/.test(env.DESTINY_WECHAT_APPID || "") ||
+      /^wx0+$/.test(env.DESTINY_WECHAT_APPID || "") ||
+      !/^[A-Za-z0-9]{16,32}$/.test(env.DESTINY_WECHAT_CALLBACK_TOKEN || "") ||
+      !/^[A-Za-z0-9+/]{43}$/.test(env.DESTINY_WECHAT_CALLBACK_AES_KEY || "")
+    )
+      throw new Error("CLOUD_WECHAT_CONTENT_REQUIRED");
+  }
   if (
     origin.username ||
     origin.password ||

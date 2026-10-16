@@ -51,10 +51,20 @@ test("test writes require origin, independent database and actual remote binding
     verifyCloudTestBinding(target, { ok: true, testBinding: wrongDb.binding }),
   );
 });
-test("database pool uses PostgreSQL connection-string defaults", () => {
+test("database pool uses DATABASE_URL and PostgreSQL driver defaults", () => {
+  const options = databaseOptions(env.DATABASE_URL, env);
+  assert.equal(options.connectionString, env.DATABASE_URL);
+  assert.equal("ssl" in options, false);
+  const legacyVariables = databaseOptions(env.DATABASE_URL, {
+    ...env,
+    DESTINY_DATABASE_SSL: "disable",
+    DESTINY_DATABASE_CA_FILE: "/missing/postgres-ca.pem",
+  });
+  assert.equal("ssl" in legacyVariables, false);
+  assert.equal(legacyVariables.connectionString, env.DATABASE_URL);
   assert.equal(
-    databaseOptions(env.DATABASE_URL, env).connectionString,
-    env.DATABASE_URL,
+    databaseOptions(`${env.DATABASE_URL}?sslmode=require`, env).connectionString,
+    `${env.DATABASE_URL}?sslmode=require`,
   );
   assert.throws(() =>
     databaseOptions(env.DATABASE_URL, {

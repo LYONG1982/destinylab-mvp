@@ -3,9 +3,10 @@ import {
   expect,
   type BrowserContext,
   type APIRequestContext,
+  type APIResponse,
 } from "@playwright/test";
 import { randomUUID } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import jsQR from "jsqr";
 import { PNG } from "pngjs";
@@ -38,6 +39,9 @@ const NAMES = [
   "晴天",
 ];
 const target = cloudTestTarget(process.env);
+const diagnosticApiOnly = process.env.DESTINY_DIAGNOSTIC_API_ONLY === "true";
+if (diagnosticApiOnly && new URL(target.origin).hostname !== "127.0.0.1")
+  throw new Error("API-only diagnostic is restricted to isolated local tests");
 const soakSeconds = Number(process.env.DESTINY_CLOUD_SOAK_SECONDS || "0");
 if (
   !Number.isInteger(soakSeconds) ||
@@ -48,11 +52,57 @@ const url = (path: string, audience = "participant") =>
   `/api/live/${path}?activity=${target.activity}&audience=${audience}`;
 const login = () =>
   JSON.parse(readFileSync(process.env.DESTINY_CLOUD_TEST_LOGIN!, "utf8"));
+// Deliberately allowlist metadata: never persist bodies, cookies or request headers.
+function diagnostic(value: Record<string, unknown>) {
+  appendFileSync(
+    join(process.env.DESTINY_CLOUD_TEST_OUTPUT!, "http-diagnostics.jsonl"),
+    JSON.stringify({ at: new Date().toISOString(), ...value }) + "\n",
+    { mode: 0o600 },
+  );
+}
+function sourceHeaders(headers: Record<string, string>) {
+  return Object.fromEntries(
+    [
+      "server",
+      "cf-ray",
+      "x-render-origin-server",
+      "x-request-id",
+      "content-type",
+    ]
+      .filter((key) => headers[key])
+      .map((key) => [key, headers[key].slice(0, 160)]),
+  );
+}
+async function measured(operation: string, run: () => Promise<APIResponse>) {
+  const start = Date.now();
+  try {
+    const response = await run();
+    diagnostic({
+      operation,
+      status: response.status(),
+      elapsedMs: Date.now() - start,
+      source: sourceHeaders(response.headers()),
+    });
+    return response;
+  } catch {
+    diagnostic({
+      operation,
+      transportFailure: true,
+      elapsedMs: Date.now() - start,
+    });
+    // Playwright's original error can include authorization headers.
+    throw new Error(
+      `Request transport failed (${operation}); see sanitized diagnostics`,
+    );
+  }
+}
 async function read(
   r: APIRequestContext,
   role = "participant",
 ): Promise<LiveSnapshot> {
-  const response = await r.get(url("snapshot", role));
+  const response = await measured("snapshot:" + role, () =>
+    r.get(url("snapshot", role)),
+  );
   expect(response.status()).toBe(200);
   return response.json();
 }
@@ -63,10 +113,12 @@ async function send(
   role = "participant",
   id = randomUUID(),
 ) {
-  return r.post(url("command", role), {
-    headers: { Origin: target.origin, "Idempotency-Key": id },
-    data: { epoch, command },
-  });
+  return measured("command:" + role, () =>
+    r.post(url("command", role), {
+      headers: { Origin: target.origin, "Idempotency-Key": id },
+      data: { epoch, command },
+    }),
+  );
 }
 async function command(
   r: APIRequestContext,
@@ -85,9 +137,11 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
 }) => {
   test.setTimeout(600000 + soakSeconds * 1000);
   // The first request is read-only. No login, session or participant creation before proof.
-  const ready = await request.get("/api/health/ready", {
-    headers: { "x-destiny-test-token": target.token },
-  });
+  const ready = await measured("readiness", () =>
+    request.get("/api/health/ready", {
+      headers: { "x-destiny-test-token": target.token },
+    }),
+  );
   expect(ready.status()).toBe(200);
   verifyCloudTestBinding(target, await ready.json());
   const contexts: BrowserContext[] = [];
@@ -99,6 +153,36 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
         baseURL: target.origin,
         viewport: { width: 390, height: 844 },
         reducedMotion: "reduce",
+      });
+      c.setDefaultTimeout(15000);
+      const starts = new WeakMap<object, number>();
+      c.on("request", (request) => {
+        starts.set(request, Date.now());
+        if (new URL(request.url()).pathname === "/api/live/command")
+          diagnostic({ operation: "browser-command-start" });
+      });
+      c.on("requestfailed", (request) => {
+        const path = new URL(request.url()).pathname;
+        if (path.startsWith("/api/live/"))
+          diagnostic({
+            operation: "browser-failed:" + path,
+            timing: request.timing(),
+            elapsedMs: Date.now() - (starts.get(request) || Date.now()),
+            failure:
+              request.failure()?.errorText === "net::ERR_ABORTED"
+                ? "aborted"
+                : "transport",
+          });
+      });
+      c.on("response", (response) => {
+        const path = new URL(response.url()).pathname;
+        if (path.startsWith("/api/live/"))
+          diagnostic({
+            operation: "browser:" + path,
+            status: response.status(),
+            source: sourceHeaders(response.headers()),
+            responseStartMs: response.request().timing().responseStart,
+          });
       });
       contexts.push(c);
       return c;
@@ -145,7 +229,7 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
         const snap = await read(c.request);
         const epoch = snap.state!.epoch;
         users.push({ context: c, actor: snap.actor!, epoch });
-        if (i < 4) {
+        if (i < 4 && !diagnosticApiOnly) {
           await page.getByRole("button", { name: /一起逛逛/ }).click();
           await page
             .getByRole("button", { name: "看看现场还有谁和我一样" })
@@ -167,6 +251,24 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
             })
             .check();
           await page.getByRole("button", { name: "继续答题" }).click();
+          try {
+            await expect(page).toHaveURL(/04-question/);
+          } catch {
+            diagnostic({
+              operation: "profile-navigation",
+              path: new URL(page.url()).pathname,
+              notices: await page
+                .locator(".notice-error, .field-error")
+                .allTextContents(),
+              submitDisabled: await page
+                .getByRole("button", { name: "继续答题" })
+                .isDisabled()
+                .catch(() => null),
+            });
+            throw new Error(
+              "Profile did not reach questions; see sanitized diagnostics",
+            );
+          }
           for (const q of QUESTIONS.slice(1))
             await page
               .getByRole("button", { name: q.options[0], exact: true })
@@ -425,6 +527,8 @@ test("10 then 20 independent browsers, two pairs, permissions and reconnect", as
           activity: target.activity,
           independentBrowserContexts: 20,
           realDevices: 0,
+          mobileUiJourneys: diagnosticApiOnly ? 0 : 4,
+          diagnosticOnly: diagnosticApiOnly,
           pairs: 2,
           apiAnswerBatchMs: times,
           syncSamplesMs: sync,

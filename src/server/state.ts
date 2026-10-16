@@ -1,6 +1,7 @@
 import "server-only";
 import { createHmac, randomUUID } from "node:crypto";
 import { QUESTIONS } from "@/data/questions";
+import { defaultMeetPoints } from "@/domain/meet-points";
 import type { DemoState, Participant } from "@/domain/types";
 import {
   commonAnswers,
@@ -28,7 +29,7 @@ export function emptyActivity(): DemoState {
     activityPaused: false,
     participants: [],
     invitations: [],
-    points: [],
+    points: defaultMeetPoints(),
     helps: [],
     merchants: [],
     events: [],
@@ -181,6 +182,17 @@ export function worldProjection(
   previous?: DemoState,
 ) {
   const config = liveConfig();
+  if (process.env.DESTINY_AVATARS_ENABLED !== "true") {
+    state = {
+      ...state,
+      participants: state.participants.map((p) => ({ ...p, photo: null })),
+    };
+    if (previous)
+      previous = {
+        ...previous,
+        participants: previous.participants.map((p) => ({ ...p, photo: null })),
+      };
+  }
   const consent = {
     revision: state.revision,
     allows: (invitationId: string, participantId: string) =>

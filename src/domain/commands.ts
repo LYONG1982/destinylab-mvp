@@ -35,6 +35,10 @@ export function applyCommand(
   s.wallAt = Date.now();
   const { command: c, actor } = envelope;
   const me = person(s, actor);
+  if (actor !== "operator") {
+    ensure(s.fieldOpen !== false, "现场已关闭，报名与同舟资料仍可维护。");
+    ensure(me?.present, "你已离场，请联系工作人员恢复入场。");
+  }
   const log = (
     type: string,
     text: string,
@@ -328,10 +332,22 @@ export function applyCommand(
       ensure(p, "参与者不存在。");
       if (c.action === "pause") p.paused = true;
       else if (c.action === "resume") p.paused = false;
-      else if (c.action === "leave") {
+      else if (c.action === "return") {
+        p.present = true;
+        p.paused = false;
+        p.ready = false;
+      } else if (c.action === "leave") {
         p.present = false;
         p.ready = false;
         const i = currentInvite(s, p);
+        for (const h of s.helps.filter(
+          (h) =>
+            (h.participantId === p.id || h.invitationId === i?.id) &&
+            h.status !== "RESOLVED",
+        )) {
+          h.status = "RESOLVED";
+          h.reply = "参与者已离场。";
+        }
         if (i && ACTIVE_STATUSES.includes(i.status)) close(i, "CANCELLED");
       } else if (c.action === "hint")
         log(
@@ -342,7 +358,7 @@ export function applyCommand(
         );
       log(
         "PARTICIPANT",
-        `${p.name}：${{ pause: "暂停推荐", resume: "恢复推荐", leave: "标记离场", hint: "发送现场提示" }[c.action]}`,
+        `${p.name}：${{ pause: "暂停推荐", resume: "恢复推荐", leave: "标记离场", return: "恢复入场", hint: "发送现场提示" }[c.action]}`,
         undefined,
         p.id,
       );
@@ -359,6 +375,15 @@ export function applyCommand(
           ? "工作人员已接单，请在相遇点附近稍候。"
           : "本次帮助已处理。如仍有需要，可以再次求助。";
       log("HELP_STATUS", h.reply, h.invitationId, h.participantId);
+      break;
+    }
+    case "point-status": {
+      admin();
+      const point = s.points.find((p) => p.id === c.pointId);
+      ensure(point, "相遇点不存在。");
+      ensure(!point.occupant, "请先结束安排并确认场地空闲，再修改开放状态。");
+      point.closed = !c.enabled;
+      log("POINT_STATUS", `${point.name}${c.enabled ? "已启用" : "已停用"}`);
       break;
     }
     case "release": {

@@ -16,6 +16,8 @@ export interface Participant {
   name: string;
   gender: Gender;
   avatarId: string | null;
+  photo?: import("./photo").PhotoAvatar | null;
+  avatarVersion?: number;
   age: string;
   ready: boolean;
   present: boolean;
@@ -87,6 +89,7 @@ export interface DemoState {
   wallAt: number;
   scenario: string;
   activityPaused: boolean;
+  fieldOpen?: boolean;
   participants: Participant[];
   invitations: Invitation[];
   points: MeetPoint[];
@@ -112,12 +115,21 @@ export interface DemoState {
   };
 }
 export interface ActivityMetrics {
-  active: number; canMeet: number; waiting: number; mutual: number;
-  going: number; real: number; scans: number; answered: number;
-  completed: number; sent: number; merchant: number;
+  active: number;
+  canMeet: number;
+  waiting: number;
+  mutual: number;
+  going: number;
+  real: number;
+  scans: number;
+  answered: number;
+  completed: number;
+  sent: number;
+  merchant: number;
 }
 export type Actor = string | "operator";
 export type Command =
+  | import("./photo").AvatarCommand
   | TongzhouCommand
   | { type: "answer"; questionId: string; value: string }
   | {
@@ -148,10 +160,11 @@ export type Command =
   | {
       type: "participant";
       participantId: string;
-      action: "pause" | "resume" | "leave" | "hint";
+      action: "pause" | "resume" | "leave" | "return" | "hint";
     }
   | { type: "help-status"; helpId: string; status: HelpRequest["status"] }
   | { type: "release"; pointId: string }
+  | { type: "point-status"; pointId: string; enabled: boolean }
   | { type: "merchant"; merchantId: string; active: boolean }
   | { type: "advance"; minutes: number }
   | { type: "broadcast-consume" }

@@ -19,6 +19,7 @@ export function database() {
 }
 export async function transaction<T>(fn: (client: PoolClient) => Promise<T>) {
   const client = await database().connect();
+  let releaseError: Error | undefined;
   try {
     await client.query("BEGIN");
     const result = await fn(client);
@@ -31,9 +32,13 @@ export async function transaction<T>(fn: (client: PoolClient) => Promise<T>) {
       logServerError("database.transaction.rollback_failed", rollbackError, {
         stage: "rollback",
       });
+      releaseError =
+        rollbackError instanceof Error
+          ? rollbackError
+          : new Error(String(rollbackError));
     }
     throw error;
   } finally {
-    client.release();
+    client.release(releaseError);
   }
 }

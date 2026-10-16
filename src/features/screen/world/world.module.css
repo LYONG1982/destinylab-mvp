@@ -879,3 +879,5 @@
     box-shadow: none;
   }
 }
+
+.stablePlayers :global(.destiny-player-avatar img[src^="/api/avatar/"]) { object-fit: cover; object-position: center; transform: none; }
