@@ -32,12 +32,19 @@ export async function galleryState(
     "SELECT snapshot->'photos' AS photos FROM dl_agency_profiles WHERE activity_id=$1 AND actor=$2 AND published",
     [activity, actor],
   );
-  const user = (
+  let user = (
     await c.query(
       "SELECT a.id,a.created_at FROM dl_avatar_assets a JOIN dl_activities d ON d.id=a.activity_id CROSS JOIN LATERAL jsonb_array_elements(d.state->'participants') p WHERE a.activity_id=$1 AND a.actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) AND a.attached AND p->>'id'=a.actor AND p->'photo'->>'id'=a.id::text ORDER BY a.created_at DESC LIMIT 1",
       [activity, actor],
     )
   ).rows[0];
+  if (!user)
+    user = (
+      await c.query(
+        "SELECT id,created_at FROM dl_agency_retained_photos WHERE activity_id=$1 AND actor IN (SELECT actor FROM dl_agency_sources WHERE activity_id=$1 AND member_actor=$2 AND active) ORDER BY created_at DESC LIMIT 1",
+        [activity, actor],
+      )
+    ).rows[0];
   const all = [
     ...(user
       ? [{ ...user, width: 512, height: 512, source: "user" as const }]
@@ -74,7 +81,7 @@ export async function galleryPhoto(
     if (!/^[a-f0-9-]{36}$/.test(id)) throw new HttpError(404, "照片不可查看。");
     if (id === photo) {
       const user = await c.query(
-        "SELECT bytes FROM dl_avatar_assets WHERE id=$1 AND activity_id=$2 AND actor=$3 AND attached",
+        "SELECT bytes FROM dl_avatar_assets WHERE id=$1 AND activity_id=$2 AND actor=$3 AND attached UNION ALL SELECT bytes FROM dl_agency_retained_photos WHERE id=$1 AND activity_id=$2 AND actor=$3",
         [id, activity, photoActor],
       );
       if (!user.rowCount) throw new HttpError(404, "照片不可查看。");

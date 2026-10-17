@@ -439,7 +439,7 @@ export function RegistrationPage({ entry }: { entry: MiniEntry }) {
               ? "你的报名已核验，可以开始答题与发现同频的人。"
               : "请由现场工作人员核验签到，扫码不会自动签到。"}
           </Text>
-          {record?.effectiveStatus === "checked_in" && (
+          {record && record.status !== "cancelled" && (
             <Button
               className="reg-primary"
               disabled={busy}

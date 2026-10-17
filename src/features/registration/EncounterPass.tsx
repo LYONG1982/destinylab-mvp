@@ -131,7 +131,7 @@ export function EncounterPass({
           <button className="reg-text" onClick={onDetails}>
             查看报名详情
           </button>
-          {!cancelled && record.effectiveStatus === "checked_in" && (
+          {!cancelled && (
             <button className="reg-text" disabled={busy} onClick={onEnter}>
               进入活动 <span aria-hidden="true">↗</span>
             </button>

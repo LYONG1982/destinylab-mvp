@@ -28,6 +28,8 @@ jobs:
       DESTINY_SESSION_SECRET: isolated-ci-session-secret-not-for-deployment
       DESTINY_REGISTRATION_ENABLED: 'true'
       DESTINY_TONGZHOU_ENABLED: 'true'
+      DESTINY_AVATARS_ENABLED: 'true'
+      DESTINY_MEMBER_WALL_ENABLED: 'true'
       DESTINY_MINI_ENABLED: 'true'
       DESTINY_WECHAT_APPID: wx0000000000000000
       DESTINY_WECHAT_SECRET: 00000000000000000000000000000000
@@ -47,6 +49,7 @@ jobs:
       - run: npm run test:mini:integration
       - run: node --conditions=react-server --import tsx --test tests/agency/unified.test.ts
       - run: node --conditions=react-server --import tsx --test tests/live/meet-points.test.ts
+      - run: node --conditions=react-server --import tsx --test tests/live/field-management.test.ts
       - run: npm run typecheck --prefix miniapp
       - run: npm run build:weapp --prefix miniapp
       - run: npm run build

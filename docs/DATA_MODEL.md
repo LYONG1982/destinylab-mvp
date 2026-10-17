@@ -1,5 +1,13 @@
 # 遇见-缘分实验室 · V1.0 数据模型、状态与适配边界
 
+## 2026-10-16 · 遇见卡牌墙后台UX优化
+
+无新增DDL或迁移。仅需运营权限的member-wall/admin响应增加diagnostics：authorizedPresent、onScreen、互斥excluded(left/consent/paused/profile/invalid)及screen(status/window/heartbeatAt/expiresAt)。窗口标识为owner摘要，不返回令牌；公开snapshot不包含诊断。配置结构、版本锁、主控租约和公开许可均不变。 详见[实施与验收说明](weapp/17-member-wall-admin-ux.md)。
+
+## 2026-10-15 · 运营后台视觉优化
+
+本轮运营后台状态标签与操作层级调整不增加表、字段、枚举或迁移。展示继续读取报名 status、参与者 present/paused 和现有 phase 派生结果；已签到不推导在场状态。详见 [边界说明](weapp/15-admin-visual-uat.md)。
+
 ## 2026-10-12 更新：正面年龄段（当前）
 
 PublicMemberCard新增ageRange:string|null，源于Participant.age，仅允许AGES中的22–25/26–29/30–33/34–37/38+，其他输入归null。客户端安全检查拒绝非法值。WALL_CONSENT_VERSION升级member-wall-2026-10-12-v4，复用既有版本列，无DDL。encounterCode保留后端/运营兼容，仅从卡片UI移除。

@@ -19,6 +19,7 @@ export async function registrationApi<T>(
     {
       method: input !== undefined || upload ? "POST" : "GET",
       credentials: "same-origin",
+      signal: AbortSignal.timeout(15000),
       cache: "no-store",
       headers:
         input !== undefined || upload

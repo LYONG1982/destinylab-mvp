@@ -1,10 +1,10 @@
 import "server-only";
-import { checkMiniText } from "./wechat-content";
 import { isIP } from "node:net";
 import { randomBytes, randomUUID } from "node:crypto";
 import { database, transaction } from "./db";
 import { digest, HttpError, load, rateLimit, type Session } from "./service";
-import { registrationEnterActor } from "./registration-service";
+import { newParticipant } from "./state";
+import { save } from "./service";
 import { entryType, type MiniEntry } from "@/domain/mini-entry";
 import {
   exchangeWechatCode,
@@ -89,43 +89,51 @@ export async function miniSession(
 ): Promise<Session> {
   const identity = await miniIdentity(request, activity);
   const found = await database().query(
-    "SELECT r.participant_id AS actor FROM dl_wechat_registrations w JOIN dl_registrations r ON r.id=w.registration_id AND r.activity_id=w.activity_id JOIN dl_activities a ON a.id=w.activity_id WHERE w.identity_id=$1 AND w.activity_id=$2 AND r.status='checked_in' AND r.checkin_epoch=a.state->>'epoch' AND r.participant_epoch=a.state->>'epoch' AND r.participant_id IS NOT NULL",
+    "SELECT w.actor,w.epoch,a.state->>'epoch' AS current_epoch FROM dl_wechat_participants w JOIN dl_activities a ON a.id=w.activity_id WHERE w.identity_id=$1 AND w.activity_id=$2",
     [identity, activity],
   );
-  if (!found.rows[0])
-    throw new HttpError(
-      409,
-      "请先完成报名并由工作人员核验签到，再进入现场互动。",
-    );
+  if (!found.rows[0] || found.rows[0].epoch !== found.rows[0].current_epoch)
+    throw new HttpError(410, "本轮参与已结束，请主动进入现场互动。");
   return { actor: found.rows[0].actor, role: "participant" };
 }
 export async function miniEnter(identity: string, activity: string) {
-  const record = await database().query(
-    "SELECT r.nickname FROM dl_registrations r JOIN dl_wechat_registrations w ON w.registration_id=r.id AND w.activity_id=r.activity_id WHERE w.identity_id=$1 AND w.activity_id=$2",
-    [identity, activity],
-  );
-  if (!record.rows[0]) throw new HttpError(403, "请先完成报名。");
-  const nickname = record.rows[0].nickname as string;
-  await checkMiniText(identity, nickname);
   return transaction(async (c) => {
-    await load(c, activity, true);
-    const existing = await c.query(
-      "SELECT actor FROM dl_wechat_participants WHERE identity_id=$1 AND activity_id=$2",
-      [identity, activity],
-    );
-    const actor = await registrationEnterActor(
-      c,
-      activity,
-      `mini:${identity}`,
-      undefined,
-      existing.rows[0]?.actor,
-      nickname,
-    );
+    const before = await load(c, activity, true);
+    const old = (
+      await c.query(
+        "SELECT actor,epoch FROM dl_wechat_participants WHERE identity_id=$1 AND activity_id=$2",
+        [identity, activity],
+      )
+    ).rows[0];
+    if (old?.epoch === before.epoch) {
+      const p = before.participants.find((p) => p.id === old.actor);
+      if (!p) throw new HttpError(410, "你已从本场移除，请联系工作人员。");
+      return { actor: p.id, role: "participant" as const };
+    }
+    if (before.fieldOpen === false)
+      throw new HttpError(409, "现场尚未开放，请稍后再来。");
+    const next = structuredClone(before),
+      p = newParticipant();
+    next.participants.push(p);
+    next.scans.push(p.id);
+    next.events.push({
+      id: `join-${p.id}`,
+      at: p.joinedAt,
+      type: "JOIN",
+      text: "一位参与者进入活动",
+      participantId: p.id,
+    });
+    await save(c, activity, before, next);
     await c.query(
-      "INSERT INTO dl_wechat_participants(identity_id,activity_id,actor) VALUES($1,$2,$3) ON CONFLICT(identity_id,activity_id) DO UPDATE SET actor=EXCLUDED.actor",
-      [identity, activity, actor],
+      "INSERT INTO dl_wechat_participants(identity_id,activity_id,actor,epoch) VALUES($1,$2,$3,$4) ON CONFLICT(identity_id,activity_id) DO UPDATE SET actor=$3,epoch=$4",
+      [identity, activity, p.id, before.epoch],
     );
-    return { actor, role: "participant" as const };
+    // Verified identity binding only; no phone/name matching and no copied public profile.
+    await c.query(
+      "UPDATE dl_registrations r SET participant_id=$3,participant_epoch=$4 FROM dl_wechat_registrations w WHERE w.identity_id=$1 AND w.activity_id=$2 AND r.id=w.registration_id AND r.activity_id=$2",
+      [identity, activity, p.id, before.epoch],
+    );
+    return { actor: p.id, role: "participant" as const };
   });
 }
 export async function miniLogout(request: Request, activity: string) {

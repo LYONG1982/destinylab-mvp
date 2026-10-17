@@ -1,4 +1,5 @@
 import "server-only";
+import { fieldParticipant } from "./field-guard";
 import sharp from "sharp";
 import { randomUUID } from "node:crypto";
 import { database, transaction } from "./db";
@@ -49,6 +50,7 @@ export async function uploadAvatar(
   const id = randomUUID();
   await transaction(async (client) => {
     const state = await load(client, activity, true);
+    fieldParticipant(state, session.actor);
     if (!state.participants.some((p) => p.id === session.actor))
       throw new HttpError(403, "参与身份已失效。");
     await client.query(
@@ -92,6 +94,7 @@ export async function avatarCommand(
     const state = await load(client, activity, true),
       next = structuredClone(state),
       me = next.participants.find((p) => p.id === session.actor);
+    fieldParticipant(state, session.actor);
     if (!me || input.epoch !== state.epoch)
       throw new HttpError(409, "活动状态已变化，请刷新。");
     const hash = digest(JSON.stringify(c));
@@ -179,14 +182,26 @@ export async function readAvatar(request: Request, id: string) {
 }
 
 /** Small-program downloads use the same projection boundary, with a verified bearer session. */
-export async function readMiniAvatar(activity: string, session: Session, id: string) {
+export async function readMiniAvatar(
+  activity: string,
+  session: Session,
+  id: string,
+) {
   if (!assetIdValid(id)) throw new HttpError(404, "照片不可查看。");
-  const result = await database().query("SELECT a.actor,a.bytes,a.attached,d.state FROM dl_avatar_assets a JOIN dl_activities d ON d.id=a.activity_id WHERE a.id=$1 AND a.activity_id=$2 AND (a.attached OR a.created_at>now()-interval '24 hours')", [id, activity]);
+  const result = await database().query(
+    "SELECT a.actor,a.bytes,a.attached,d.state FROM dl_avatar_assets a JOIN dl_activities d ON d.id=a.activity_id WHERE a.id=$1 AND a.activity_id=$2 AND (a.attached OR a.created_at>now()-interval '24 hours')",
+    [id, activity],
+  );
   const row = result.rows[0];
   if (!row) throw new HttpError(404, "照片不可查看。");
   const state = row.state as DemoState;
-  const owner = state.participants.find(p => p.id === row.actor);
-  const allowed = session.actor === row.actor || (owner?.photo?.id === id && mobileProjection(state, session.actor, activity).participants.some(p => p.id === row.actor));
+  const owner = state.participants.find((p) => p.id === row.actor);
+  const allowed =
+    session.actor === row.actor ||
+    (owner?.photo?.id === id &&
+      mobileProjection(state, session.actor, activity).participants.some(
+        (p) => p.id === row.actor,
+      ));
   if (!allowed) throw new HttpError(404, "照片不可查看。");
   return row.bytes as Buffer;
 }

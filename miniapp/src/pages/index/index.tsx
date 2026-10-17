@@ -224,7 +224,9 @@ function InviteFlow({
           <Button disabled={busy} onClick={() => send("help")}>
             需要工作人员帮助
           </Button>
-          {["ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(invite.status) && (
+          {["ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(
+            invite.status,
+          ) && (
             <Button
               className="text-button"
               disabled={busy}
@@ -275,7 +277,8 @@ function InviteFlow({
               className={invite.choices[me.id] === c.id ? "selected" : ""}
               disabled={
                 busy ||
-                (c.id === "MERCHANT" && !state.merchants.some((m) => m.id === "cloud" && m.active))
+                (c.id === "MERCHANT" &&
+                  !state.merchants.some((m) => m.id === "cloud" && m.active))
               }
               onClick={() => send("next", { choice: c.id })}
             >
@@ -337,10 +340,14 @@ export default function Index() {
   const [overlay, setOverlay] = useState("flow"),
     [back, setBack] = useState("flow"),
     [target, setTarget] = useState("");
-  const [questionIndex, setQuestionIndex] = useState<number | null>(null),
-    [privacy, setPrivacy] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState<number | null>(null);
   useLoad((options) => {
-    void client.enter(options || {}).then(() => { if (!client.state().snapshot) void Taro.redirectTo({ url: `/pages/encounter/index?activity=${encodeURIComponent(client.activity())}` }); });
+    void client.enter(options || {}).then(() => {
+      if (!client.state().snapshot)
+        void Taro.redirectTo({
+          url: `/pages/encounter/index?activity=${encodeURIComponent(client.activity())}`,
+        });
+    });
   });
   useDidShow(() => client.show());
   useDidHide(() => client.hide());
@@ -374,22 +381,16 @@ export default function Index() {
         <Text className="muted">
           扫码进入活动，发现同频的人。你的答案和选择会同步到现场；手机号等服务资料不会在大屏公开。
         </Text>
-        <View className="permission">
-          <Switch
-            checked={privacy}
-            disabled={current.busy}
-            onChange={(e) => setPrivacy(e.detail.value)}
-          />
-          <Text>
-            我已了解：登录用于识别本人及保存活动进度。同舟服务与大屏公开展示另行征得同意。
-          </Text>
-        </View>
         <Button
           className="primary"
-          disabled={!privacy || current.busy || !API_ORIGIN}
-          onClick={() => client.login()}
+          disabled={current.busy || !API_ORIGIN}
+          onClick={() =>
+            Taro.redirectTo({
+              url: `/pages/encounter/index?activity=${encodeURIComponent(client.activity())}`,
+            })
+          }
         >
-          {current.busy ? "正在登录…" : "微信登录，开始遇见"}
+          返回现场入口
         </Button>
         {!API_ORIGIN && (
           <Text className="notice">当前为本地开发包，尚未配置服务地址。</Text>
@@ -405,7 +406,19 @@ export default function Index() {
         onBack={() => setOverlay(back)}
       />
     );
-  else if (overlay === "wall") content = <MemberWallConsent onBack={() => setOverlay("flow")} />;
+  else if (overlay === "wall")
+    content = <MemberWallConsent onBack={() => setOverlay("flow")} />;
+  else if (!me.present || state.fieldOpen === false)
+    content = (
+      <View className="card">
+        <Text>
+          {!me.present
+            ? "你已离场，请联系工作人员恢复入场。"
+            : "现场暂未开放。"}
+        </Text>
+        <Button onClick={() => setOverlay("service")}>同舟专业服务</Button>
+      </View>
+    );
   else if (overlay === "avatar")
     content = (
       <AvatarEditor participant={me} onBack={() => setOverlay("flow")} />
@@ -623,7 +636,17 @@ export default function Index() {
         </View>
       )}
       {content}
-      {me?.profileComplete && overlay === "flow" && current.features.memberWall && <Button className="text-button" disabled={busy} onClick={() => setOverlay("wall")}>我的遇见卡牌</Button>}
+      {me?.profileComplete &&
+        overlay === "flow" &&
+        current.features.memberWall && (
+          <Button
+            className="text-button"
+            disabled={busy}
+            onClick={() => setOverlay("wall")}
+          >
+            我的遇见卡牌
+          </Button>
+        )}
       {me && state && overlay === "flow" && (
         <View className="footer">
           {current.features.tongzhou && currentInvite(state, me) && (

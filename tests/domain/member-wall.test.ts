@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_WALL_CONFIG, wallAgeRange, wallAgeLabel, memberCard, rotateWall, safeWallCard, validateWallConfig, wallColumns, wallDemographics, wallNickname, rotateWallSlots, pruneWallSlots, wallCardSlots, wallSlotGender, type GenderCandidate, type WallCandidate } from "../../src/domain/member-wall";
+import { DEFAULT_WALL_CONFIG, wallConfigErrors, wallAgeRange, wallAgeLabel, memberCard, rotateWall, safeWallCard, validateWallConfig, wallColumns, wallDemographics, wallNickname, rotateWallSlots, pruneWallSlots, wallCardSlots, wallSlotGender, type GenderCandidate, type WallCandidate } from "../../src/domain/member-wall";
 import { WallClock } from "../../src/features/member-wall/scheduler";
 import { demoMembers } from "../../src/features/member-wall/demo";
 import type { Participant } from "../../src/domain/types";
@@ -135,5 +135,17 @@ test("wall age is a validated activity range and never an inferred exact age",()
     const card=memberCard({id:"p",gender:"female",age,answers:{}} as unknown as Participant,"public","MW-12345678","清禾");
     assert.equal(card.ageRange,null);assert.ok(safeWallCard(card));
     assert.equal(safeWallCard({...card,ageRange:age} as never),age===null);
+  }
+});
+
+
+test("operator field validation agrees with server config constraints", () => {
+  for (const flipSeconds of [0, 7, 8, 10.5, 60, 61, NaN]) {
+    for (const rotationSeconds of [0, 16, 20, 120, 600, 601, NaN]) {
+      const config = { ...DEFAULT_WALL_CONFIG, flipSeconds, rotationSeconds };
+      const valid = Object.keys(wallConfigErrors(config)).length === 0;
+      if (valid) assert.deepEqual(validateWallConfig(config), config);
+      else assert.throws(() => validateWallConfig(config));
+    }
   }
 });

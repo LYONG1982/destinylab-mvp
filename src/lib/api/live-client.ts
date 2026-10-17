@@ -113,7 +113,14 @@ function accept(next: LiveSnapshot, ticket: number) {
 }
 function report(error: unknown, ticket: number) {
   if (ticket !== generation) return;
+  const ended = error instanceof RequestError && error.status === 410;
   unauthorized = error instanceof RequestError && error.status === 401;
+  if (ended) {
+    state = null;
+    actor = "";
+    source?.close();
+    source = null;
+  }
   problem = unauthorized
     ? lastSuccess
       ? "登录状态已失效，请重新登录。"
@@ -192,12 +199,15 @@ function connect(ticket: number) {
     void refresh();
   };
 }
-async function start(ticket: number) {
+async function start(ticket: number, explicit = false) {
   try {
     if (audience() === "participant") {
       const open = async () =>
         accept(
-          await request("session", { method: "POST", body: "{}" }),
+          await request("session", {
+            method: "POST",
+            body: JSON.stringify(explicit ? { enter: true } : {}),
+          }),
           ticket,
         );
       if (navigator.locks)
@@ -254,6 +264,10 @@ export function initialize() {
     });
   }
 }
+export function reenter() {
+  void start(generation, true);
+}
+export const getLastSuccess = () => lastSuccess;
 export function retry() {
   if (isLive()) {
     unauthorized = false;
@@ -299,14 +313,28 @@ export async function command(command: LiveCommand, signal?: AbortSignal) {
   const id = pending.get(signature) || clientId();
   pending.set(signature, id);
   try {
-    const commandPath = command.type.startsWith("tongzhou-") ? "tongzhou" : command.type === "avatar" ? "avatar" : null;
+    const commandPath = command.type.startsWith("tongzhou-")
+      ? "tongzhou"
+      : command.type === "avatar"
+        ? "avatar"
+        : null;
     const options: RequestInit = {
       method: "POST",
       body: signature,
       headers: { "Idempotency-Key": id },
       signal,
     };
-    const next = commandPath ? await fetchTimed(`/api/${commandPath}/command?activity=${encodeURIComponent(activity())}`, { ...options, credentials: "same-origin", cache: "no-store", headers: {"Content-Type":"application/json", ...options.headers} }) : await request("command", options);
+    const next = commandPath
+      ? await fetchTimed(
+          `/api/${commandPath}/command?activity=${encodeURIComponent(activity())}`,
+          {
+            ...options,
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json", ...options.headers },
+          },
+        )
+      : await request("command", options);
     pending.delete(signature);
     accept(next, ticket);
     return next.state as DemoState;

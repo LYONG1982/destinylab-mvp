@@ -130,12 +130,24 @@ export async function rateLimit(
   if (result.rows[0].attempts > limit)
     throw new HttpError(429, "操作过于频繁，请稍后重试。");
 }
-export async function join(request: Request, activity: string) {
+export async function join(
+  request: Request,
+  activity: string,
+  explicit = false,
+) {
   try {
-    return {
-      session: await sessionFor(request, activity, "participant"),
-      token: "",
-    };
+    const session = await sessionFor(request, activity, "participant");
+    const state = await readState(activity);
+    if (state.participants.some((p) => p.id === session.actor))
+      return { session, token: "" };
+    const removed = await database().query(
+      "SELECT 1 FROM dl_field_removed WHERE activity_id=$1 AND epoch=$2 AND actor=$3",
+      [activity, state.epoch, session.actor],
+    );
+    if (removed.rowCount)
+      throw new HttpError(410, "你已从本场移除，请联系工作人员。");
+    if (!explicit)
+      throw new HttpError(410, "本轮参与已结束，请点击重新进入现场。");
   } catch (e) {
     if (!(e instanceof HttpError) || e.status !== 401) throw e;
   }
@@ -144,6 +156,8 @@ export async function join(request: Request, activity: string) {
   const participant = newParticipant();
   await transaction(async (client) => {
     const before = await load(client, activity, true);
+    if (before.fieldOpen === false)
+      throw new HttpError(409, "现场尚未开放，请稍后再来。");
     const next = structuredClone(before);
     next.participants.push(participant);
     next.scans.push(participant.id);
@@ -267,10 +281,24 @@ export async function snapshot(
   }
   if (!session || session.role !== audience)
     throw new HttpError(401, "请先登录。");
-  const own = audience === "participant" && process.env.DESTINY_TONGZHOU_ENABLED === "true"
-    ? await database().query("SELECT record FROM dl_tongzhou_submissions WHERE activity_id=$1 AND actor=$2", [activity, session.actor]) : null;
-  const projected = audience === "operator" ? operatorProjection(state, activity) : mobileProjection(state, session.actor, activity);
-  projected.tongzhouSubmissions = own?.rows.map(r => r.record) || [];
+  if (
+    audience === "participant" &&
+    !state.participants.some((p) => p.id === session.actor)
+  )
+    throw new HttpError(410, "本轮参与已结束，请点击重新进入现场。");
+  const own =
+    audience === "participant" &&
+    process.env.DESTINY_TONGZHOU_ENABLED === "true"
+      ? await database().query(
+          "SELECT record FROM dl_tongzhou_submissions WHERE activity_id=$1 AND actor=$2",
+          [activity, session.actor],
+        )
+      : null;
+  const projected =
+    audience === "operator"
+      ? operatorProjection(state, activity)
+      : mobileProjection(state, session.actor, activity);
+  projected.tongzhouSubmissions = own?.rows.map((r) => r.record) || [];
   return {
     activity,
     revision: state.revision,
@@ -296,6 +324,11 @@ export async function execute(
   await rateLimit(`command:${activity}:${session.actor}`, 120);
   return transaction(async (client) => {
     const before = await load(client, activity, true);
+    if (session.role === "participant") {
+      if (before.fieldOpen === false) throw new HttpError(409, "现场已关闭。");
+      if (!before.participants.find((p) => p.id === session.actor)?.present)
+        throw new HttpError(409, "你已离场，请联系工作人员恢复入场。");
+    }
     if (epoch !== before.epoch)
       throw new HttpError(409, "活动状态已变化，请刷新后重试。");
     const payloadHash = digest(JSON.stringify(command));

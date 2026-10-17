@@ -126,12 +126,9 @@ test("native registration, admission, dual codes and privacy integration", async
         await miniIdentity(req("registration/me", one.token), activity),
         one.identity,
       );
-      assert.equal((await api("snapshot", one.token)).status, 409);
+      assert.equal((await api("snapshot", one.token)).status, 410);
       assert.equal((await api("registration/me", one.token)).data.record, null);
-      assert.equal(
-        (await api("registration/enter", one.token, {})).status,
-        403,
-      );
+      assert.equal(await count(), 0);
     },
   );
   await t.test(
@@ -151,10 +148,7 @@ test("native registration, admission, dual codes and privacy integration", async
       assert.match(record.receipt, /^\d{6}$/);
       assert.equal(record.zodiac, "水瓶座");
       assert.equal(await count(), 0);
-      assert.equal(
-        (await api("registration/enter", one.token, {})).status,
-        409,
-      );
+      assert.equal(await count(), 0);
       const stranger = await miniLogin(activity, code(), async () => ({
         appid: process.env.DESTINY_WECHAT_APPID!,
         openid: "test_another_identity",
@@ -358,23 +352,25 @@ test("native registration, admission, dual codes and privacy integration", async
     },
   );
   await t.test(
-    "expired identity and another activity are rejected; reset requires fresh checkin",
+    "expired identity and another activity are rejected; reset preserves checkin and requires explicit re-entry",
     async () => {
       const invalid = req("registration/me", one.token);
       await assert.rejects(miniIdentity(invalid, "other-activity"), /登录/);
       const reset = emptyActivity();
+      reset.revision = (
+        await database().query("SELECT state FROM dl_activities WHERE id=$1", [
+          activity,
+        ])
+      ).rows[0].state.revision;
       await database().query("UPDATE dl_activities SET state=$2 WHERE id=$1", [
         activity,
         JSON.stringify(reset),
       ]);
-      assert.equal((await api("snapshot", one.token)).status, 409);
-      assert.equal(
-        (await api("registration/enter", one.token, {})).status,
-        409,
-      );
+      assert.equal((await api("snapshot", one.token)).status, 410);
+      assert.equal((await api("enter", one.token, {})).status, 200);
       assert.equal(
         (await api("registration/me", one.token)).data.record.effectiveStatus,
-        "registered",
+        "checked_in",
       );
       await database().query(
         "UPDATE dl_mini_identity_sessions SET expires_at=now()-interval '1 second' WHERE token_hash=$1",

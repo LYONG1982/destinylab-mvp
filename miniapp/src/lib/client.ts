@@ -160,6 +160,12 @@ async function refresh() {
     if (generation !== gate.generation) return;
     failures++;
     if (e instanceof ApiError && e.status === 401) clearSession();
+    if (e instanceof ApiError && e.status === 410) {
+      gate.reset();
+      pending = null;
+      erasePhotos();
+      update({ snapshot: null, pending: false, busy: false });
+    }
     update({ error: errorText(e), online: false });
   } finally {
     reading = false;
@@ -230,7 +236,7 @@ export const client = {
   },
   clearPhotos: erasePhotos,
   async startInteraction() {
-    await request<Snapshot>("registration/enter", "POST", {});
+    await request<Snapshot>("enter", "POST", {});
     await Taro.redirectTo({
       url: `/pages/index/index?activity=${encodeURIComponent(activity)}`,
     });

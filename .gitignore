@@ -38,3 +38,5 @@ miniapp/release/
 # Platform-specific compiler plugin caches
 .swc/
 miniapp/.swc/
+
+.next-admin*/

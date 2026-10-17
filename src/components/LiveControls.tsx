@@ -63,7 +63,13 @@ export function LiveGate({ problem }: { problem: string }) {
           </Button>
         </form>
       ) : (
-        <Button onClick={live.retry}>重新连接</Button>
+        <Button
+          onClick={
+            problem.includes("本轮参与已结束") ? live.reenter : live.retry
+          }
+        >
+          {problem.includes("本轮参与已结束") ? "重新进入现场" : "重新连接"}
+        </Button>
       )}
       {(error || problem) && (
         <Notice
@@ -94,7 +100,11 @@ export function LiveOperatorPanel({
         <strong>
           活动 {state.live.activity} · {problem ? "连接中断" : "数据已同步"}
         </strong>
-        <span>大屏当前展示第一题</span>
+        <span>
+          当前展示：
+          {state.live.questions.find((q) => q.id === state.displayQuestionId)
+            ?.title || "第一题"}
+        </span>
         {typeof document !== "undefined" &&
           document.documentElement.dataset.mini === "true" &&
           (["registration", "encounter"] as const).map((entry) => (
@@ -127,14 +137,14 @@ export function LiveOperatorPanel({
                   }
                 }}
               >
-                生成{entry === "registration" ? "报名" : "现场互动"}码
+                生成{entry === "registration" ? "报名" : "现场互动"}小程序码
               </Button>
               <a
                 href={`/api/mini/code?activity=${encodeURIComponent(state.live!.activity)}&entry=${entry}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                查看{entry === "registration" ? "报名" : "现场互动"}码
+                查看{entry === "registration" ? "报名" : "现场互动"}小程序码
               </a>
               <a
                 href={`/api/mini/code?activity=${encodeURIComponent(state.live!.activity)}&entry=${entry}`}
@@ -144,17 +154,9 @@ export function LiveOperatorPanel({
               </a>
             </div>
           ))}
-        <Button
-          kind="text"
-          onClick={() =>
-            void live.signOut().catch(() => setMessage("退出失败，请重试。"))
-          }
-        >
-          退出登录
-        </Button>
       </div>
       {message && <p role="status">{message}</p>}
-      <details>
+      <details open>
         <summary>题目统计与相遇点配置</summary>
         <div className="live-settings">
           <div>

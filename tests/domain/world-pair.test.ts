@@ -123,13 +123,19 @@ test("pair positions follow gender fields even when a woman initiates; completed
   state.invitations = [{ ...inv, from: inv.to, to: inv.from }];
   for (const p of state.participants) {
     p.ready = false;
-    p.present = false;
+    p.present = true;
   }
   const pair = new WorldAdapter({ revision: 1, allows: () => true }).read(state)
     .meetScene!.qualifiedPairs[0];
   assert.equal(pair.male.gender, "male");
   assert.equal(pair.female.gender, "female");
   assert.ok(displayablePair(pair));
+  state.participants[0].present = false;
+  assert.equal(
+    new WorldAdapter({ revision: 2, allows: () => true }).read(state).meetScene!
+      .qualifiedPairs.length,
+    0,
+  );
 });
 test("mock has ten explicit pairs; meeting creates fresh priority without a business store", () => {
   const source = new WorldMockSource();
@@ -393,24 +399,41 @@ test("mock pair fixtures preserve actual genders and avatars after empty and dir
   assert.equal(pair.male.avatar, players[1].avatar);
 });
 
-test('uploaded photo display requires its own grant as well as both pair grants', () => {
-  const {state,inv}=stateWithPair();
-  state.invitations=[inv];
-  const owner=state.participants.find(p=>p.id===inv.from)!;
-  owner.photo={id:'12345678-1234-1234-1234-123456789012',screen:false};
-  const provider={revision:1,allows:()=>true};
-  const adapter=new WorldAdapter(provider);
-  const first=adapter.read(structuredClone(state));
+test("uploaded photo display requires its own grant as well as both pair grants", () => {
+  const { state, inv } = stateWithPair();
+  state.invitations = [inv];
+  const owner = state.participants.find((p) => p.id === inv.from)!;
+  owner.photo = { id: "12345678-1234-1234-1234-123456789012", screen: false };
+  const provider = { revision: 1, allows: () => true };
+  const adapter = new WorldAdapter(provider);
+  const first = adapter.read(structuredClone(state));
   assert.ok(!JSON.stringify(first).includes(owner.photo.id));
-  owner.photo.screen=true;state.revision++;
-  const visible=adapter.read(structuredClone(state));
-  assert.ok(visible.meetScene!.qualifiedPairs[0].male.avatar.includes(owner.photo.id));
-  assert.equal(displayablePair(visible.meetScene!.qualifiedPairs[0]),true);
-  assert.equal(displayablePair({...visible.meetScene!.qualifiedPairs[0],male:{...visible.meetScene!.qualifiedPairs[0].male,avatar:'https://untrusted.example/avatar.png'}}),false);
-  owner.photo.screen=false;state.revision++;
-  const revoked=adapter.read(structuredClone(state));
+  owner.photo.screen = true;
+  state.revision++;
+  const visible = adapter.read(structuredClone(state));
+  assert.ok(
+    visible.meetScene!.qualifiedPairs[0].male.avatar.includes(owner.photo.id),
+  );
+  assert.equal(displayablePair(visible.meetScene!.qualifiedPairs[0]), true);
+  assert.equal(
+    displayablePair({
+      ...visible.meetScene!.qualifiedPairs[0],
+      male: {
+        ...visible.meetScene!.qualifiedPairs[0].male,
+        avatar: "https://untrusted.example/avatar.png",
+      },
+    }),
+    false,
+  );
+  owner.photo.screen = false;
+  state.revision++;
+  const revoked = adapter.read(structuredClone(state));
   assert.ok(!JSON.stringify(revoked).includes(owner.photo.id));
-  assert.equal(visible.totalMeetings,revoked.totalMeetings);
-  provider.allows=()=>false;provider.revision++;
-  assert.deepEqual(adapter.read(structuredClone(state)).meetScene!.qualifiedPairs,[]);
+  assert.equal(visible.totalMeetings, revoked.totalMeetings);
+  provider.allows = () => false;
+  provider.revision++;
+  assert.deepEqual(
+    adapter.read(structuredClone(state)).meetScene!.qualifiedPairs,
+    [],
+  );
 });
