@@ -1,5 +1,6 @@
 import "server-only";
 import { randomInt } from "node:crypto";
+import type { PoolClient } from "pg";
 import { transaction } from "./db";
 import { HttpError } from "./service";
 import {
@@ -21,8 +22,8 @@ export async function allocateRegistrationReceipt(
   throw new HttpError(503, "签到凭证暂时无法分配，请稍后重试。");
 }
 
-export async function migrateRegistrationReceipts() {
-  return transaction(async (c) => {
+export async function migrateRegistrationReceipts(client?: PoolClient) {
+  const migrate = async (c: PoolClient) => {
     // No activity locks are acquired here. Block concurrent writes for the whole backfill.
     await c.query("LOCK TABLE dl_registrations IN ACCESS EXCLUSIVE MODE");
     const rows = await c.query<{
@@ -52,5 +53,6 @@ export async function migrateRegistrationReceipts() {
       });
     }
     return { migrated: rows.rows.length };
-  });
+  };
+  return client ? migrate(client) : transaction(migrate);
 }

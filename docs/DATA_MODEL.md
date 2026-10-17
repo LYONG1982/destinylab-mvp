@@ -1,5 +1,9 @@
 # 遇见-缘分实验室 · V1.0 数据模型、状态与适配边界
 
+## 2026-10-17 · 迁移历史
+
+`dl_schema_migrations` 记录迁移编号、名称和成功时间。`database/000-migration-history.sql` 只负责创建历史表并登记 000；之后初始化程序按历史跳过已成功迁移的版本。现有数据库已登记 000–015，登记记录保留；新空库执行 001–015。
+
 ## 2026-10-16 · 遇见卡牌墙后台UX优化
 
 无新增DDL或迁移。仅需运营权限的member-wall/admin响应增加diagnostics：authorizedPresent、onScreen、互斥excluded(left/consent/paused/profile/invalid)及screen(status/window/heartbeatAt/expiresAt)。窗口标识为owner摘要，不返回令牌；公开snapshot不包含诊断。配置结构、版本锁、主控租约和公开许可均不变。 详见[实施与验收说明](weapp/17-member-wall-admin-ux.md)。

@@ -13,45 +13,86 @@ async function main() {
   stage = "database_pool_create";
   const dbPool = database();
   pool = dbPool;
+  const historySql = await readFile(
+    new URL("../database/000-migration-history.sql", import.meta.url),
+    "utf8",
+  );
+  stage = "migration_000_sql_execute";
+  await dbPool.query(historySql);
+
   const migrations = [
-    "001-live.sql",
-    "002-private-services.sql",
-    "003-wechat-identity.sql",
-    "004-tongzhou-agency.sql",
-    "005-agency-album.sql",
-    "006-agency-user-photos.sql",
-    "007-member-wall.sql",
-    "008-registration.sql",
-    "009-registration-receipts.sql",
-    "010-registration-profile-progress.sql",
-    "011-registration-birth-date.sql",
-    "012-mini-registration-entry.sql",
-    "013-mini-content-review.sql",
-    "014-agency-unified-members.sql",
-    "015-field-management.sql",
+    ["001", "001-live.sql"],
+    ["002", "002-private-services.sql"],
+    ["003", "003-wechat-identity.sql"],
+    ["004", "004-tongzhou-agency.sql"],
+    ["005", "005-agency-album.sql"],
+    ["006", "006-agency-user-photos.sql"],
+    ["007", "007-member-wall.sql"],
+    ["008", "008-registration.sql"],
+    ["009", "009-registration-receipts.sql"],
+    ["010", "010-registration-profile-progress.sql"],
+    ["011", "011-registration-birth-date.sql"],
+    ["012", "012-mini-registration-entry.sql"],
+    ["013", "013-mini-content-review.sql"],
+    ["014", "014-agency-unified-members.sql"],
+    ["015", "015-field-management.sql"],
   ];
 
-  for (const migration of migrations.slice(0, 9)) {
-    stage = `migration_${migration.slice(0, 3)}_sql_read`;
+  for (const [version, migration] of migrations) {
+    stage = `migration_${version}_history_check`;
+    const applied = await dbPool.query(
+      "SELECT 1 FROM dl_schema_migrations WHERE version=$1",
+      [version],
+    );
+    if (applied.rowCount) {
+      console.log(
+        JSON.stringify({
+          event: "database.migration.skipped",
+          version,
+          migration,
+          reason: "already_applied",
+        }),
+      );
+      continue;
+    }
+
+    stage = `migration_${version}_sql_read`;
     const sql = await readFile(
       new URL(`../database/${migration}`, import.meta.url),
       "utf8",
     );
-    stage = `migration_${migration.slice(0, 3)}_sql_execute`;
-    await dbPool.query(sql);
-  }
-
-  stage = "registration_receipts_migrate";
-  await migrateRegistrationReceipts();
-
-  for (const migration of migrations.slice(9)) {
-    stage = `migration_${migration.slice(0, 3)}_sql_read`;
-    const sql = await readFile(
-      new URL(`../database/${migration}`, import.meta.url),
-      "utf8",
+    const begin = /^\s*BEGIN\s*;\s*/i;
+    const commit = /\s*COMMIT\s*;\s*$/i;
+    if (!begin.test(sql) || !commit.test(sql))
+      throw new Error(`MIGRATION_TRANSACTION_WRAPPER_REQUIRED_${version}`);
+    const body = sql.replace(begin, "").replace(commit, "");
+    stage = `migration_${version}_sql_execute`;
+    const client = await dbPool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(body);
+      if (version === "009") {
+        stage = "migration_009_registration_receipts_backfill";
+        await migrateRegistrationReceipts(client);
+      }
+      await client.query(
+        "INSERT INTO dl_schema_migrations(version,name) VALUES($1,$2)",
+        [version, migration],
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // Preserve the migration error; the connection will be released below.
+      }
+      throw error;
+    } finally {
+      client.release();
+    }
+    console.log(
+      JSON.stringify({ event: "database.migration.applied", version, migration }),
     );
-    stage = `migration_${migration.slice(0, 3)}_sql_execute`;
-    await dbPool.query(sql);
   }
 
   stage = "activity_insert";
