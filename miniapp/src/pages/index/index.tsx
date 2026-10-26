@@ -411,11 +411,27 @@ export default function Index() {
   else if (!me.present || state.fieldOpen === false)
     content = (
       <View className="card">
-        <Text>
-          {!me.present
-            ? "你已离场，请联系工作人员恢复入场。"
-            : "现场暂未开放。"}
-        </Text>
+        <Text>{state.fieldOpen === false ? "现场暂未开放。" : "你已离场"}</Text>
+        {state.fieldOpen !== false && !me.present && (
+          <>
+            <Text className="muted">
+              点击继续参与，保留你的资料与答题进度。
+            </Text>
+            <Button
+              className="primary"
+              disabled={current.busy}
+              onClick={async () => {
+                try {
+                  await client.resumePresence();
+                  setQuestionIndex(null);
+                  setOverlay("flow");
+                } catch {}
+              }}
+            >
+              {current.busy ? "正在进入…" : "继续参与"}
+            </Button>
+          </>
+        )}
         <Button onClick={() => setOverlay("service")}>同舟专业服务</Button>
       </View>
     );

@@ -1,4 +1,5 @@
 import { entryType } from "@/domain/mini-entry";
+import { reenterField } from "@/server/field-reentry";
 import {
   checkMiniText,
   reviewMiniAvatar,
@@ -241,6 +242,15 @@ export async function POST(request: Request, context: Context) {
       );
     }
     const input = await body(request);
+    if (path === "reenter") {
+      await reenterField(
+        activity,
+        session,
+        input,
+        request.headers.get("idempotency-key") || "",
+      );
+      return json(await snapshot(activity, "participant", session));
+    }
     if (path === "avatar/review") {
       keys(input, ["assetId"]);
       await rateLimit(`avatar-review:${activity}:${session.actor}`, 30);

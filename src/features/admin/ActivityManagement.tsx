@@ -285,7 +285,7 @@ export function FieldActions({
             </div>
             <p>
               {task.action === "leave"
-                ? "离场后不能自行恢复；已使用的遇见地点仍需工作人员确认空闲。"
+                ? "离场将停止当前互动；现场开放时，本人可点击继续参与再次入场。已使用的遇见地点仍需工作人员确认空闲。"
                 : task.action === "remove"
                   ? "从本场有效名单和统计中移除，历史记录保留在受限归档。"
                   : task.action === "return"

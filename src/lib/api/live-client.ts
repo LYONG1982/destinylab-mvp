@@ -267,6 +267,40 @@ export function initialize() {
 export function reenter() {
   void start(generation, true);
 }
+export async function resumePresence() {
+  const ticket = generation,
+    epoch = state?.epoch,
+    owner = actor;
+  if (!epoch || !owner || audience() !== "participant")
+    throw new Error("身份尚未就绪，请刷新后重试。");
+  const signature = JSON.stringify({ type: "field-reenter", epoch, owner });
+  const id = pending.get(signature) || clientId();
+  pending.set(signature, id);
+  try {
+    const next = await request("reenter", {
+      method: "POST",
+      body: JSON.stringify({ epoch }),
+      headers: { "Idempotency-Key": id },
+    });
+    if (ticket !== generation || actor !== owner || state?.epoch !== epoch)
+      throw new Error("活动身份已变化，请重新进入。");
+    accept(next, ticket);
+    pending.delete(signature);
+    if (
+      !state?.participants.find((p) => p.id === owner)?.present ||
+      state.fieldOpen === false
+    )
+      throw new Error("现场状态已变化，请确认当前状态后再试。");
+    return { state, actor: owner };
+  } catch (e) {
+    if (e instanceof RequestError && e.status < 500) {
+      pending.delete(signature);
+      if (e.status === 401 || e.status === 410) report(e, ticket);
+      else await refresh();
+    }
+    throw e;
+  }
+}
 export const getLastSuccess = () => lastSuccess;
 export function retry() {
   if (isLive()) {

@@ -327,7 +327,7 @@ export async function execute(
     if (session.role === "participant") {
       if (before.fieldOpen === false) throw new HttpError(409, "现场已关闭。");
       if (!before.participants.find((p) => p.id === session.actor)?.present)
-        throw new HttpError(409, "你已离场，请联系工作人员恢复入场。");
+        throw new HttpError(409, "你已离场，请点击“继续参与”重新入场。");
     }
     if (epoch !== before.epoch)
       throw new HttpError(409, "活动状态已变化，请刷新后重试。");

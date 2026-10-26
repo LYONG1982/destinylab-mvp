@@ -71,6 +71,8 @@ Participant 兼容增加 `photo?: {id,screen}|null`、`avatarVersion?: number`�
 
 计数：scans 为建立的参与会话数，answered 为至少答过第一题的人数，completed 为资料与十题齐全的人数，active 为未标记离场的人数，real 为真实双方确认的邀请数。网络断开不等同离场。SSE 只通知持久版本，快照恢复最终状态；过期动画不补播，不能用动画数累加业务计数。
 
+2026-10-26 自助返回：受鉴权的 `POST /api/live/reenter`、`POST /api/mini/reenter` 仅接收 epoch 和 Idempotency-Key，由会话确定本人。在活动行锁内检查轮次、移除记录、开放状态，将 present 恢复 true、ready 设为 false、清除已结束任务 currentId，保留 paused、原资料和答案、邀请历史及点位状态。记录 REENTER 事件，复用 dl_commands 存储带类型和 epoch 的载荷哈希；相同请求重试不再次改变状态，即使其后管理员再次离场。已在场请求只记幂等结果，不改变 ready。无新增表/列/迁移，scans 与历史真实相遇数不增加。
+
 ## 2026-10-10 · ACT03 局部桃心表现
 
 没有新增业务字段或存储迁移。桃心与火花仅使用PairSceneFrame的slot、elapsedMs、opacity和现有布局，由交汇时刻1700ms派生0–1400ms视觉状态。历史播放及TRIGGER COLLISION不改变totalMeetings；新动画资源为固定3实例及复用16点缓冲，不保存新事件。授权撤回、未知统计和匿名全局事件维持原数据语义。

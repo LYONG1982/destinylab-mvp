@@ -6,6 +6,7 @@ import { writeFileSync } from "node:fs";
 import { database, transaction } from "../../src/server/db";
 import { emptyActivity, newParticipant } from "../../src/server/state";
 import { fieldAction, fieldPreview } from "../../src/server/field-service";
+import { reenterField } from "../../src/server/field-reentry";
 import {
   execute,
   load,
@@ -281,6 +282,35 @@ test("field lifecycle, privacy preservation and admission", async (t) => {
       );
       await action(f.a, "return", [actor!]);
       assert.equal((await read(f.a)).participants[0].present, true);
+    },
+  );
+  await t.test(
+    "self reentry preserves registration, agency records and authorized published photo",
+    async () => {
+      const registrationBefore = (await registrationView(f.a, owner)).record;
+      const agencyBefore = await agencyDetail(f.a, member);
+      const publicBefore = await publishedProfile(slug);
+      await action(f.a, "leave", [actor!]);
+      await reenterField(
+        f.a,
+        session,
+        { epoch: (await read(f.a)).epoch },
+        key(),
+      );
+      assert.equal(
+        (await read(f.a)).participants.find((p) => p.id === actor)!.present,
+        true,
+      );
+      assert.deepEqual(
+        (await registrationView(f.a, owner)).record,
+        registrationBefore,
+      );
+      assert.deepEqual(await agencyDetail(f.a, member), agencyBefore);
+      assert.deepEqual(await publishedProfile(slug), publicBefore);
+      assert.deepEqual(
+        await publishedGalleryPhoto(slug, asset.id),
+        beforePhoto,
+      );
     },
   );
   await t.test(

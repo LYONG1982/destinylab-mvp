@@ -37,7 +37,7 @@ export function applyCommand(
   const me = person(s, actor);
   if (actor !== "operator") {
     ensure(s.fieldOpen !== false, "现场已关闭，报名与同舟资料仍可维护。");
-    ensure(me?.present, "你已离场，请联系工作人员恢复入场。");
+    ensure(me?.present, "你已离场，请点击“继续参与”重新入场。");
   }
   const log = (
     type: string,

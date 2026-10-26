@@ -6,6 +6,6 @@ export function fieldParticipant(state: DemoState, actor: string) {
   const p = state.participants.find((p) => p.id === actor);
   if (!p) throw new HttpError(410, "本轮参与已结束，请主动重新进入现场。");
   if (!p.present)
-    throw new HttpError(409, "你已离场，请联系工作人员恢复入场。");
+    throw new HttpError(409, "你已离场，请点击“继续参与”重新入场。");
   return p;
 }

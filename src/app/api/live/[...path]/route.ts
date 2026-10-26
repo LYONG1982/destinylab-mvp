@@ -1,4 +1,5 @@
 import { database } from "@/server/db";
+import { reenterField } from "@/server/field-reentry";
 import { liveConfig } from "@/server/config";
 import { logServerError } from "@/server/logging";
 import {
@@ -231,6 +232,15 @@ export async function POST(request: Request, context: Context) {
     const role = audience(url.searchParams.get("audience"));
     if (role === "screen") throw new HttpError(403, "大屏仅能读取数据。");
     const session = await sessionFor(request, activity, role);
+    if (path === "reenter") {
+      await reenterField(
+        activity,
+        session,
+        input,
+        request.headers.get("idempotency-key") || "",
+      );
+      return json(await snapshot(activity, role, session));
+    }
     if (path === "logout") {
       await logout(request, activity, role);
       return json({ ok: true }, 200, {

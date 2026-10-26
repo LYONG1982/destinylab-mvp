@@ -28,6 +28,7 @@ import {
   stats,
 } from "@/domain/selectors";
 import { useAction, useDemo } from "@/lib/demo/hooks";
+import { resumePresence } from "@/lib/api/live-client";
 import {
   Avatar,
   Badge,
@@ -68,26 +69,64 @@ import {
 } from "@/components/LiveControls";
 
 type Actions = ReturnType<typeof useAction>;
+function FieldAccess({ state, me }: { state: DemoState; me: Participant }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const locked = useRef(false);
+  const open = state.fieldOpen !== false;
+  return (
+    <main className="live-access">
+      <h1>{open ? "你已离场" : "现场暂未开放"}</h1>
+      <p>
+        {open
+          ? state.live
+            ? "点击继续参与，保留你的资料与答题进度。"
+            : "请在演示后台恢复入场。"
+          : "请等待工作人员开放现场。"}
+      </p>
+      {open && !me.present && state.live && (
+        <Button
+          disabled={busy}
+          onClick={async () => {
+            if (locked.current) return;
+            locked.current = true;
+            setBusy(true);
+            setError("");
+            try {
+              const result = await resumePresence();
+              const restored = person(result.state, result.actor)!;
+              router.replace(
+                `/mobile/${routeFor(result.state, restored)}?activity=${encodeURIComponent(result.state.live!.activity)}`,
+              );
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "进入失败，请重试。");
+            } finally {
+              locked.current = false;
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? "正在进入…" : "继续参与"}
+        </Button>
+      )}
+      {error && <p role="alert">{error}</p>}
+      <a href={`/mobile/tongzhou?activity=${state.live?.activity || "meet"}`}>
+        同舟专业服务
+      </a>
+      <a href={`/mobile/register?activity=${state.live?.activity || "meet"}`}>
+        我的报名资料
+      </a>
+    </main>
+  );
+}
 export function MobileApp({ page }: { page: string }) {
   const { state, actor, problem } = useDemo();
   if (!state) return <LiveGate problem={problem} />;
   const me = person(state, actor);
   if (me && (!me.present || state.fieldOpen === false))
     return (
-      <main className="live-access">
-        <h1>{!me.present ? "你已离场" : "现场暂未开放"}</h1>
-        <p>
-          {!me.present
-            ? "请联系工作人员恢复入场。"
-            : "请等待工作人员开放现场。"}
-        </p>
-        <a href={`/mobile/tongzhou?activity=${state.live?.activity || "meet"}`}>
-          同舟专业服务
-        </a>
-        <a href={`/mobile/register?activity=${state.live?.activity || "meet"}`}>
-          我的报名资料
-        </a>
-      </main>
+      <FieldAccess key={`${state.epoch}:${actor}`} state={state} me={me} />
     );
   if (!me)
     return (

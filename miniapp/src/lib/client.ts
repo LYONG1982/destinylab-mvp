@@ -50,6 +50,7 @@ let pending: {
   id: string;
   epoch: string;
 } | null = null;
+let pendingReentry: { signature: string; id: string } | null = null;
 const photos = new Map<string, string>();
 const key = () => `destiny-mini:${API_ORIGIN}:${activity}`;
 function update(patch: Partial<ViewState>) {
@@ -128,6 +129,7 @@ function clearSession() {
   gate.reset();
   token = "";
   pending = null;
+  pendingReentry = null;
   Taro.removeStorageSync(key());
   erasePhotos();
   update({
@@ -178,6 +180,46 @@ function schedule() {
       await refresh();
       schedule();
     }, retryDelay(failures));
+}
+async function restorePresence(snapshot: Snapshot, generation: number) {
+  if (generation !== gate.generation)
+    throw new Error("活动身份已变化，请重新进入。");
+  const signature = `${activity}:${snapshot.state.epoch}:${snapshot.actor}`;
+  if (pendingReentry?.signature !== signature)
+    pendingReentry = {
+      signature,
+      id: `reenter-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`,
+    };
+  try {
+    const result = await request<Snapshot>(
+      "reenter",
+      "POST",
+      { epoch: snapshot.state.epoch },
+      {
+        "Idempotency-Key": pendingReentry.id,
+      },
+    );
+    if (generation !== gate.generation)
+      throw new Error("活动身份已变化，请重新进入。");
+    pendingReentry = null;
+    apply(result, generation);
+    const latest = view.snapshot;
+    if (
+      !latest?.state.participants.find((p) => p.id === latest.actor)?.present ||
+      latest.state.fieldOpen === false
+    )
+      throw new Error("现场状态已变化，请确认当前状态后再试。");
+    pending = null;
+    update({ pending: false });
+  } catch (e) {
+    if (
+      generation === gate.generation &&
+      e instanceof ApiError &&
+      e.status < 500
+    )
+      pendingReentry = null;
+    throw e;
+  }
 }
 export const client = {
   async registration() {
@@ -236,10 +278,48 @@ export const client = {
   },
   clearPhotos: erasePhotos,
   async startInteraction() {
-    await request<Snapshot>("enter", "POST", {});
-    await Taro.redirectTo({
-      url: `/pages/index/index?activity=${encodeURIComponent(activity)}`,
-    });
+    if (view.busy) return;
+    const generation = gate.generation;
+    update({ busy: true, error: "" });
+    try {
+      const snapshot = await request<Snapshot>("enter", "POST", {});
+      if (generation !== gate.generation)
+        throw new Error("活动身份已变化，请重新进入。");
+      if (snapshot.state.fieldOpen === false)
+        throw new Error("现场暂未开放，请稍后再来。");
+      if (
+        !snapshot.state.participants.find((p) => p.id === snapshot.actor)
+          ?.present
+      )
+        await restorePresence(snapshot, generation);
+      if (generation !== gate.generation)
+        throw new Error("活动身份已变化，请重新进入。");
+      await Taro.redirectTo({
+        url: `/pages/index/index?activity=${encodeURIComponent(activity)}`,
+      });
+    } catch (e) {
+      if (generation === gate.generation) update({ error: errorText(e) });
+      throw e;
+    } finally {
+      if (generation === gate.generation) update({ busy: false });
+    }
+  },
+  async resumePresence() {
+    if (view.busy || !view.snapshot) return;
+    const generation = gate.generation;
+    update({ busy: true, error: "" });
+    try {
+      await restorePresence(view.snapshot!, generation);
+    } catch (e) {
+      if (generation === gate.generation) update({ error: errorText(e) });
+      throw e;
+    } finally {
+      if (generation === gate.generation) {
+        update({ busy: false });
+        await refresh();
+        schedule();
+      }
+    }
   },
 
   async wallMe() {
@@ -282,6 +362,7 @@ export const client = {
     gate.reset();
     erasePhotos();
     pending = null;
+    pendingReentry = null;
     token = "";
     update({
       snapshot: null,
