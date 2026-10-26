@@ -369,7 +369,9 @@ function MobileFlow({
           <span>
             {me.name} · {me.gender === "male" ? "男生" : "女生"}
           </span>
-          {me.profileComplete && <AvatarEditor me={me} />}
+          {me.profileComplete && page !== "03-profile" && (
+            <AvatarEditor me={me} disabled={a.busy} />
+          )}
           {s.live &&
             me.profileComplete &&
             ["03-profile", "05-discover", "10-next-step"].includes(page) &&
@@ -1141,17 +1143,62 @@ function Profile({
     [error, setError] = useState("");
   const [avatarId, setAvatarId] = useState(me.avatarId);
   const [avatarMessage, setAvatarMessage] = useState("");
+  const [ageError, setAgeError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const nicknameField = useRef<HTMLInputElement>(null);
+  const ageField = useRef<HTMLFieldSetElement>(null);
+  const avatarField = useRef<HTMLFieldSetElement>(null);
   const respond = useCityResponse();
   const composing = useRef(false);
+  const missing = [
+    error && "填写合格昵称",
+    ageError && "选择年龄段",
+    avatarMessage && "选择头像",
+  ].filter(Boolean);
+  const saveError = /fetch|network|abort|timeout|timed out/i.test(a.error)
+    ? "网络连接中断或等待超时，资料仍在本页，请重试。"
+    : a.error;
+  const feedback = submitted
+    ? missing.length
+      ? `还需${missing.join("、")}，请完成后继续。`
+      : saveError
+        ? `保存未完成：${saveError} 可再次点击“继续答题”重试。`
+        : ""
+    : "";
   return (
     <form
+      className="profile-form"
+      aria-busy={a.busy}
       onSubmit={(e) => {
         e.preventDefault();
+        if (a.busy || composing.current) return;
+        setSubmitted(true);
+        a.setError("");
         const err = nicknameError(name);
         setError(err);
+        const ageValid = AGES.some((value) => value === age);
+        setAgeError(ageValid ? "" : "请选择你的年龄段。");
         const avatarValid = validAvatar(avatarId, gender);
         setAvatarMessage(avatarValid ? "" : "选一个本次活动头像吧。");
-        if (!err && avatarValid && !composing.current)
+        const invalid = err
+          ? nicknameField.current
+          : !ageValid
+            ? ageField.current
+            : !avatarValid
+              ? avatarField.current
+              : null;
+        if (invalid) {
+          invalid.focus({ preventScroll: true });
+          invalid.scrollIntoView({
+            block: "center",
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+              .matches
+              ? "instant"
+              : "smooth",
+          });
+          return;
+        }
+        if (!err && ageValid && avatarValid)
           void a.run(
             { type: "profile", name, gender, age, ready, avatarId },
             () => {
@@ -1170,6 +1217,7 @@ function Profile({
       </label>
       <div className="nickname-field">
         <input
+          ref={nicknameField}
           id="nickname"
           disabled={a.busy}
           value={name}
@@ -1197,7 +1245,13 @@ function Profile({
       <p id="nickname-error" className="field-error" aria-live="polite">
         {error}
       </p>
-      <fieldset disabled={a.busy}>
+      <fieldset
+        ref={ageField}
+        tabIndex={-1}
+        disabled={a.busy}
+        aria-invalid={!!ageError}
+        aria-describedby="profile-age-error"
+      >
         <legend className="field-label">你的年龄段</legend>
         <div className="age-grid">
           {AGES.map((v) => (
@@ -1206,12 +1260,18 @@ function Profile({
               key={v}
               aria-pressed={age === v}
               className={age === v ? "selected" : ""}
-              onClick={() => setAge(v)}
+              onClick={() => {
+                setAge(v);
+                setAgeError("");
+              }}
             >
               {v}
             </button>
           ))}
         </div>
+        <p id="profile-age-error" className="field-error" aria-live="polite">
+          {ageError}
+        </p>
       </fieldset>
       <fieldset disabled={a.busy}>
         <legend className="field-label">我是</legend>
@@ -1242,16 +1302,23 @@ function Profile({
       </fieldset>
       <AvatarEditor
         me={me}
-        onSaved={() =>
-          setAvatarId(
-            validAvatar(avatarId, gender)
-              ? avatarId
-              : defaultAvatarId(me.id, gender),
-          )
-        }
+        disabled={a.busy}
+        onSaved={(saved) => {
+          if (saved.gender !== gender) {
+            setAvatarId(null);
+            setAvatarMessage(
+              `性别已更改，请重新选择一个${gender === "male" ? "男生" : "女生"}${saved.photo ? "备用" : ""}头像。`,
+            );
+          } else {
+            setAvatarId(saved.avatarId);
+            setAvatarMessage("");
+          }
+        }}
       />
-      {!me.photo && (
+      {(!me.photo || !validAvatar(avatarId, gender)) && (
         <AvatarSelector
+          ref={avatarField}
+          required
           gender={gender}
           value={avatarId}
           disabled={a.busy}
@@ -1292,10 +1359,25 @@ function Profile({
         <Icon name="help" size={18} />
         对方会看到昵称、活动头像、性别、年龄段和相同答案。昵称、系统头像及当前大屏问题的选择会在现场大屏展示；本人照片需单独允许上屏。联系方式不会自动分享。
       </p>
-      <Button type="submit" disabled={a.busy}>
-        继续答题
-        <Icon name="arrow" />
-      </Button>
+      <div className="profile-submit">
+        {feedback && (
+          <p
+            id="profile-submit-feedback"
+            className="profile-feedback"
+            role="alert"
+          >
+            {feedback}
+          </p>
+        )}
+        <Button
+          type="submit"
+          disabled={a.busy}
+          aria-describedby={feedback ? "profile-submit-feedback" : undefined}
+        >
+          {a.busy ? "正在保存…" : "继续答题"}
+          {!a.busy && <Icon name="arrow" />}
+        </Button>
+      </div>
     </form>
   );
 }

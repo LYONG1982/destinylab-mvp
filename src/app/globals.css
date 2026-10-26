@@ -980,6 +980,26 @@ svg {
   min-height: 0;
   margin-top: 4px;
 }
+.profile-form fieldset,
+.profile-form #nickname {
+  scroll-margin-block: 24px;
+}
+.profile-form fieldset:focus-visible {
+  outline: 2px solid var(--wine);
+  outline-offset: 4px;
+}
+.profile-submit {
+  margin-top: 18px;
+}
+.profile-feedback {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid #9c2836;
+  border-radius: 10px;
+  color: #9c2836;
+  background: #fff8f5;
+  font-size: 14px;
+}
 .age-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

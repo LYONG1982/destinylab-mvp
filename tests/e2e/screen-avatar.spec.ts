@@ -25,7 +25,7 @@ test("avatar is required, gender changes clear selection, keyboard works, refres
   await page.setViewportSize({ width: 390, height: 844 });
   await profile(page);
   await page.getByRole("button", { name: "继续答题" }).click();
-  await expect(page.locator("#avatar-message")).toHaveText(
+  await expect(page.locator(".avatar-selector .field-error")).toHaveText(
     "选一个本次活动头像吧。",
   );
   await page.getByRole("radio", { name: "男生虚拟头像 03" }).check();
@@ -38,11 +38,11 @@ test("avatar is required, gender changes clear selection, keyboard works, refres
   ).toBeChecked();
   await page.getByRole("button", { name: "女生", exact: true }).click();
   await expect(page.getByRole("radio", { name: /男生/ })).toHaveCount(0);
-  await expect(page.locator('input[name="avatar"]:checked')).toHaveCount(0);
-  await expect(page.locator("#avatar-message")).toContainText("女生头像");
+  await expect(page.locator('.avatar-selector input:checked')).toHaveCount(0);
+  await expect(page.locator(".avatar-selector .field-error")).toContainText("女生头像");
   await page.getByRole("radio", { name: "女生虚拟头像 07" }).check();
   await page.getByRole("button", { name: "男生", exact: true }).click();
-  await expect(page.locator('input[name="avatar"]:checked')).toHaveCount(0);
+  await expect(page.locator('.avatar-selector input:checked')).toHaveCount(0);
   await page.getByRole("radio", { name: "男生虚拟头像 03" }).focus();
   await page.keyboard.press("Space");
   await page.keyboard.press("ArrowRight");

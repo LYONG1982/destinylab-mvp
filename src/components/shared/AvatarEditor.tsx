@@ -4,30 +4,39 @@ import type { Participant } from "@/domain/types";
 import { activity, isLive } from "@/lib/api/live-client";
 import { defaultAvatarId, validAvatar } from "@/config/avatars";
 import { useAction } from "@/lib/demo/hooks";
+import { getSnapshot } from "@/lib/demo/store";
 import { Avatar, Button, Modal, Notice } from "@/components/ui";
 import { AvatarSelector } from "./AvatarSelector";
 type Crop = { url: string; width: number; height: number };
+type AvatarSaveResult = Pick<Participant, "gender" | "avatarId" | "photo">;
 export function AvatarEditor({
   me,
   onSaved,
+  disabled,
 }: {
   me: Participant;
-  onSaved?: () => void;
+  onSaved?: (result: AvatarSaveResult) => void;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   if (!isLive() || document.documentElement.dataset.avatars === "false")
     return null;
   return (
     <>
-      <Button type="button" kind="text" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        kind="text"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+      >
         {me.profileComplete ? "更换头像" : "上传我的照片"}
       </Button>
       {open && (
         <Editor
           key={me.id}
           me={me}
-          onSaved={() => {
-            onSaved?.();
+          onSaved={(result) => {
+            onSaved?.(result);
             setOpen(false);
           }}
           onClose={() => setOpen(false)}
@@ -42,7 +51,7 @@ function Editor({
   onClose,
 }: {
   me: Participant;
-  onSaved: () => void;
+  onSaved: (result: AvatarSaveResult) => void;
   onClose: () => void;
 }) {
   const a = useAction(me.id, "avatar-editor"),
@@ -164,7 +173,15 @@ function Editor({
           allowScreen: !!id && allow,
           expectedVersion: version,
         },
-        () => onSaved(),
+        () => {
+          const saved = getSnapshot()?.participants.find((p) => p.id === me.id);
+          if (saved)
+            onSaved({
+              gender: saved.gender,
+              avatarId: saved.avatarId,
+              photo: saved.photo,
+            });
+        },
       );
     } catch (e) {
       if (mounted.current)
