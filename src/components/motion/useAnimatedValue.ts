@@ -9,6 +9,7 @@ export function useAnimatedValue<T extends HTMLElement>(
   value: number,
   fromZero: boolean,
   draw: (element: T, value: number) => void,
+  duration: number = motionTiming.counter,
 ) {
   const displayed = useRef(fromZero ? 0 : value);
   useLayoutEffect(() => {
@@ -42,7 +43,7 @@ export function useAnimatedValue<T extends HTMLElement>(
       // React may have committed the target text. Restore the starting value before paint.
       paint(from);
       const tick = (now: number) => {
-        const progress = Math.min(1, (now - start) / ms(motionTiming.counter));
+        const progress = Math.min(1, (now - start) / ms(duration));
         paint(from + (value - from) * (1 - Math.pow(1 - progress, 3)));
         if (progress < 1) frame = requestAnimationFrame(tick);
       };
@@ -55,5 +56,5 @@ export function useAnimatedValue<T extends HTMLElement>(
       preference.removeEventListener("change", environment);
       document.removeEventListener("visibilitychange", environment);
     };
-  }, [ref, value, draw]);
+  }, [ref, value, draw, duration]);
 }

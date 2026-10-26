@@ -1,286 +1,146 @@
 "use client";
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
-import QRCode from "qrcode";
-import { QUESTIONS } from "@/data/questions";
-import { screenMotion } from "@/lib/motion-tokens";
-import { useDemo } from "@/lib/demo/hooks";
-import { command } from "@/lib/demo/store";
-import type { DemoState } from "@/domain/types";
-import { ScreenAdapter } from "@/components/motion/screen/model";
-import { ScreenMotion } from "@/components/motion/screen/ScreenMotion";
-import { SceneTransition } from "@/components/motion/screen/SceneTransition";
-import { MotionController } from "@/components/motion/screen/controller";
-import { MotionPreview } from "@/components/motion/screen/MotionPreview";
-import { Brand, Loading } from "@/components/ui";
-import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
-import { AnimatedBar } from "@/components/motion/AnimatedBar";
-import { DestinyTrack } from "@/components/motion/DestinyTrack";
+import { useState } from "react";
+import { useWorldData, mockWorld } from "./world/source";
+import { WorldStage } from "./world/WorldStage";
+import type { PairCommand, WorldMode } from "./world/types";
+import styles from "./world/world.module.css";
+import { isLive } from "@/lib/api/live-client";
 
 export type ScreenState = "question" | "presence" | "mutual" | "real-meet";
+const modes: Record<ScreenState, WorldMode> = {
+  question: "CHOICE",
+  presence: "LIVE",
+  mutual: "CHOICE",
+  "real-meet": "MEET",
+};
 
-export function ScreenApp({ fixed }: { fixed?: ScreenState }) {
-  const { state } = useDemo();
-  if (!state) return <Loading />;
-  return <ScreenView key={state.epoch} state={state} fixed={fixed} />;
-}
-function ScreenView({
-  state,
+export function ScreenApp({
   fixed,
+  mock: requestMock = false,
 }: {
-  state: DemoState;
   fixed?: ScreenState;
+  mock?: boolean;
 }) {
-  const [adapter] = useState(() => new ScreenAdapter());
-  const [controller] = useState(() => new MotionController());
-  const snapshot = useMemo(() => adapter.read(state), [adapter, state]);
-  const p = snapshot.projection;
-  const [mode, setMode] = useState<ScreenState>(fixed || "question");
-  const [visited] = useState(() => new Set<ScreenState>());
-  const latestProjection = useRef(p);
-  useLayoutEffect(() => {
-    latestProjection.current = p;
-  }, [p]);
-  useEffect(() => {
-    visited.add(mode);
-  }, [mode, visited]);
-  const [qr, setQr] = useState("");
-  const [qrError, setQrError] = useState("");
-  const [url] = useState(() => {
-    try {
-      return (
-        localStorage.getItem("destinylab:qr-url") ||
-        "http://localhost:3210/mobile/01-start"
-      );
-    } catch {
-      return "http://localhost:3210/mobile/01-start";
-    }
+  const mock = requestMock && process.env.NODE_ENV === "development";
+  const data = useWorldData(mock);
+  const [pairControl, setPairControl] = useState<{
+    action: PairCommand;
+    revision: number;
+  }>();
+  const pairAction = (action: PairCommand) => {
+    choose("MEET", true);
+    setPairControl((old) => ({ action, revision: (old?.revision ?? 0) + 1 }));
+  };
+  const [control, setControl] = useState({
+    mode: fixed ? modes[fixed] : ("CHOICE" as WorldMode),
+    fixed: Boolean(fixed),
+    revision: 0,
   });
-  useEffect(() => {
-    const target = url;
-    void QRCode.toDataURL(target, {
-      width: 768,
-      margin: 3,
-      errorCorrectionLevel: "M",
-      color: { dark: "#5c1724", light: "#fffdf9" },
-    })
-      .then(setQr)
-      .catch(() => setQrError("二维码生成失败，请检查演示入口配置。"));
-  }, [url]);
-  useEffect(() => {
-    if (fixed) return;
-    const delays: Record<ScreenState, number> = {
-      question: 12000,
-      presence: 8000,
-      "real-meet": 8000,
-      mutual: 6000,
-    };
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      if (mode === "mutual") {
-        setMode("question");
-        return;
-      }
-      if (latestProjection.current.canBroadcast) {
-        void command("operator", { type: "broadcast-consume" })
-          .then(() => {
-            if (!cancelled) setMode("mutual");
-          })
-          .catch(() => {
-            if (cancelled) return;
-            setMode(
-              mode === "question"
-                ? "presence"
-                : mode === "presence"
-                  ? "real-meet"
-                  : "question",
-            );
-          });
-      } else
-        setMode(
-          mode === "question"
-            ? "presence"
-            : mode === "presence"
-              ? "real-meet"
-              : "question",
-        );
-    }, delays[mode]);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [mode, fixed]);
+  const choose = (mode: WorldMode, fixed: boolean) =>
+    setControl((old) => ({ mode, fixed, revision: old.revision + 1 }));
   return (
-    <main className="screen-viewport">
-      <div
-        className={`screen-canvas ${mode === "mutual" ? "screen-mutual" : ""}`}
-        data-testid="screen-canvas"
-        style={
-          {
-            "--screen-background-duration": `${screenMotion.background}s`,
-            "--screen-qr-duration": `${screenMotion.qrHalo}s`,
-          } as CSSProperties
-        }
-      >
-        <div className="screen-background" aria-hidden="true" />
-        <ScreenMotion
-          snapshot={snapshot}
-          controller={controller}
-          scene={mode}
-        />
-        {process.env.NODE_ENV === "development" && (
-          <MotionPreview controller={controller} />
-        )}
-        <header className="screen-top">
-          <Brand light={mode === "mutual"} />
-          <span>银川 · 鼓楼步行街 ／ 让一座城更温柔</span>
-        </header>
-        <div className="screen-main">
-          <section className="screen-content">
-            <SceneTransition scene={mode}>
-              {mode === "question" && (
-                <>
-                  <div className="eyebrow">ONE QUESTION. MANY CONNECTIONS.</div>
-                  <h1>
-                    今天，
-                    <br />
-                    <span>想怎样遇见？</span>
-                  </h1>
-                  <div className="screen-distribution">
-                    {p.options.map((v) => (
-                      <div className="screen-bar" key={v.label}>
-                        <span>{v.label}</span>
-                        <div>
-                          <AnimatedBar
-                            percentage={v.percentage}
-                            fromZero={!visited.has("question")}
-                          />
-                        </div>
-                        <strong>
-                          <AnimatedCounter
-                            value={v.percentage}
-                            suffix="%"
-                            fromZero={!visited.has("question")}
-                          />
-                        </strong>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="fine">
-                    今天已回答此题的 {p.total} 位参与者 · 演示数据
-                  </p>
-                </>
-              )}
-              {mode === "presence" && (
-                <>
-                  <div className="eyebrow">HERE & NOW · 此刻在场</div>
-                  <div className="screen-number">
-                    <AnimatedCounter
-                      value={p.active}
-                      fromZero={!visited.has("presence")}
-                    />
-                  </div>
-                  <h1>人正在鼓楼探索</h1>
-                  <p className="screen-subtext">
-                    其中 <AnimatedCounter value={p.canMeet} />{" "}
-                    人，现在可以认识新朋友
-                  </p>
-                  <div className="presence-network" aria-hidden="true">
-                    {Array.from({ length: 8 }, (_, i) => (
-                      <i
-                        key={i}
-                        style={{
-                          left: `${50 + 48 * Math.cos((i * Math.PI) / 4)}%`,
-                          top: `${50 + 48 * Math.sin((i * Math.PI) / 4)}%`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-              {mode === "mutual" && (
-                <>
-                  <div className="eyebrow">WHEN PATHS CROSS</div>
-                  <div className="relationship-tracks" aria-hidden="true">
-                    <DestinyTrack />
-                  </div>
-                  <h1>
-                    今天，又有人
-                    <br />
-                    愿意认识彼此
-                  </h1>
-                  <p className="screen-subtext">从共同话题，走向真实的相遇</p>
-                  <p className="fine" style={{ color: "#d7b8b8" }}>
-                    {fixed
-                      ? "独立视觉预览 · 虚构场景"
-                      : "匿名聚合播报 · 不展示个人身份"}
-                  </p>
-                </>
-              )}
-              {mode === "real-meet" && (
-                <>
-                  <div className="eyebrow">REAL MOMENTS · 认真发生</div>
-                  <div
-                    className="screen-number"
-                    data-testid="screen-real-count"
-                  >
-                    <AnimatedCounter
-                      value={p.real}
-                      fromZero={!visited.has("real-meet")}
-                    />
-                  </div>
-                  <h1>
-                    次真实相遇，
-                    <br />
-                    今天已经在鼓楼发生
-                  </h1>
-                  <p className="screen-subtext">双方均确认已经见面</p>
-                </>
-              )}
-            </SceneTransition>
-          </section>
-          <aside className="screen-qr">
-            {qr ? (
-              <img src={qr} alt="扫码进入缘分实验室" width="768" height="768" />
-            ) : (
-              <div>{qrError || "正在生成二维码…"}</div>
-            )}
-            <h2>
-              扫码加入
-              <br />
-              今天的遇见
-            </h2>
-            <p>
-              回答 {QUESTIONS.length} 个轻问题
-              <br />
-              发现现场同频的人
-            </p>
-            <small>
-              {url.includes("localhost")
-                ? "本机入口 · 手机扫码需可访问的局域网地址"
-                : "请在可访问此地址的网络中扫码"}
-            </small>
-          </aside>
+    <main className={styles.viewport}>
+      {data === "unavailable" ? (
+        <div className={styles.loading} role="status">
+          {typeof document !== "undefined" && document.documentElement.dataset.dataMode === "server"
+            ? "现场数据暂不可用，正在重新连接。" : "现场数据暂不可用，请在演示入口恢复本地数据。"}
         </div>
-        <footer className="screen-bottom">
-          <span>
-            DESTINY LAB ／{" "}
-            {p.paused ? "新邀请暂时休息中" : "从一个共同话题，开始认识"}
-          </span>
-          <div className="rotation-dots">
-            {["question", "presence", "real-meet"].map((v) => (
-              <i key={v} className={mode === v ? "active" : ""} />
+      ) : data ? (
+        <WorldStage
+          key={data.epoch}
+          data={data}
+          control={control}
+          previewIntersection={fixed === "mutual" && !isLive()}
+          pairControl={pairControl}
+        />
+      ) : (
+        <div className={styles.loading} role="status">
+          世界正在醒来
+        </div>
+      )}
+      {mock && <span className={styles.demoLabel}>虚构演示</span>}
+      {mock && process.env.NODE_ENV === "development" && (
+        <details className={styles.debug} data-testid="world-debug">
+          <summary>虚构世界 · 演示控制</summary>
+          <p>独立模拟数据，不改变手机或后台状态</p>
+          <div>
+            {(["male", "female"] as const).flatMap((gender) =>
+              (["CHAT", "WALK", "SERIOUS"] as const).map((field, index) => (
+                <button
+                  key={`${gender}-${field}`}
+                  onClick={() => mockWorld.join(gender, `q1:${index}`)}
+                >
+                  ADD {gender.toUpperCase()} TO {field}
+                </button>
+              )),
+            )}
+            <button onClick={() => mockWorld.burst(5)}>BURST ADD 5</button>
+            <button onClick={() => mockWorld.burst(20)}>BURST ADD 20</button>
+            <button onClick={() => mockWorld.join()}>加入</button>
+            <button onClick={() => mockWorld.answer()}>完成问题</button>
+            <button onClick={() => mockWorld.field()}>切换选择</button>
+            <button onClick={() => mockWorld.open()}>开放认识</button>
+            <button onClick={() => mockWorld.close()}>取消开放</button>
+            <button onClick={() => mockWorld.mutual()}>双向确认</button>
+            <button onClick={() => mockWorld.meet()}>确认见面</button>
+            <button onClick={() => mockWorld.stress()}>143人在场</button>
+            <button onClick={() => mockWorld.empty()}>清空世界</button>
+            <button onClick={() => mockWorld.reset()}>重置演示</button>
+            {(["CHOICE", "LIVE", "MEET"] as const).map((mode) => (
+              <button key={mode} onClick={() => choose(mode, true)}>
+                {mode}
+              </button>
             ))}
+            <button onClick={() => choose("CHOICE", false)}>正常轮播</button>
+            {[0, 1, 2, 3, 10].map((count) => (
+              <button key={count} onClick={() => mockWorld.pairCount(count)}>
+                {count} PAIRS
+              </button>
+            ))}
+            <button onClick={() => mockWorld.revokePair()}>REVOKE ONE</button>
+            <button onClick={() => mockWorld.duplicatePair()}>
+              DUPLICATE EVENT
+            </button>
+            <button onClick={() => mockWorld.connectPair()}>
+              NEW CONNECTION
+            </button>
+            <button onClick={() => mockWorld.upgradePair()}>
+              CONFIRM CONNECTION MEET
+            </button>
+            <button onClick={() => mockWorld.conflictPair()}>
+              SHARED PARTICIPANT
+            </button>
+            <button onClick={() => mockWorld.failedAvatar()}>
+              AVATAR FAILURE
+            </button>
+            <button onClick={() => mockWorld.network(false)}>
+              OFFLINE UNKNOWN GRANTS
+            </button>
+            <button onClick={() => mockWorld.network(false, true)}>
+              OFFLINE VERIFIED GRANTS
+            </button>
+            <button onClick={() => mockWorld.network(true)}>RECONNECT</button>
+            <button onClick={() => mockWorld.unknownStatistics()}>
+              UNKNOWN STATISTICS
+            </button>
+            <button onClick={() => pairAction("next")}>NEXT PAIR</button>
+            <button onClick={() => pairAction("previous")}>
+              PREVIOUS PAIR
+            </button>
+            <button onClick={() => mockWorld.meet()}>TRIGGER NEW MEET</button>
+            <button onClick={() => pairAction("collision")}>
+              TRIGGER COLLISION
+            </button>
+            <button onClick={() => pairAction("trail")}>TOGGLE TRAIL</button>
+            <button onClick={() => pairAction("spark")}>TOGGLE SPARK</button>
+            <button onClick={() => mockWorld.meet(20)}>BURST PAIRS</button>
+            <button onClick={() => mockWorld.revokePairs()}>
+              REVOKE PAIRS
+            </button>
+            <button onClick={() => mockWorld.onePair()}>ONE PAIR</button>
           </div>
-          <span>本地演示 · 不显示个人信息</span>
-        </footer>
-      </div>
+        </details>
+      )}
     </main>
   );
 }

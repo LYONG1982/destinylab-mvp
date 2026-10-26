@@ -1,4 +1,5 @@
 import { validAvatar } from "@/config/avatars";
+import { applyTongzhouCommand, isTongzhouCommand } from "./tongzhou";
 import { AGES, QUESTIONS } from "@/data/questions";
 import type {
   CommandEnvelope,
@@ -27,6 +28,8 @@ export function applyCommand(
   ensure(envelope.epoch === source.epoch, "演示场景已更新，请重新操作。");
   const key = `${envelope.actor}:${envelope.id}`;
   if (source.commands.includes(key)) return source;
+  if (isTongzhouCommand(envelope.command))
+    return applyTongzhouCommand(source, envelope, at);
   const s = structuredClone(source);
   s.now = at;
   s.wallAt = Date.now();
@@ -356,6 +359,15 @@ export function applyCommand(
           ? "工作人员已接单，请在相遇点附近稍候。"
           : "本次帮助已处理。如仍有需要，可以再次求助。";
       log("HELP_STATUS", h.reply, h.invitationId, h.participantId);
+      break;
+    }
+    case "point-status": {
+      admin();
+      const point = s.points.find((p) => p.id === c.pointId);
+      ensure(point, "相遇点不存在。");
+      ensure(!point.occupant, "请先结束安排并确认场地空闲，再修改开放状态。");
+      point.closed = !c.enabled;
+      log("POINT_STATUS", `${point.name}${c.enabled ? "已启用" : "已停用"}`);
       break;
     }
     case "release": {

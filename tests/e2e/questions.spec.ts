@@ -102,7 +102,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
           if (reducedMotion === "no-preference" && [320, 390].includes(width)) {
             await expect(page.locator(".question-outgoing")).toHaveCount(0);
             await page.screenshot({
-              path: `docs/verification/answer-motion/${q.id}-${width}.png`,
+              path: `docs/verification/destiny-field-act3-v2/regression/answer-motion/${q.id}-${width}.png`,
               fullPage: true,
             });
           }
@@ -188,7 +188,7 @@ test("saved extra answers survive backtracking and refresh; admin shows all ten 
   for (const value of ["跟着感觉走", ...extra.slice(1).map((q) => q.answer)])
     await expect(dialog).toContainText(value);
   await page.screenshot({
-    path: "docs/verification/answer-motion/admin-ten-answers.png",
+    path: "docs/verification/destiny-field-act3-v2/regression/answer-motion/admin-ten-answers.png",
   });
 });
 test("a persisted six-answer invitation completes two-person meeting then explicitly resumes q7", async ({

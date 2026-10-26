@@ -1,6 +1,6 @@
 {
   "name": "destiny-lab-mvp",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "private": true,
   "engines": {
     "node": ">=22.22.1 <23"
@@ -14,22 +14,30 @@
     "test": "tsx --test tests/domain/*.test.ts",
     "test:e2e": "playwright test",
     "screenshots": "tsx scripts/screenshots.ts",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run build"
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build",
+    "live": "node scripts/live-run.mjs",
+    "test:mini:integration": "node --conditions=react-server --import tsx --test tests/mini/registration.test.ts && node --conditions=react-server --import tsx --test tests/mini/content.test.ts"
   },
   "dependencies": {
     "next": "16.3.8",
+    "pg": "^8.23.1",
     "qrcode": "1.5.4",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "sharp": "0.35.5",
+    "three": "0.186.1"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "22.20.4",
+    "@types/pg": "^8.23.1",
     "@types/pngjs": "6.0.5",
     "@types/qrcode": "1.5.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.8",
     "jsqr": "1.4.0",

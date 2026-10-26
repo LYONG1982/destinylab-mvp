@@ -2,13 +2,17 @@
 import { withCompatibleAvatar } from "@/config/avatars";
 import { createSeed } from "@/data/seed";
 import { applyCommand } from "@/domain/commands";
+import { isTongzhouCommand, readTongzhouSubmissions } from "@/domain/tongzhou";
 import type { Command, DemoState } from "@/domain/types";
+import * as live from "@/lib/api/live-client";
+import { clientId } from "@/lib/client-id";
 const KEY = "destinylab:v1.1:state";
 const ACTOR = "destinylab:v1.1:actor";
 const LOCK = "destinylab:v1.1:write";
 let snapshot: DemoState | null = null;
 let channel: BroadcastChannel | null = null;
 let problem = "";
+let unreadable = false;
 let started = false;
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((f) => f());
@@ -67,7 +71,11 @@ function check(raw: string): DemoState {
       !s.events.every((e) => e && typeof e.id === "string")
     )
       throw new Error();
-    return { ...s, participants: s.participants.map(withCompatibleAvatar) };
+    return {
+      ...s,
+      participants: s.participants.map(withCompatibleAvatar),
+      tongzhouSubmissions: readTongzhouSubmissions(s.tongzhouSubmissions),
+    };
   } catch {
     throw new Error("保存的演示状态无法读取，请在演示入口重置。");
   }
@@ -75,8 +83,11 @@ function check(raw: string): DemoState {
 function read(): DemoState {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? check(raw) : snapshot || createSeed();
+    const state = raw ? check(raw) : snapshot || createSeed();
+    unreadable = false;
+    return state;
   } catch (e) {
+    unreadable = true;
     problem = e instanceof Error ? e.message : "浏览器无法读取保存的演示状态。";
     throw new Error(problem);
   }
@@ -92,14 +103,19 @@ function persist(s: DemoState) {
   }
   snapshot = s;
   problem = "";
+  unreadable = false;
   notify();
   channel?.postMessage({ revision: s.revision, epoch: s.epoch });
 }
 function reload() {
   try {
+    const wasUnreadable = unreadable;
     const s = read();
+    if (wasUnreadable) problem = "";
     if (s.epoch !== snapshot?.epoch || s.revision !== snapshot?.revision) {
       snapshot = s;
+      notify();
+    } else if (wasUnreadable) {
       notify();
     }
   } catch {
@@ -107,6 +123,7 @@ function reload() {
   }
 }
 export function initialize() {
+  if (live.isLive()) return live.initialize();
   if (started || typeof window === "undefined") return;
   started = true;
   try {
@@ -126,15 +143,18 @@ export function initialize() {
   notify();
 }
 export function subscribe(listener: () => void) {
+  if (live.isLive()) return live.subscribe(listener);
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
 }
-export const getSnapshot = () => snapshot;
+export const getSnapshot = () => live.isLive() ? live.getState() : snapshot;
 export const getServerSnapshot = () => null;
-export const storageProblem = () => problem;
+export const storageProblem = () => live.isLive() ? live.getProblem() : problem;
+export const storageUnreadable = () => live.isLive() ? false : unreadable;
 export function actorFromSession() {
+  if (live.isLive()) return live.getActor();
   try {
     return sessionStorage.getItem(ACTOR) || "p-shanfeng";
   } catch {
@@ -142,6 +162,7 @@ export function actorFromSession() {
   }
 }
 export function setActor(actor: string) {
+  if (live.isLive()) return;
   try {
     sessionStorage.setItem(ACTOR, actor);
   } catch {}
@@ -155,13 +176,16 @@ async function locked<T>(fn: () => T | Promise<T>): Promise<T> {
   return next;
 }
 export async function resetScenario(name: string) {
+  if (live.isLive()) throw new Error("共享服务不提供演示重置。");
   await locked(() => persist(createSeed(name)));
 }
 export async function command(
   actor: string,
   c: Command,
-  id = crypto.randomUUID(),
+  id = clientId(),
+  signal?: AbortSignal,
 ) {
+  if (live.isLive()) return live.command(c, signal);
   const epoch = snapshot?.epoch;
   if (!epoch) throw new Error("演示正在加载，请稍候。");
   const delay = Number(sessionStorage.getItem("destinylab:delay") || "250");
@@ -173,6 +197,8 @@ export async function command(
     throw new Error("模拟连接中断，本次操作未提交，请重试。");
   }
   return locked(() => {
+    if (isTongzhouCommand(c) && signal?.aborted)
+      throw new Error("本次填报操作已取消。");
     const next = applyCommand(read(), { actor, id, epoch, command: c });
     persist(next);
     return next;

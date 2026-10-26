@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-live/
 out/
 playwright-report/
 test-results/
@@ -7,3 +8,33 @@ test-results/
 !.env.example
 .DS_Store
 *.tsbuildinfo
+
+.next-private/
+
+/miniapp/node_modules/
+/miniapp/dist/
+/miniapp/.taro-cache/
+
+.next-mini*/
+miniapp/node_modules/
+miniapp/dist/
+miniapp/project.private.config.json
+
+.next-album*/
+.next-profile*/
+
+.next-memberwall*/
+
+.next-registration*/
+
+# Isolated builds and local verification evidence are not release source.
+.next-weapp*/
+.next-points*/
+.next-release*/
+docs/verification/
+assets/uat/
+miniapp/release/
+
+# Platform-specific compiler plugin caches
+.swc/
+miniapp/.swc/

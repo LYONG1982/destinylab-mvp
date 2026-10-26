@@ -118,14 +118,18 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         .getByRole("button", { name: "我已经见到 TA", exact: true })
         .click();
       await expect(admin.getByTestId("real-count")).toHaveText("28");
-      await expect(screen.getByTestId("screen-real-count")).toHaveText("28");
+      await expect(
+        screen.locator('[data-world-copy="MEET"] .animated-counter'),
+      ).toHaveText("28");
       await receiver
         .getByRole("button", { name: "我已经见到 TA", exact: true })
         .click();
       await expect(page).toHaveURL(/10-next-step/);
       await expect(receiver).toHaveURL(/10-next-step/);
       await expect(admin.getByTestId("real-count")).toHaveText("29");
-      await expect(screen.getByTestId("screen-real-count")).toHaveText("29");
+      await expect(
+        screen.locator('[data-world-copy="MEET"] .animated-counter'),
+      ).toHaveText("29");
       await page.getByRole("button", { name: /就到这里，也很好/ }).click();
       await expect(
         page.getByText("已保存你的选择。是否一起继续，请与对方面对面商量。"),
@@ -338,7 +342,7 @@ test("screen QR decodes to configured entry, remains visible and low activity do
 }) => {
   await scenario(page, "mutual");
   await page.goto("/screen");
-  const qr = page.getByRole("img", { name: "扫码进入缘分实验室" });
+  const qr = page.getByRole("img", { name: "扫码加入", exact: true });
   await expect(qr).toBeVisible();
   const src = await qr.getAttribute("src");
   const png = PNG.sync.read(Buffer.from(src!.split(",")[1], "base64"));
@@ -346,26 +350,55 @@ test("screen QR decodes to configured entry, remains visible and low activity do
   expect(decoded?.data).toBe("http://localhost:3210/mobile/01-start");
   await page.waitForTimeout(12500);
   await expect(
-    page.getByRole("heading", { name: "人正在鼓楼探索" }),
+    page.getByText("正在等一次自然的靠近。", { exact: true }),
   ).toBeVisible();
   await expect(qr).toBeVisible();
-  for (const forbidden of ["山风", "小满", "4721", "Meet01"])
-    await expect(page.locator(".screen-canvas")).not.toContainText(forbidden);
+  for (const forbidden of ["p-shanfeng", "p-xiaoman", "4721", "Meet01"])
+    await expect(page.getByTestId("destiny-world")).not.toContainText(
+      forbidden,
+    );
 });
-test("three independent pairs produce a single anonymous insertion and no repeat", async ({
+test("one real mutual acceptance triggers an anonymous global event without consuming business broadcast records", async ({
   page,
+  context,
 }) => {
-  await scenario(page, "broadcast");
-  await page.goto("/screen");
-  await page.waitForTimeout(13000);
-  await expect(page.locator(".screen-mutual")).toBeVisible();
-  await expect(
-    page.getByRole("img", { name: "扫码进入缘分实验室" }),
-  ).toBeVisible();
-  await page.waitForTimeout(6500);
-  await expect(page.locator(".screen-mutual")).toHaveCount(0);
-  expect((await saved(page)).broadcastConsumed).toHaveLength(3);
+  await scenario(page, "waiting");
+  const screen = await context.newPage();
+  await screen.setViewportSize({ width: 1920, height: 1080 });
+  await screen.goto("/screen");
+  const world = screen.getByTestId("destiny-world");
+  await expect(world).toHaveAttribute("data-renderer", "webgl");
+  await expect(world).toHaveAttribute("data-intersection", "false");
+  const before = await saved(page);
+  await actorPage(page, "p-xiaoman", "07-invitation");
+  await page.getByRole("button", { name: "我也愿意认识", exact: true }).click();
+  await expect(world).toHaveAttribute("data-intersection", "true");
+  await expect(world).toHaveAttribute("data-mode", "CHOICE");
+  await expect(world).toHaveAttribute("data-meetings", "28");
+  const event = screen.locator("[data-intersection-copy]");
+  await expect(event).toContainText("又一次交汇");
+  expect(await event.locator("img,[data-world-player]").count()).toBe(0);
+  for (const secret of [
+    "山风",
+    "小满",
+    "p-shanfeng",
+    "p-xiaoman",
+    "4721",
+    "Meet01",
+  ])
+    await expect(event).not.toContainText(secret);
+  await expect(world).toHaveAttribute("data-intersection", "false", {
+    timeout: 9000,
+  });
+  expect((await saved(page)).broadcastConsumed).toEqual(
+    before.broadcastConsumed,
+  );
+  await screen.reload();
+  await expect(world).toHaveAttribute("data-renderer", "webgl");
+  await expect(world).toHaveAttribute("data-intersection", "false");
+  await screen.close();
 });
+
 test("phone widths, keyboard modal, and screen safe canvas have no critical overflow", async ({
   page,
 }) => {
@@ -393,10 +426,10 @@ test("phone widths, keyboard modal, and screen safe canvas have no critical over
   ]) {
     await page.setViewportSize(size);
     await page.goto("/screen/real-meet");
-    const b = await page.getByTestId("screen-canvas").boundingBox();
+    const b = await page.getByTestId("destiny-world").boundingBox();
     expect(Math.abs(b!.width / b!.height - 16 / 9)).toBeLessThan(0.01);
     await expect(
-      page.getByRole("img", { name: "扫码进入缘分实验室" }),
+      page.getByRole("img", { name: "扫码加入", exact: true }),
     ).toBeVisible();
   }
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -437,28 +470,54 @@ test("corrupt saved state has a visible recovery path without silently overwriti
   expect((await saved(page)).scenario).toBe("fresh");
   expect(errors).toEqual([]);
 });
-test("all four screen states render decodable QR pixels and readable panel text", async ({
+test("four legacy screen URLs resolve to the same World modes or event preview with stable QR", async ({
   page,
 }) => {
   await scenario(page, "broadcast");
   await page.setViewportSize({ width: 1920, height: 1080 });
-  for (const mode of ["question", "presence", "mutual", "real-meet"]) {
-    await page.goto(`/screen/${mode}`);
-    const qr = page.getByRole("img", { name: "扫码进入缘分实验室" });
+  let originalBox: Awaited<
+    ReturnType<ReturnType<Page["locator"]>["boundingBox"]>
+  > = null;
+  let originalSource: string | null = null;
+  for (const [route, mode] of [
+    ["question", "CHOICE"],
+    ["presence", "LIVE"],
+    ["mutual", "CHOICE"],
+    ["real-meet", "MEET"],
+  ]) {
+    await page.goto(`/screen/${route}`);
+    const world = page.getByTestId("destiny-world");
+    await expect(world).toHaveAttribute("data-renderer", "webgl");
+    await expect(world).toHaveAttribute("data-mode", mode);
+    if (route === "mutual")
+      await expect(world).toHaveAttribute("data-intersection", "true");
+    const qr = page.getByTestId("world-qr").locator("img");
     await expect(qr).toBeVisible();
-    await qr.evaluate((img) => (img as HTMLImageElement).decode());
     const png = PNG.sync.read(await qr.screenshot());
-    const decoded = jsQR(
-      new Uint8ClampedArray(png.data),
-      png.width,
-      png.height,
-    );
-    expect(decoded?.data, mode).toBe("http://localhost:3210/mobile/01-start");
     expect(
-      await page
-        .locator(".screen-qr h2")
-        .evaluate((el) => getComputedStyle(el).color),
-    ).toBe("rgb(40, 35, 31)");
+      jsQR(new Uint8ClampedArray(png.data), png.width, png.height)?.data,
+    ).toBe("http://localhost:3210/mobile/01-start");
+    const box = await qr.boundingBox(),
+      source = await qr.getAttribute("src");
+    if (originalSource) {
+      expect(box).toEqual(originalBox);
+      expect(source).toBe(originalSource);
+    } else {
+      originalBox = box;
+      originalSource = source;
+    }
+    expect(
+      await qr.evaluate((el) => ({
+        transform: getComputedStyle(el).transform,
+        opacity: getComputedStyle(el).opacity,
+      })),
+    ).toEqual({ transform: "none", opacity: "1" });
+    await expect(page.getByTestId("world-qr").locator("strong")).toHaveText(
+      "你呢？",
+    );
+    await expect(page.getByTestId("world-qr").locator("small")).toHaveText(
+      "扫码加入",
+    );
   }
 });
 
@@ -491,7 +550,7 @@ test("recommendation return preserves answers and people while explaining short 
     await page.getByRole("button", { name: "看看共同答案" }).first().click();
     await expect(page).toHaveURL(/06-common/);
     await page
-      .getByRole("button", { name: "返回推荐列表", exact: true })
+      .getByRole("button", { name: "暂时不了，看看其他人", exact: true })
       .click();
     await expect(page).toHaveURL(/05-discover$/);
     await expect(page.locator(".recommend-card h2")).toHaveText(names);

@@ -1,4 +1,5 @@
 "use client";
+import { PRODUCT } from "@/config/product";
 import {
   createContext,
   useCallback,
@@ -59,7 +60,7 @@ export function CityResponseBoundary({ children }: { children: ReactNode }) {
         return;
       const text =
         question === "profile"
-          ? "欢迎进入缘分实验室，也可以看看现场大屏。"
+          ? `欢迎进入${PRODUCT.name}，也可以看看现场大屏。`
           : [
               question === "q1" ? "已加入今晚的答案。" : "",
               cityResponseFor(saved, actor, question, answer),

@@ -1,4 +1,5 @@
 "use client";
+import { PRODUCT } from "@/config/product";
 import {
   ParticipantAvatar,
   type AvatarSize,
@@ -153,8 +154,8 @@ export function Brand({
       </svg>
       {!compact && (
         <span>
-          <strong>缘分实验室</strong>
-          <small>DESTINY LAB</small>
+          <strong>{PRODUCT.name}</strong>
+          <small>{PRODUCT.englishName}</small>
         </span>
       )}
     </div>
@@ -164,7 +165,7 @@ export function Avatar({
   person,
   size = "md",
 }: {
-  person: Pick<Participant, "gender" | "name" | "id" | "avatarId">;
+  person: Pick<Participant, "gender" | "name" | "id" | "avatarId" | "photo">;
   size?: AvatarSize;
 }) {
   return (
@@ -172,8 +173,9 @@ export function Avatar({
       avatarId={
         validAvatar(person.avatarId, person.gender) ? person.avatarId : null
       }
+      photo={person.photo}
       size={size}
-      alt={`${person.name}的系统虚拟头像，不代表本人长相`}
+      alt={`${person.name}的${person.photo ? "上传照片" : "系统虚拟头像，不代表本人长相"}`}
     />
   );
 }
@@ -254,14 +256,14 @@ export function Modal({
       ref={ref}
       className="modal"
       aria-labelledby={id}
-      onCancel={onClose}
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div className="modal-head">
         <h2 id={id}>{title}</h2>
-        <button className="icon-button" aria-label="关闭弹窗" onClick={onClose}>
+        <button type="button" className="icon-button" aria-label="关闭弹窗" onClick={onClose}>
           <Icon name="close" />
         </button>
       </div>
@@ -311,6 +313,7 @@ export function Loading() {
   );
 }
 export function DemoLink() {
+  if (typeof document !== "undefined" && document.documentElement.dataset.dataMode === "server") return null;
   return (
     <Link className="demo-link" href="/demo">
       本地演示 · 切换场景

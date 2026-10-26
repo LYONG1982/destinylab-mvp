@@ -67,13 +67,13 @@ test("avatar is required, gender changes clear selection, keyboard works, refres
     }
   }
   await page.screenshot({
-    path: "docs/verification/answer-motion/M03-selected.png",
+    path: "docs/verification/destiny-field-act3-v2/regression/answer-motion/M03-selected.png",
     fullPage: true,
   });
   await page.getByRole("button", { name: "继续答题" }).click();
   await expect(page).toHaveURL(/04-question/);
   await expect(
-    page.getByRole("status").filter({ hasText: "欢迎进入缘分实验室" }),
+    page.getByRole("status").filter({ hasText: "欢迎进入遇见-缘分实验室" }),
   ).toBeVisible();
   expect((await saved(page)).participants[0].avatarId).toBe("male_04");
   await page.goto("/mobile/03-profile");
@@ -154,113 +154,9 @@ test("legacy state loads safely and image failure gives neutral fallback", async
   await expect(page.locator(".avatar-placeholder").first()).toBeVisible();
 });
 
-test("screen preserves QR, layout, canvas identity across dissolve and stops motion when reduced or hidden", async ({
-  page,
-}) => {
-  test.setTimeout(60000);
-  await page.setViewportSize({ width: 1920, height: 1080 });
-  await scenario(page, "discover");
-  await page.goto("/screen");
-  const qr = page.locator(".screen-qr img");
-  await expect(qr).toBeVisible();
-  const src = await qr.getAttribute("src"),
-    box = await qr.boundingBox();
-  await page.waitForTimeout(1600);
-  await page.evaluate(
-    'window.__ambient = document.querySelector("[data-layer=ambient]")',
-  );
-  await expect(page.locator('[data-scene-current="presence"]')).toBeVisible({
-    timeout: 16000,
-  });
-  expect(
-    await page.evaluate(
-      'window.__ambient === document.querySelector("[data-layer=ambient]")',
-    ),
-  ).toBe(true);
-  await expect(page.locator(".screen-scene-outgoing")).toHaveAttribute(
-    "aria-hidden",
-    "true",
-  );
-  await expect(page.locator(".screen-qr img")).toHaveCount(1);
-  expect(await qr.getAttribute("src")).toBe(src);
-  expect(await qr.boundingBox()).toEqual(box);
-  const png = PNG.sync.read(await qr.screenshot());
-  expect(
-    jsQR(new Uint8ClampedArray(png.data), png.width, png.height)?.data,
-  ).toBe("http://localhost:3210/mobile/01-start");
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(page.getByTestId("screen-motion")).toHaveAttribute(
-    "data-running",
-    "false",
-  );
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          document.getAnimations().filter((a) => a.playState === "running")
-            .length,
-      ),
-    )
-    .toBe(0);
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.evaluate(() => {
-    Object.defineProperty(document, "visibilityState", {
-      configurable: true,
-      value: "hidden",
-    });
-    document.dispatchEvent(new Event("visibilitychange"));
-  });
-  await expect(page.getByTestId("screen-motion")).toHaveAttribute(
-    "data-running",
-    "false",
-  );
-  await page.evaluate(() => {
-    Object.defineProperty(document, "visibilityState", {
-      configurable: true,
-      value: "visible",
-    });
-    document.dispatchEvent(new Event("visibilitychange"));
-  });
-  await expect(page.getByTestId("screen-motion")).toHaveAttribute(
-    "data-running",
-    "true",
-  );
-  for (const mode of ["question", "presence", "mutual", "real-meet"]) {
-    await page.goto(`/screen/${mode}`);
-    await expect(qr).toBeVisible();
-    await page.waitForTimeout(1400);
-    const image = PNG.sync.read(await qr.screenshot());
-    expect(
-      jsQR(new Uint8ClampedArray(image.data), image.width, image.height)?.data,
-    ).toBe("http://localhost:3210/mobile/01-start");
-    expect(await qr.boundingBox()).toEqual(box);
-    expect(
-      await qr.evaluate((el) => ({
-        transform: getComputedStyle(el).transform,
-        opacity: getComputedStyle(el).opacity,
-      })),
-    ).toEqual({ transform: "none", opacity: "1" });
-    await page.screenshot({
-      path: `docs/verification/answer-motion/${mode}.png`,
-    });
-  }
-  await page.setViewportSize({ width: 3840, height: 2160 });
-  await page.goto("/screen/question");
-  await page.waitForTimeout(1600);
-  await page.screenshot({
-    path: "docs/verification/answer-motion/question-4k.png",
-  });
-  const png4k = PNG.sync.read(await qr.screenshot());
-  expect(
-    jsQR(new Uint8ClampedArray(png4k.data), png4k.width, png4k.height)?.data,
-  ).toBe("http://localhost:3210/mobile/01-start");
-  const html = await page.locator("main").innerHTML();
-  for (const word of ["p-shanfeng", "山风", "小满", "4721", "Meet01"])
-    expect(html).not.toContain(word);
-  await expect(page.getByText("虚构动效预览")).toHaveCount(0);
-});
-
-test("mobile choice reaches screen as the same avatar and JOIN/ANSWER cues cannot change actual counts", async ({
+// The old Canvas2D/PPT dissolve checks moved to destiny-field.spec.ts;
+// these tests retain real mobile-to-world avatar and business-state integration.
+test("a real mobile avatar selection enters the World without adding a second answer or meeting", async ({
   page,
   context,
 }) => {
@@ -268,43 +164,57 @@ test("mobile choice reaches screen as the same avatar and JOIN/ANSWER cues canno
   await profile(page);
   const screen = await context.newPage();
   await screen.setViewportSize({ width: 1920, height: 1080 });
-  await screen.addInitScript(
-    `(() => { window.__drawnAvatars = []; const draw = CanvasRenderingContext2D.prototype.drawImage; CanvasRenderingContext2D.prototype.drawImage = function(img, ...args) { if (img.src && !window.__drawnAvatars.includes(img.src)) window.__drawnAvatars.push(img.src); return draw.call(this, img, ...args); }; })()`,
-  );
   await screen.goto("/screen/question");
-  await expect(screen.getByTestId("screen-motion")).toBeVisible();
+  const world = screen.getByTestId("destiny-world");
+  await expect(world).toHaveAttribute("data-renderer", "webgl");
   const before = await saved(page);
+  await expect(world).toHaveAttribute(
+    "data-total",
+    String(Object.keys(before.responses).length),
+  );
   await page.getByRole("radio", { name: "男生虚拟头像 08" }).check();
   await page.getByRole("button", { name: "继续答题" }).click();
+  const selectedAvatar = screen
+    .locator('[data-world-player][data-avatar$="male_08.png"]')
+    .filter({ hasText: "山风" })
+    .locator("img");
+  await expect(selectedAvatar).toBeVisible();
+  await expect(selectedAvatar).toHaveAttribute("src", /male_08\.png$/);
   await expect
     .poll(() =>
-      screen.evaluate(
-        'window.__drawnAvatars.some(src => decodeURIComponent(src).includes("male_08.png"))',
+      selectedAvatar.evaluate(
+        (img) =>
+          (img as HTMLImageElement).complete &&
+          (img as HTMLImageElement).naturalWidth > 0,
       ),
     )
     .toBe(true);
-  await expect
-    .poll(() =>
-      screen.getByTestId("screen-motion").getAttribute("data-effects"),
-    )
-    .not.toBe("0");
+  await expect(
+    screen
+      .locator('[data-world-player][data-avatar$="male_08.png"]')
+      .filter({ hasText: "山风" }),
+  ).toBeVisible();
+  const after = await saved(page);
+  expect(after.responses).toEqual(before.responses);
+  await expect(world).toHaveAttribute(
+    "data-total",
+    String(Object.keys(before.responses).length),
+  );
+  await expect(world).toHaveAttribute(
+    "data-current",
+    String(
+      before.participants.filter((p: { present: boolean }) => p.present).length,
+    ),
+  );
   expect(
-    (await saved(page)).participants.filter(
-      (p: { present: boolean }) => p.present,
-    ).length,
+    after.participants.filter((p: { present: boolean }) => p.present).length,
   ).toBe(
     before.participants.filter((p: { present: boolean }) => p.present).length,
   );
-  expect((await saved(page)).invitations).toEqual(before.invitations);
-  await expect
-    .poll(() =>
-      screen.getByTestId("screen-motion").getAttribute("data-effects"),
-    )
-    .toBe("0");
+  expect(after.invitations).toEqual(before.invitations);
   await screen.close();
 });
-
-test("reduced-motion join and 4K resize keep the selected avatar visible without a queued effect; all canvas pixels leave QR clear", async ({
+test("real selected avatar remains visible with reduced motion and 4K; hiding pauses the World", async ({
   page,
   context,
 }) => {
@@ -312,65 +222,63 @@ test("reduced-motion join and 4K resize keep the selected avatar visible without
   const screen = await context.newPage();
   await screen.emulateMedia({ reducedMotion: "reduce" });
   await screen.setViewportSize({ width: 1920, height: 1080 });
-  await screen.addInitScript(
-    `(() => { window.__drawnAvatars = []; const draw = CanvasRenderingContext2D.prototype.drawImage; CanvasRenderingContext2D.prototype.drawImage = function(img, ...args) { if (img.src && !window.__drawnAvatars.includes(img.src)) window.__drawnAvatars.push(img.src); return draw.call(this, img, ...args); }; })()`,
-  );
   await screen.goto("/screen/question");
+  const world = screen.getByTestId("destiny-world");
+  await expect(world).toHaveAttribute("data-renderer", "webgl");
   await page.getByRole("radio", { name: "男生虚拟头像 10" }).check();
   await page.getByRole("button", { name: "继续答题" }).click();
+  const selectedAvatar = screen
+    .locator('[data-world-player][data-avatar$="male_10.png"]')
+    .filter({ hasText: "山风" })
+    .locator("img");
+  await expect(selectedAvatar).toBeVisible();
+  await expect(selectedAvatar).toHaveAttribute("src", /male_10\.png$/);
   await expect
     .poll(() =>
-      screen.evaluate(
-        'window.__drawnAvatars.some(src => decodeURIComponent(src).includes("male_10.png"))',
+      selectedAvatar.evaluate(
+        (img) =>
+          (img as HTMLImageElement).complete &&
+          (img as HTMLImageElement).naturalWidth > 0,
       ),
     )
     .toBe(true);
-  await expect(screen.getByTestId("screen-motion")).toHaveAttribute(
-    "data-running",
-    "false",
-  );
-  await expect(screen.getByTestId("screen-motion")).toHaveAttribute(
-    "data-effects",
-    "0",
-  );
   for (const size of [
     { width: 1920, height: 1080 },
     { width: 3840, height: 2160 },
   ]) {
     await screen.setViewportSize(size);
-    await screen.waitForTimeout(200);
-    const pixels = await screen.evaluate(() => {
-      const host = document.querySelector<HTMLElement>(
-        '[data-testid="screen-motion"]',
-      )!;
-      const safe = JSON.parse(host.dataset.safe!);
-      const area = JSON.parse(host.dataset.area!);
-      return Array.from(host.querySelectorAll("canvas")).map((canvas) => {
-        const scale = canvas.width / host.getBoundingClientRect().width;
-        const c = canvas.getContext("2d")!;
-        const qr = c.getImageData(
-          Math.ceil(safe.x * scale) + 1,
-          Math.ceil(safe.y * scale) + 1,
-          Math.floor(safe.width * scale) - 3,
-          Math.floor(safe.height * scale) - 3,
-        ).data;
-        let covered = 0;
-        for (let i = 3; i < qr.length; i += 4) if (qr[i]) covered++;
-        const field = c.getImageData(
-          Math.ceil(area.x * scale),
-          Math.ceil(area.y * scale),
-          Math.floor(area.width * scale),
-          Math.floor(area.height * scale),
-        ).data;
-        let drawn = 0;
-        for (let i = 3; i < field.length; i += 4) if (field[i]) drawn++;
-        return { layer: canvas.dataset.layer, covered, drawn };
-      });
-    });
-    expect(pixels.every((p) => p.covered === 0)).toBe(true);
+    await expect(world).toHaveAttribute("data-running", "false");
+    await expect(
+      screen
+        .locator('[data-world-player][data-avatar$="male_10.png"]')
+        .filter({ hasText: "山风" }),
+    ).toBeVisible();
+    const qr = screen.getByTestId("world-qr").locator("img");
+    const png = PNG.sync.read(await qr.screenshot());
     expect(
-      pixels.find((p) => p.layer === "relationship")!.drawn,
-    ).toBeGreaterThan(200);
+      jsQR(new Uint8ClampedArray(png.data), png.width, png.height)?.data,
+    ).toBe("http://localhost:3210/mobile/01-start");
   }
+  await screen.emulateMedia({ reducedMotion: "no-preference" });
+  await expect(world).toHaveAttribute("data-running", "true");
+  await screen.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "hidden",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(world).toHaveAttribute("data-running", "false");
+  const frames = await world.getAttribute("data-frames");
+  await screen.waitForTimeout(350);
+  expect(await world.getAttribute("data-frames")).toBe(frames);
+  await screen.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(world).toHaveAttribute("data-running", "true");
   await screen.close();
 });

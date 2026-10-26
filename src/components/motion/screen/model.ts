@@ -1,3 +1,9 @@
+import { QUESTIONS } from "@/data/questions";
+import {
+  stableSeed,
+  type FieldNode,
+  type FieldQuestion,
+} from "./relationship/layout";
 import { getAvatarById, validAvatar } from "@/config/avatars";
 import type { DemoState } from "@/domain/types";
 import { screenProjection } from "@/domain/selectors";
@@ -24,12 +30,23 @@ export type ScreenEvent = {
   node?: string;
   option?: number;
   phase?: "mutual" | "confirmed";
+  field?: {
+    questionKey: string;
+    optionKey: string;
+    optionLabel: string;
+    kind: "join" | "move" | "answer";
+    amount?: number;
+    label?: string;
+    image?: string;
+  };
   /** MATCH is an aggregate cue, never an identifiable pair. */
   aggregate?: true;
 };
 export interface ScreenSnapshot {
   projection: ReturnType<typeof screenProjection>;
   nodes: DisplayNode[];
+  question: FieldQuestion;
+  members: FieldNode[];
   events: ScreenEvent[];
 }
 
@@ -55,7 +72,7 @@ export function displayNode(
     label:
       input.mode === "LIGHT"
         ? `${[...input.name][0] || "访"}*`
-        : input.name.slice(0, 6),
+        : [...input.name.trim()].slice(0, 8).join(""),
     image: input.image,
   };
 }
@@ -67,8 +84,18 @@ export class ScreenAdapter {
   private eventSequence = 0;
   private previous: DemoState | null = null;
   private cached: ScreenSnapshot | null = null;
-  read(s: DemoState): ScreenSnapshot {
-    if (this.previous === s && this.cached) return this.cached;
+  private questionKey = "";
+  read(
+    s: DemoState,
+    question: {
+      id: string;
+      title: string;
+      options: readonly string[];
+    } = QUESTIONS[0],
+  ): ScreenSnapshot {
+    const questionKey = `${question.id}:${question.options.join("|")}`;
+    if (this.previous === s && this.cached && questionKey === this.questionKey)
+      return this.cached;
     const old = this.previous?.epoch === s.epoch ? this.previous : null;
     if (!old) {
       this.ids.clear();
@@ -81,18 +108,67 @@ export class ScreenAdapter {
       return this.ids.get(id)!;
     };
     const projection = screenProjection(s);
+    const counts =
+      question.id === "q1"
+        ? projection.options
+        : question.options.map((label) => ({
+            label,
+            count: s.participants.filter(
+              (p) => p.answers[question.id] === label,
+            ).length,
+            percentage: 0,
+          }));
+    const total =
+      question.id === "q1"
+        ? projection.total
+        : counts.reduce((n, o) => n + o.count, 0);
+    const fields: FieldQuestion = {
+      id: question.id,
+      title: question.title,
+      total,
+      options: question.options.map((label, index) => ({
+        key: `${question.id}:${index}`,
+        label,
+        count: counts.find((o) => o.label === label)?.count ?? 0,
+        percentage: total
+          ? Math.round(
+              ((counts.find((o) => o.label === label)?.count ?? 0) / total) *
+                100,
+            )
+          : 0,
+      })),
+    };
+    const answerOf = (
+      p: DemoState["participants"][number],
+      state: DemoState,
+    ) =>
+      question.id === "q1" ? state.responses[p.id] : p.answers[question.id];
+    const optionOf = (answer?: string) =>
+      fields.options.find((o) => o.label === answer);
     const nodes = s.participants
       .filter((p) => p.present)
       .map((p) => {
-        const node = displayNode(token(p.id));
+        const node = displayNode(token(p.id), {
+          mode: "PUBLIC",
+          name: p.name,
+          displayGranted: p.profileComplete && !!p.name.trim(),
+        });
         const avatar = validAvatar(p.avatarId, p.gender)
           ? getAvatarById(p.avatarId)
           : undefined;
         return {
           ...node,
-          displayMode: avatar ? ("LIGHT" as const) : ("ANONYMOUS" as const),
           image: avatar?.src,
         };
+      });
+    const members: FieldNode[] = s.participants
+      .filter((p) => p.present && p.profileComplete)
+      .flatMap((p) => {
+        const option = optionOf(answerOf(p, s));
+        const node = nodes.find((n) => n.key === token(p.id));
+        return option && node?.image
+          ? [{ ...node, optionKey: option.key, seed: stableSeed(p.id) }]
+          : [];
       });
     const events: ScreenEvent[] = [];
     const emit = (event: Omit<ScreenEvent, "id" | "timestamp">) =>
@@ -101,25 +177,59 @@ export class ScreenAdapter {
         id: `visual-${++this.eventSequence}`,
         timestamp: Date.now(),
       });
-    if (old) {
+    if (old && questionKey === this.questionKey) {
       const before = new Map(old.participants.map((p) => [p.id, p]));
       for (const p of s.participants.filter((p) => p.present)) {
         const previous = before.get(p.id);
-        if (
+        const node = nodes.find((n) => n.key === token(p.id));
+        const option = optionOf(answerOf(p, s));
+        const prior = previous ? optionOf(answerOf(previous, old)) : undefined;
+        const born =
           p.profileComplete &&
-          (!previous?.present || !previous.profileComplete)
-        )
-          emit({ type: "JOIN", node: token(p.id) });
+          (!previous?.present || !previous.profileComplete);
+        const changed = option && option.key !== prior?.key;
+        const field =
+          option && node?.image && p.profileComplete && (born || changed)
+            ? {
+                questionKey: question.id,
+                optionKey: option.key,
+                optionLabel: option.label,
+                kind: (prior && !born ? "move" : "join") as "move" | "join",
+                label: node.displayMode === "PUBLIC" ? node.label : undefined,
+                image: node.image,
+              }
+            : undefined;
+        if (born) emit({ type: "JOIN", node: token(p.id), field });
         if (
+          !born &&
           previous &&
           Object.entries(p.answers).some(([q, a]) => previous.answers[q] !== a)
         )
-          emit({ type: "ACTIVE", node: token(p.id) });
+          emit({ type: "ACTIVE", node: token(p.id), field });
       }
       const oldProjection = screenProjection(old);
       projection.options.forEach((option, index) => {
-        if (option.count > oldProjection.options[index].count)
-          emit({ type: "ANSWER", option: index });
+        if (option.count > oldProjection.options[index].count) {
+          const covered = events.filter(
+            (e) => e.field?.optionKey === fields.options[index]?.key,
+          ).length;
+          const amount =
+            option.count - oldProjection.options[index].count - covered;
+          emit({
+            type: "ANSWER",
+            option: index,
+            field:
+              question.id === "q1" && amount > 0
+                ? {
+                    questionKey: question.id,
+                    optionKey: fields.options[index].key,
+                    optionLabel: option.label,
+                    kind: "answer",
+                    amount,
+                  }
+                : undefined,
+          });
+        }
       });
       if (projection.real > oldProjection.real)
         emit({ type: "MATCH", phase: "confirmed", aggregate: true });
@@ -131,7 +241,14 @@ export class ScreenAdapter {
         emit({ type: "MATCH", phase: "mutual", aggregate: true });
     }
     this.previous = s;
-    this.cached = { projection, nodes, events: events.slice(-32) };
+    this.questionKey = questionKey;
+    this.cached = {
+      projection,
+      nodes,
+      question: fields,
+      members,
+      events: events.slice(-32),
+    };
     return this.cached;
   }
 }

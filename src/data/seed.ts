@@ -1,4 +1,5 @@
 import { defaultAvatarId } from "@/config/avatars";
+import { defaultMeetPoints } from "@/domain/meet-points";
 import { QUESTIONS } from "./questions";
 import type { DemoState, Participant, Invitation } from "@/domain/types";
 import { commonAnswers } from "@/domain/selectors";
@@ -124,19 +125,7 @@ export function createSeed(
     activityPaused: false,
     participants,
     invitations: [],
-    points: Array.from({ length: 3 }, (_, n) => ({
-      id: `meet-${n + 1}`,
-      name: `Meet0${n + 1}`,
-      location:
-        n === 0
-          ? "主屏右侧 · 1｜1 装置旁"
-          : n === 1
-            ? "街角花店旁 · 相遇装置"
-            : "鼓楼南侧 · 银杏树下",
-      distance: 40 + n * 20,
-      occupant: null,
-      closed: false,
-    })),
+    points: defaultMeetPoints(),
     helps: [],
     merchants: [
       {
@@ -167,6 +156,7 @@ export function createSeed(
     merchantViews: [],
     commands: [],
     broadcastConsumed: [],
+    tongzhouSubmissions: [],
   };
   // Complete, inspectable historical pairs. These do not occupy current meet points.
   for (let n = 0; n < 28; n++) {

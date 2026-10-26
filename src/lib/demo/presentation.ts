@@ -7,6 +7,10 @@ export function cityResponseFor(
   question: string,
   answer: string,
 ) {
+  if (state.live) {
+    const count = state.live.questions.find((q) => q.id === question)?.options.find((o) => o.label === answer)?.count || 0;
+    return count > 1 ? `现场也有人选择了“${answer}”。` : "";
+  }
   if (!demoPresentation.isDemoData) return "";
   return state.participants.some(
     (p) => p.id !== actor && p.present && p.answers[question] === answer,

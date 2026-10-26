@@ -2,8 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { TongzhouEntry } from "@/features/tongzhou/TongzhouMobile";
+import { AvatarEditor } from "@/components/shared/AvatarEditor";
+import {avatarDescription} from "@/domain/photo";
 import { AvatarSelector } from "@/components/shared/AvatarSelector";
-import { validAvatar } from "@/config/avatars";
+import { validAvatar, defaultAvatarId } from "@/config/avatars";
 import { AGES, QUESTIONS, STATUS_LABELS } from "@/data/questions";
 import type {
   DemoState,
@@ -34,7 +37,6 @@ import {
   Empty,
   Footer,
   Icon,
-  Loading,
   Modal,
   Notice,
 } from "@/components/ui";
@@ -46,6 +48,7 @@ import {
 } from "@/components/motion/QuestionTransition";
 
 import { CommonAnswerLink } from "@/components/motion/CommonAnswerLink";
+import { CandidateCard, IcebreakerCard } from "./MatchDetail";
 import { SignalArrival, useSendSignal } from "@/components/motion/SignalMotion";
 import { MutualEncounterMotion } from "@/components/motion/MutualEncounterMotion";
 import { MeetStatusTrack } from "@/components/motion/MeetStatusTrack";
@@ -58,11 +61,12 @@ import { RouteDraw } from "@/components/motion/RouteDraw";
 import { DestinyTrack } from "@/components/motion/DestinyTrack";
 import { useCityResponse } from "@/components/motion/CityResponseToast";
 import { motionTiming } from "@/lib/motion-tokens";
+import { LiveGate, PairDisplayPermission, PastDisplayPermissions } from "@/components/LiveControls";
 
 type Actions = ReturnType<typeof useAction>;
 export function MobileApp({ page }: { page: string }) {
   const { state, actor, problem } = useDemo();
-  if (!state) return <Loading />;
+  if (!state) return <LiveGate problem={problem} />;
   const me = person(state, actor);
   if (!me)
     return (
@@ -114,7 +118,11 @@ function MobileFlow({
         : "你正在进行一次相遇。结束当前相遇前，暂时不能再发出新邀请。";
   const [inviteModal, setInviteModal] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
-  const target = person(s, query.get("target") || "p-xiaoman");
+  const target = person(s, query.get("target") || (s.live ? "" : "p-xiaoman"));
+  const sharedAnswers = target ? commonAnswers(me, target) : [];
+  const sharedSignature = sharedAnswers
+    .map((answer) => `${answer.questionId}:${answer.answer}`)
+    .join("|");
   const resumeRoute = routeFor(s, me);
   const go = (p: string, targetId?: string) =>
     router.push(`/mobile/${p}${targetId ? `?target=${targetId}` : ""}`);
@@ -181,11 +189,23 @@ function MobileFlow({
         );
       case "06-common":
         return hero(
-          "THINGS WE SHARE",
+          "A LITTLE IN COMMON",
           <>
-            共同答案<span>与邀请</span>
+            发现一个
+            <br />
+            {sharedAnswers.length ? (
+              <>
+                与你<span>同频</span>的人
+              </>
+            ) : (
+              <>
+                值得<span>认识</span>的人
+              </>
+            )}
           </>,
-          "相似的想法，让靠近变得自然",
+          sharedAnswers.length
+            ? "相似的想法，让靠近变得自然"
+            : "不同的想法，也能打开新的话题",
         );
       case "07-invitation":
         return hero(
@@ -253,7 +273,7 @@ function MobileFlow({
   );
   return (
     <main
-      className={`mobile-shell ${page === "01-start" ? "start-shell" : ""}`}
+      className={`mobile-shell ${page === "01-start" ? "start-shell" : ""} ${page === "06-common" ? "match-detail-shell" : ""}`}
     >
       <header className="mobile-header">
         <Brand />
@@ -289,6 +309,8 @@ function MobileFlow({
           <span>
             {me.name} · {me.gender === "male" ? "男生" : "女生"}
           </span>
+          {me.profileComplete && <AvatarEditor me={me}/>}
+          {s.live && me.profileComplete && ["03-profile", "05-discover", "10-next-step"].includes(page) && document.documentElement.dataset.memberWall === "true" && <Link href={`/mobile/member-wall-consent?activity=${encodeURIComponent(s.live.activity)}`}>我的遇见卡牌</Link>}
         </div>
       )}
       {page === "01-start" ? (
@@ -301,6 +323,9 @@ function MobileFlow({
           )}
           <div className="mobile-content">
             {notices}
+            <PastDisplayPermissions state={s} />
+            {inv && ["08-mutual", "09-meet", "10-next-step"].includes(page) &&
+              <PairDisplayPermission state={s} invitation={inv} actor={me.id} />}
             {page === "02-result" && (
               <Result
                 state={s}
@@ -313,7 +338,7 @@ function MobileFlow({
               <Profile me={me} action={a} onNext={() => go("04-question")} />
             )}
             {page === "04-question" && (
-              <Questions me={me} action={a} onNext={() => go("05-discover")} />
+              <Questions state={s} me={me} action={a} onNext={() => go("05-discover")} />
             )}
             {page === "05-discover" && (
               <>
@@ -399,59 +424,84 @@ function MobileFlow({
                     我现在可以见面了
                   </Button>
                 )}
-                <p className="fine center">系统虚拟头像，不代表本人长相</p>
+                <p className="fine center">活动头像由用户选择或上传</p>
+                <TongzhouEntry state={s} actor={me.id} />
               </>
             )}
             {page === "06-common" &&
               (target && target.id !== me.id ? (
                 <>
-                  <PersonCard p={target} />
-                  <CommonAnswerLink
-                    key={target.id}
-                    common={commonAnswers(me, target)}
+                  <CandidateCard
+                    key={`candidate:${target.id}`}
+                    participant={target}
+                    count={sharedAnswers.length}
                   />
-                  {invitationBlocked ? (
-                    <Notice>
-                      <span id="invite-unavailable-reason">
-                        {invitationMessage}
-                      </span>
-                      <Link
-                        className="notice-action"
-                        href={`/mobile/${routeFor(s, me)}`}
-                      >
-                        {currentTaskLabel}
-                        <Icon name="arrow" size={16} />
-                      </Link>
-                    </Notice>
-                  ) : s.activityPaused ? (
-                    <Notice>
-                      <span id="invite-unavailable-reason">
-                        现场暂时暂停新邀请。你可以先看看共同答案，恢复后再发出邀请。
-                      </span>
-                    </Notice>
-                  ) : (
-                    <Notice>
-                      可以从「
-                      {commonAnswers(me, target)[0]?.answer || "今天的鼓楼"}
-                      」开始聊起。
-                    </Notice>
-                  )}
-                  <Button
-                    disabled={a.busy || s.activityPaused || invitationBlocked}
-                    aria-describedby={
-                      invitationBlocked || s.activityPaused
-                        ? "invite-unavailable-reason"
-                        : undefined
-                    }
-                    onClick={() => setInviteModal(true)}
-                  >
-                    想认识 TA
-                    <Icon name="arrow" />
-                  </Button>
-                  <Button kind="text" onClick={() => go("05-discover")}>
-                    返回推荐列表
-                  </Button>
-                  <p className="fine center">双方都愿意，才会安排见面。</p>
+                  <CommonAnswerLink
+                    key={`common:${target.id}`}
+                    common={sharedAnswers}
+                    identity={`${s.epoch}:${me.id}:${target.id}`}
+                  />
+                  <IcebreakerCard
+                    key={`${target.id}:${sharedSignature}`}
+                    common={sharedAnswers}
+                  />
+                  <div className="match-actions">
+                    {invitationBlocked ? (
+                      <Notice>
+                        <span id="invite-unavailable-reason">
+                          {invitationMessage}
+                        </span>
+                        <Link
+                          className="notice-action"
+                          href={`/mobile/${routeFor(s, me)}`}
+                        >
+                          {currentTaskLabel}
+                          <Icon name="arrow" size={16} />
+                        </Link>
+                      </Notice>
+                    ) : s.activityPaused ? (
+                      <Notice>
+                        <span id="invite-unavailable-reason">
+                          现场暂时暂停新邀请。你可以先看看共同答案，恢复后再发出邀请。
+                        </span>
+                      </Notice>
+                    ) : !sharedAnswers.length ? (
+                      <Notice>
+                        <span id="invite-unavailable-reason">
+                          当前没有共同答案，暂时不能发出邀请。可以返回推荐列表继续看看。
+                        </span>
+                      </Notice>
+                    ) : null}
+                    <Button
+                      disabled={
+                        a.busy ||
+                        s.activityPaused ||
+                        invitationBlocked ||
+                        !sharedAnswers.length
+                      }
+                      aria-describedby={
+                        invitationBlocked ||
+                        s.activityPaused ||
+                        !sharedAnswers.length
+                          ? "invite-unavailable-reason"
+                          : "match-invite-explanation"
+                      }
+                      onClick={() => setInviteModal(true)}
+                    >
+                      想认识 TA
+                      <Icon name="arrow" />
+                    </Button>
+                    <p
+                      className="match-invite-explanation"
+                      id="match-invite-explanation"
+                    >
+                      对方也选择你后，我们会告诉你们。
+                    </p>
+                    <Button kind="text" onClick={() => go("05-discover")}>
+                      暂时不了，看看其他人
+                      <Icon name="arrow" size={16} />
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <Empty title="这位朋友暂时不可见">
@@ -583,10 +633,6 @@ function MobileFlow({
                       <h2>
                         {s.points.find((p) => p.id === inv.pointId)?.name}
                       </h2>
-                      <p>
-                        <Icon name="pin" />
-                        {s.points.find((p) => p.id === inv.pointId)?.location}
-                      </p>
                     </div>
                     <Notice tone="success">
                       {inv.departures[other.id]
@@ -634,30 +680,8 @@ function MobileFlow({
                       <Badge>{inv.pass}</Badge>
                     </div>
                   </div>
-                  <div className="ticket-row">
-                    <Icon name="pin" />
-                    <span>
-                      <strong>见面地点</strong>
-                      <small>
-                        {s.points.find((p) => p.id === inv.pointId)?.location ||
-                          "等待分配"}
-                      </small>
-                    </span>
-                  </div>
-                  <div className="ticket-row">
-                    <Icon name="walk" />
-                    <span>
-                      <strong>
-                        步行约{" "}
-                        {s.points.find((p) => p.id === inv.pointId)?.distance ||
-                          40}{" "}
-                        米
-                      </strong>
-                      <small>跟随现场指引，轻松找到见面点</small>
-                    </span>
-                  </div>
                   <div className="verification-code">
-                    <small>本次辨认码</small>
+                    <small>缘分相遇码</small>
                     <Motion
                       as="span"
                       className="code-motion"
@@ -666,7 +690,7 @@ function MobileFlow({
                     >
                       <strong>{inv.code}</strong>
                     </Motion>
-                    <span>到场后核对昵称与辨认码，不凭默认头像认人。</span>
+                    <span>到场后核对昵称与缘分相遇码，请勿仅凭头像认人。</span>
                   </div>
                 </div>
                 <MeetStatusTrack
@@ -748,17 +772,20 @@ function MobileFlow({
               </>
             )}
             {page === "10-next-step" && inv && (
-              <NextStep
-                state={s}
-                me={me}
-                inv={inv}
-                action={a}
-                onExplore={() =>
-                  a.run({ type: "rediscover", invitationId: inv.id }, () =>
-                    go("05-discover"),
-                  )
-                }
-              />
+              <>
+                <NextStep
+                  state={s}
+                  me={me}
+                  inv={inv}
+                  action={a}
+                  onExplore={() =>
+                    a.run({ type: "rediscover", invitationId: inv.id }, () =>
+                      go("05-discover"),
+                    )
+                  }
+                />
+                <TongzhouEntry state={s} actor={me.id} />
+              </>
             )}
           </div>
         </>
@@ -774,7 +801,7 @@ function MobileFlow({
           <PersonCard p={target} />
           <p>
             TA
-            会看到你的昵称、默认头像、性别、年龄段和共同答案。联系方式不会自动分享。
+            会看到你的昵称、活动头像、性别、年龄段和共同答案。联系方式不会自动分享。
           </p>
           {!me.ready && (
             <Notice>
@@ -999,7 +1026,7 @@ function Result({
           </Motion>
         </div>
         <div className="sample-note">
-          演示样本 · {Object.keys(state.responses).length} 人回答
+          {state.live ? "现场回答" : "演示样本"} · {stats(state).answered} 人回答
         </div>
         <h3>其他人的选择</h3>
         {dist.map((d) => (
@@ -1122,9 +1149,9 @@ function Profile({
               onClick={() => {
                 if (v !== gender) {
                   setGender(v);
-                  setAvatarId(null);
+                  setAvatarId(me.photo ? defaultAvatarId(me.id, v) : null);
                   setAvatarMessage(
-                    `请重新选择一个${v === "male" ? "男生" : "女生"}头像。`,
+                    me.photo ? "" : `请重新选择一个${v === "male" ? "男生" : "女生"}头像。`,
                   );
                 }
               }}
@@ -1135,7 +1162,8 @@ function Profile({
           ))}
         </div>
       </fieldset>
-      <AvatarSelector
+      <AvatarEditor me={me} onSaved={() => setAvatarId(validAvatar(avatarId, gender) ? avatarId : defaultAvatarId(me.id, gender))}/>
+      {!me.photo && <AvatarSelector
         gender={gender}
         value={avatarId}
         disabled={a.busy}
@@ -1144,7 +1172,7 @@ function Profile({
           setAvatarId(id);
           setAvatarMessage("");
         }}
-      />
+      />}
       <Notice>
         本场将为你推荐愿意认识新朋友的{gender === "male" ? "女生" : "男生"}。
       </Notice>
@@ -1173,7 +1201,7 @@ function Profile({
       </fieldset>
       <p className="fine privacy-note">
         <Icon name="help" size={18} />
-        对方会看到昵称、默认头像、性别、年龄段和相同答案。联系方式不会自动分享。
+        对方会看到昵称、活动头像、性别、年龄段和相同答案。昵称、系统头像及当前大屏问题的选择会在现场大屏展示；本人照片需单独允许上屏。联系方式不会自动分享。
       </p>
       <Button type="submit" disabled={a.busy}>
         继续答题
@@ -1183,6 +1211,7 @@ function Profile({
   );
 }
 function Questions({
+  state,
   me,
   action: a,
   onNext,
@@ -1190,10 +1219,13 @@ function Questions({
   me: Participant;
   action: Actions;
   onNext: () => void;
+  state: DemoState;
 }) {
+  const query = useSearchParams();
   const cityResponse = useCityResponse();
   const initial = QUESTIONS.findIndex((q, i) => i > 0 && !me.answers[q.id]);
-  const [index, setIndex] = useState(initial < 0 ? 1 : initial);
+  const requested = QUESTIONS.findIndex(q => q.id === query.get("q"));
+  const [index, setIndex] = useState(requested > 0 && (me.answers[QUESTIONS[requested].id] || requested === initial) ? requested : initial < 0 ? 1 : initial);
   const [selected, setSelected] = useState("");
   const transition = useRef<QuestionTransitionHandle>(null);
   const choosing = useRef(false);
@@ -1228,7 +1260,6 @@ function Questions({
       </div>
       <QuestionTransition ref={transition} questionKey={q.id}>
         <h1 tabIndex={-1}>{q.title}</h1>
-        <p className="question-note">没有标准答案，选择后自动继续。</p>
         <div className="answer-grid">
           {q.options.map((v, i) => (
             <button
@@ -1276,6 +1307,7 @@ function Questions({
         </div>
       </QuestionTransition>
       <p className="fine center">你的答案只用于发现共同话题</p>
+      <TongzhouEntry state={state} actor={me.id} questionId={q.id} disabled={a.busy} canLeave={() => !choosing.current && !transition.current?.busy()} />
     </div>
   );
 }
@@ -1313,7 +1345,7 @@ export function PersonCard({
         <p>
           {p.gender === "male" ? "男生" : "女生"} · {p.age} 岁
         </p>
-        <small>系统虚拟头像，不代表本人长相</small>
+        <small>{avatarDescription(p)}</small>
       </div>
     </div>
   );
@@ -1396,7 +1428,7 @@ function NextStep({
               value: "WALK",
               icon: "walk",
               title: "一起走走",
-              description: "在鼓楼再慢慢逛一会",
+              description: s.live ? "在附近再慢慢逛一会" : "在鼓楼再慢慢逛一会",
             },
             {
               value: "MERCHANT",
@@ -1411,7 +1443,7 @@ function NextStep({
               description: "每一次认真相遇，都有意义",
             },
           ] as const
-        ).map((v, index) => (
+        ).filter((v) => !s.live || v.value !== "MERCHANT" || s.merchants.some((m) => m.id === "cloud" && m.active)).map((v, index) => (
           <Motion key={v.value} delay={index * motionTiming.cardGap}>
             <button
               className={`next-card ${choice === v.value ? "selected" : ""}`}

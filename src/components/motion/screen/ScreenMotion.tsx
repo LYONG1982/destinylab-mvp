@@ -114,9 +114,9 @@ function UserNode(
         c.stroke();
       }
   }
-  if (effect && (!birth || t > 0.5)) {
+  if (!birth || t > 0.5) {
     c.globalAlpha =
-      body.visibility * (birth ? Math.min(0.8, (t - 0.5) * 3) : 0.7);
+      body.visibility * (birth ? Math.min(0.8, (t - 0.5) * 3) : 0.8);
     c.fillStyle = "#714b43";
     c.font = `${11 * scale}px sans-serif`;
     c.textAlign = "center";
@@ -283,11 +283,15 @@ export function ScreenMotion({
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const snapshotRef = useRef(snapshot);
+  const sceneRef = useRef(scene);
+  const syncRef = useRef<(() => void) | null>(null);
   const refreshRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     snapshotRef.current = snapshot;
+    sceneRef.current = scene;
+    controller.setFieldActive(scene === "question");
     snapshot.events.forEach((event) => controller.receive(event));
-    refreshRef.current?.();
+    syncRef.current?.();
   }, [snapshot, controller, scene]);
   useEffect(() => {
     const host = hostRef.current!,
@@ -308,7 +312,7 @@ export function ScreenMotion({
     };
     let bodies: Body[] = [],
       clustered = 0,
-      frame = 0,
+      stopFrame: (() => void) | undefined,
       last = 0,
       visible = true,
       frames = 0,
@@ -330,6 +334,11 @@ export function ScreenMotion({
     );
     const images = new Map<string, HTMLImageElement>();
     const draw = (time: number, dt: number) => {
+      if (sceneRef.current === "question") {
+        for (const context of [ambient, relation, eventLayer])
+          context.clearRect(0, 0, metrics.width, metrics.height);
+        return;
+      }
       const previewCount = controller.previews.length;
       controller.prune(time);
       if (previewCount !== controller.previews.length) {
@@ -551,24 +560,31 @@ export function ScreenMotion({
           elapsed = 0;
         }
       }
-      frame = requestAnimationFrame(tick);
     };
     const sync = () => {
-      cancelAnimationFrame(frame);
-      frame = 0;
+      stopFrame?.();
+      stopFrame = undefined;
       last = 0;
       elapsed = 0;
       const running =
+        sceneRef.current !== "question" &&
         visible &&
         document.visibilityState === "visible" &&
         !preference.matches &&
         controller.enabled;
       host.dataset.running = String(running);
-      if (!running) controller.clear();
+      if (
+        !visible ||
+        document.visibilityState !== "visible" ||
+        preference.matches ||
+        !controller.enabled
+      )
+        controller.clear();
       measure();
-      if (running) frame = requestAnimationFrame(tick);
+      if (running) stopFrame = controller.frames.add(tick);
     };
     refreshRef.current = measure;
+    syncRef.current = sync;
     const observer = new ResizeObserver(measure);
     observer.observe(root);
     observer.observe(root.querySelector(".screen-content")!);
@@ -587,7 +603,7 @@ export function ScreenMotion({
     sync();
     return () => {
       disposed = true;
-      cancelAnimationFrame(frame);
+      stopFrame?.();
       observer.disconnect();
       intersection.disconnect();
       window.removeEventListener("resize", measure);
@@ -600,6 +616,7 @@ export function ScreenMotion({
       images.clear();
       controller.dispose();
       refreshRef.current = null;
+      syncRef.current = null;
     };
   }, [controller]);
   return (

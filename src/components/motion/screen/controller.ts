@@ -1,11 +1,19 @@
+import { JoinEventQueue } from "./relationship/queue";
+import { ScreenFrameLoop } from "./frame-loop";
 import { screenMotion } from "@/lib/motion-tokens";
 import type { DisplayNode, ScreenEvent } from "./model";
 export type Effect = ScreenEvent & { started: number; duration: number };
-/** Future SSE/WS adapters must first apply the same anonymity/aggregate policy. */
+/** Future SSE/WS adapters must first apply the same approved nickname/aggregate policy. */
 export interface ScreenEventSource {
   subscribe(listener: (event: ScreenEvent) => void): () => void;
 }
 export class MotionController {
+  readonly frames = new ScreenFrameLoop();
+  readonly joins = new JoinEventQueue();
+  fieldActive = false;
+  setFieldActive(active: boolean) {
+    this.fieldActive = active;
+  }
   enabled = true;
   energy = 0.7;
   trails = true;
@@ -33,6 +41,8 @@ export class MotionController {
     )
       return;
     if (event.type === "MATCH" && !event.aggregate) return;
+    if (event.field && this.fieldActive)
+      this.joins.enqueue({ ...event, field: event.field }, now);
     const duration =
       event.type === "MATCH"
         ? event.phase === "mutual"
@@ -58,11 +68,13 @@ export class MotionController {
     this.previews = this.previews.filter((p) => p.until > now);
   }
   clear() {
+    this.joins.clear();
     this.effects = [];
     this.previews = [];
   }
   dispose() {
     this.clear();
     this.seen.clear();
+    this.frames.dispose();
   }
 }

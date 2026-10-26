@@ -1,4 +1,5 @@
 "use client";
+import { PRODUCT } from "@/config/product";
 import type { Gender } from "@/domain/types";
 import { getAvatarsByGender } from "@/config/avatars";
 import { ParticipantAvatar } from "./ParticipantAvatar";
@@ -23,7 +24,7 @@ export function AvatarSelector({
     >
       <legend className="field-label">选择一个头像</legend>
       <p className="fine" id="avatar-help">
-        这是你在缘分实验室里的临时形象。
+        这是你在{PRODUCT.name}里的临时形象。
       </p>
       {gender ? (
         <div className="avatar-grid">

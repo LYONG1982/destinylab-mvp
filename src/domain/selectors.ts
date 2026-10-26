@@ -11,7 +11,7 @@ export const nowOf = (s: DemoState) =>
 export const person = (s: DemoState, id: string) =>
   s.participants.find((p) => p.id === id);
 export const complete = (p: Participant) =>
-  p.profileComplete && QUESTIONS.every((q) => p.answers[q.id]);
+  p.profileComplete && (p.answerComplete ?? QUESTIONS.every((q) => p.answers[q.id]));
 export const commonAnswers = (a: Participant, b: Participant) =>
   QUESTIONS.filter(
     (q) => a.answers[q.id] && a.answers[q.id] === b.answers[q.id],
@@ -30,6 +30,12 @@ export function available(s: DemoState, p: Participant) {
   );
 }
 export function recommendations(s: DemoState, id: string) {
+  if (s.live?.role === "participant")
+    return s.live.recommendationIds.flatMap((key) => {
+      const candidate = person(s, key);
+      const me = person(s, id);
+      return candidate && me ? [{ participant: candidate, common: commonAnswers(me, candidate) }] : [];
+    });
   const me = person(s, id);
   if (!me || !complete(me) || me.paused || !me.present) return [];
   return s.participants
@@ -69,6 +75,7 @@ export function routeFor(s: DemoState, p: Participant) {
   return "05-discover";
 }
 export function stats(s: DemoState) {
+  if (s.live) return s.live.metrics;
   return {
     active: s.participants.filter((p) => p.present).length,
     canMeet: s.participants.filter((p) => available(s, p)).length,
@@ -87,14 +94,19 @@ export function stats(s: DemoState) {
     ).length,
   };
 }
-export function distribution(s: DemoState) {
-  const total = Object.keys(s.responses).length;
-  return QUESTIONS[0].options.map((label) => ({
+export function distribution(s: DemoState, questionId = "q1") {
+  const projected = s.live?.questions.find((q) => q.id === questionId);
+  if (projected) return projected.options;
+  const question = QUESTIONS.find((q) => q.id === questionId) || QUESTIONS[0];
+  const answers = questionId === "q1" ? Object.values(s.responses)
+    : s.participants.map((p) => p.answers[question.id]).filter(Boolean);
+  const total = answers.length;
+  return question.options.map((label) => ({
     label,
-    count: Object.values(s.responses).filter((x) => x === label).length,
+    count: answers.filter((x) => x === label).length,
     percentage: total
       ? Math.round(
-          (Object.values(s.responses).filter((x) => x === label).length * 100) /
+          (answers.filter((x) => x === label).length * 100) /
             total,
         )
       : 0,
@@ -114,13 +126,15 @@ export function pendingBroadcast(s: DemoState) {
 }
 export function screenProjection(s: DemoState) {
   const m = stats(s);
+  const question = QUESTIONS.find((q) => q.id === s.displayQuestionId) || QUESTIONS[0];
+  const options = distribution(s, question.id);
   return {
     active: m.active,
     canMeet: m.canMeet,
     real: m.real,
-    question: QUESTIONS[0].title,
-    options: distribution(s),
-    total: m.answered,
+    question: question.title,
+    options,
+    total: options.reduce((sum, item) => sum + item.count, 0),
     canBroadcast: pendingBroadcast(s).length >= 3,
     paused: s.activityPaused,
   };

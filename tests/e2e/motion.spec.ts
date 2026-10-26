@@ -177,7 +177,7 @@ test("failed send has no success motion; successful send preserves the invitatio
   await scenario(page, "discover");
   await page.getByRole("button", { name: "下一次请求失败" }).click();
   await mobile(page, "06-common?target=p-xiaoman");
-  await expect(page.locator(".common-link")).toHaveCount(4);
+  await expect(page.locator(".match-common-card")).toHaveCount(4);
   await page.getByRole("button", { name: "想认识 TA" }).click();
   await page.getByRole("button", { name: "发出邀请", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText("本次操作未提交");
@@ -230,7 +230,7 @@ test("a saved first answer updates only actual screen percentages across tabs", 
   const screen = await context.newPage();
   await screen.setViewportSize({ width: 1920, height: 1080 });
   await screen.goto("/screen/question");
-  await expect(screen.locator(".screen-bar")).toHaveCount(3);
+  await expect(screen.locator("[data-field-id]")).toHaveCount(3);
   await mobile(page, "01-start");
   await page.getByRole("button", { name: /轻松聊聊/ }).click();
   await expect(page).toHaveURL(/02-result/);
@@ -241,17 +241,13 @@ test("a saved first answer updates only actual screen percentages across tabs", 
       responses.length) *
       100,
   );
-  const row = screen.locator(".screen-bar").filter({ hasText: "轻松聊聊" });
-  await expect(row.locator("strong")).toHaveText(`${percentage}%`);
-  await expect
-    .poll(() =>
-      row
-        .locator(".animated-bar")
-        .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a),
-    )
-    .toBeCloseTo(percentage / 100, 4);
-  for (const secret of ["山风", "小满", "4721", "Meet01"])
-    await expect(screen.locator(".screen-canvas")).not.toContainText(secret);
+  const row = screen.locator("[data-field-id]").filter({ hasText: "轻松聊聊" });
+  await expect(row.locator(":scope > span")).toHaveText(`${percentage}%`);
+  await expect(row.locator("p [data-number]")).toHaveText(
+    String(responses.filter((answer) => answer === "轻松聊聊").length),
+  );
+  for (const secret of ["p-shanfeng", "p-xiaoman", "4721", "Meet01"])
+    await expect(screen.getByTestId("destiny-world")).not.toContainText(secret);
 });
 
 test("waiting point, arrival and merchant feedback reflect only persisted facts", async ({

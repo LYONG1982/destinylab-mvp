@@ -3,7 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import type { DemoState } from "../../src/domain/types";
 
 const KEY = "destinylab:v1.1:state";
-const evidence = "docs/verification/answer-motion";
+const evidence =
+  "docs/verification/destiny-field-act3-v2/regression/answer-motion";
 test.use({ reducedMotion: "no-preference" });
 async function scenario(page: Page, name = "discover") {
   await page.goto("/demo");
@@ -244,138 +245,112 @@ test("slow answers lock controls; hidden completion and epoch reset cannot advan
   await hub.close();
 });
 
-test("three full screen rotations never replay stable counters or resurrect outgoing text", async ({
+test("three full World cycles preserve Scene and Player identities without replaying stable counters", async ({
   page,
 }) => {
-  test.setTimeout(110000);
+  test.setTimeout(135000);
   await page.setViewportSize({ width: 1920, height: 1080 });
   await scenario(page);
   await page.goto("/screen");
-  await expect(page.locator(".screen-qr img")).toBeVisible();
+  await expect(page.getByTestId("destiny-world")).toHaveAttribute(
+    "data-renderer",
+    "webgl",
+  );
+  await expect(page.getByTestId("world-qr").locator("img")).toBeVisible();
   const result = await page.evaluate(
     () =>
       new Promise<{
-        scenes: string[];
+        modes: string[];
         violations: string[];
         samples: unknown[];
       }>((resolve) => {
-        const ambient = document.querySelector('[data-layer="ambient"]');
-        const background = document.querySelector(".screen-background");
-        const qr = document.querySelector<HTMLImageElement>(".screen-qr img")!;
-        const src = qr.src,
-          qrBox = JSON.stringify(qr.getBoundingClientRect());
-        const start = performance.now(),
-          scenes: string[] = [],
+        const host = document.querySelector<HTMLElement>(
+          '[data-testid="destiny-world"]',
+        )!;
+        const canvas = host.querySelector('canvas[data-layer="destiny-world"]');
+        const names = new Map(
+          [
+            ...host.querySelectorAll<HTMLElement>(
+              "[data-world-player]:has(img)",
+            ),
+          ].map((el) => [el.dataset.playerKey, el]),
+        );
+        const qr = host.querySelector<HTMLImageElement>(
+          '[data-testid="world-qr"] img',
+        )!;
+        const source = qr.src,
+          box = JSON.stringify(qr.getBoundingClientRect());
+        const modes: string[] = [],
           violations: string[] = [],
           samples: unknown[] = [];
-        const visits: Record<string, number> = {};
-        let scene = "",
-          changed = start,
-          previousOpacity = 1,
-          lastRect: DOMRect | null = null;
-        function issue(text: string) {
+        let previous = "";
+        const start = performance.now();
+        const issue = (text: string) => {
           if (!violations.includes(text)) violations.push(text);
-        }
-        function tick(now: number) {
-          const current = document.querySelector<HTMLElement>(
-            "[data-scene-current]",
-          )!;
-          const outgoing = document.querySelector<HTMLElement>(
-            ".screen-scene-outgoing",
-          );
-          const next = current.dataset.sceneCurrent!;
-          if (next !== scene) {
-            scene = next;
-            changed = now;
-            scenes.push(scene);
-            visits[scene] = (visits[scene] || 0) + 1;
-            previousOpacity = 1;
-            if (outgoing && lastRect) {
-              const box = outgoing.getBoundingClientRect();
-              if (
-                Math.abs(box.x - lastRect.x) > 1 ||
-                Math.abs(box.y - lastRect.y) > 2
-              )
-                issue(`exit position jumped: ${scene}`);
-            }
+        };
+        const tick = (at: number) => {
+          const mode = host.dataset.mode!;
+          if (mode !== previous) {
+            previous = mode;
+            modes.push(mode);
+            samples.push({ ms: Math.round(at - start), mode });
           }
-          const elapsed = now - changed;
-          const opacity = outgoing
-            ? Number(getComputedStyle(outgoing).opacity)
-            : 0;
-          if (opacity > previousOpacity + 0.001)
-            issue(`exit opacity rebounded: ${scene}`);
-          previousOpacity = opacity;
-          if (elapsed > 900 && outgoing) issue(`exit layer survived: ${scene}`);
-          if (document.querySelectorAll("[data-scene-current]").length !== 1)
-            issue("duplicate current layer");
-          const values = [
-            ...current.querySelectorAll<HTMLElement>(".animated-counter"),
-          ].map((el) => ({
-            shown: el.textContent,
-            target: el.getAttribute("aria-label"),
-          }));
-          if (visits[scene] > 1 && values.some((v) => v.shown !== v.target))
-            issue(`stable value replayed: ${scene}`);
-          if (visits[scene] > 1)
-            for (const bar of current.querySelectorAll<HTMLElement>(
-              ".animated-bar",
-            )) {
-              const target = parseFloat(
-                bar
-                  .closest(".screen-bar")!
-                  .querySelector(".animated-counter")!
-                  .getAttribute("aria-label")!,
-              );
-              if (
-                Math.abs(
-                  new DOMMatrix(getComputedStyle(bar).transform).a * 100 -
-                    target,
-                ) > 0.01
-              )
-                issue("stable bar replayed");
-            }
           if (
-            ambient !== document.querySelector('[data-layer="ambient"]') ||
-            background !== document.querySelector(".screen-background")
+            canvas !== host.querySelector('canvas[data-layer="destiny-world"]')
           )
-            issue("persistent background replaced");
+            issue("Canvas replaced");
           if (
-            qr.src !== src ||
-            JSON.stringify(qr.getBoundingClientRect()) !== qrBox ||
+            document.querySelectorAll('[data-testid="destiny-world"]')
+              .length !== 1
+          )
+            issue("duplicate World");
+          if (document.querySelector(".screen-scene-outgoing"))
+            issue("obsolete outgoing page exists");
+          for (const el of host.querySelectorAll<HTMLElement>(
+            "[data-world-player]:has(img)",
+          )) {
+            if (
+              names.has(el.dataset.playerKey) &&
+              names.get(el.dataset.playerKey) !== el
+            )
+              issue("Player instance replaced");
+            names.set(el.dataset.playerKey, el);
+          }
+          if (at - start > 1500)
+            for (const counter of host.querySelectorAll<HTMLElement>(
+              ".animated-counter",
+            ))
+              if (counter.textContent !== counter.getAttribute("aria-label"))
+                issue("stable counter replayed");
+          if (
+            qr.src !== source ||
+            JSON.stringify(qr.getBoundingClientRect()) !== box ||
             getComputedStyle(qr).opacity !== "1" ||
             getComputedStyle(qr).transform !== "none"
           )
-            issue("QR moved or changed");
-          if (elapsed < 1350)
-            samples.push({
-              ms: Math.round(now - start),
-              scene,
-              visit: visits[scene],
-              elapsed: Math.round(elapsed),
-              opacity,
-              outgoing: !!outgoing,
-              values,
-            });
-          lastRect = current.getBoundingClientRect();
-          if (now - start < 85500) requestAnimationFrame(tick);
-          else resolve({ scenes, violations, samples });
-        }
+            issue("QR changed");
+          if (at - start < 115000) requestAnimationFrame(tick);
+          else resolve({ modes, violations, samples });
+        };
         requestAnimationFrame(tick);
       }),
   );
-  await record("three-rotations", result);
-  expect(result.scenes).toEqual([
-    "question",
-    "presence",
-    "real-meet",
-    "question",
-    "presence",
-    "real-meet",
-    "question",
-    "presence",
-    "real-meet",
-    "question",
+  await mkdir("docs/verification/destiny-field-act3-v2", { recursive: true });
+  await writeFile(
+    "docs/verification/destiny-field-act3-v2/three-world-cycles.json",
+    JSON.stringify(result, null, 2),
+  );
+  expect(result.modes).toEqual([
+    "CHOICE",
+    "LIVE",
+    "MEET",
+    "CHOICE",
+    "LIVE",
+    "MEET",
+    "CHOICE",
+    "LIVE",
+    "MEET",
+    "CHOICE",
   ]);
   expect(result.violations).toEqual([]);
 });
@@ -421,7 +396,9 @@ test("a real second confirmation animates 28 to 29 without zero or overshoot", a
   const screen = await context.newPage();
   await screen.setViewportSize({ width: 1920, height: 1080 });
   await screen.goto("/screen/real-meet");
-  await expect(screen.getByTestId("screen-real-count")).toHaveText("28");
+  await expect(
+    screen.locator('[data-world-copy="MEET"] .animated-counter'),
+  ).toHaveText("28");
   await page.goto("/mobile/09-meet?actor=p-shanfeng");
   const samples = screen.evaluate(
     () =>
@@ -431,8 +408,9 @@ test("a real second confirmation animates 28 to 29 without zero or overshoot", a
         function tick(now: number) {
           values.push(
             Number(
-              document.querySelector('[data-testid="screen-real-count"]')!
-                .textContent,
+              document.querySelector(
+                '[data-world-copy="MEET"] .animated-counter',
+              )!.textContent,
             ),
           );
           if (now - start < 2000) requestAnimationFrame(tick);
@@ -463,13 +441,15 @@ test("rapid statistical updates continue from painted values; reduce and hidden 
   await scenario(page);
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/screen/question");
-  const row = page.locator(".screen-bar").filter({ hasText: "轻松聊聊" });
-  await expect(row.locator("strong")).toHaveText("33%");
+  const row = page.locator("[data-field-id]").filter({ hasText: "轻松聊聊" });
+  await expect(row.locator(":scope > span")).toHaveText("33%");
   const samples = await page.evaluate(async (key) => {
-    const row = [...document.querySelectorAll(".screen-bar")].find((el) =>
+    const row = [...document.querySelectorAll("[data-field-id]")].find((el) =>
       el.textContent!.includes("轻松聊聊"),
     )!;
-    const bar = row.querySelector<HTMLElement>(".animated-bar")!;
+    const number = row.querySelector<HTMLElement>(
+      ":scope > span [data-number]",
+    )!;
     const values: Array<{ time: number; percentage: number; number: number }> =
       [];
     const start = performance.now();
@@ -477,8 +457,8 @@ test("rapid statistical updates continue from painted values; reduce and hidden 
     const tick = (now: number) => {
       values.push({
         time: now - start,
-        percentage: new DOMMatrix(getComputedStyle(bar).transform).a * 100,
-        number: Number(row.querySelector("[data-number]")!.textContent),
+        percentage: Number(number.textContent),
+        number: Number(number.textContent),
       });
       frame = requestAnimationFrame(tick);
     };
@@ -515,7 +495,7 @@ test("rapid statistical updates continue from painted values; reduce and hidden 
     ).toBeLessThan((samples[i].time - samples[i - 1].time) * 0.35 + 1);
   }
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(row.locator("strong")).toHaveText("10%");
+  await expect(row.locator(":scope > span")).toHaveText("10%");
   await page.evaluate(() => {
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
@@ -523,17 +503,17 @@ test("rapid statistical updates continue from painted values; reduce and hidden 
     });
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await expect(page.getByTestId("screen-motion")).toHaveAttribute(
+  await expect(page.getByTestId("destiny-world")).toHaveAttribute(
     "data-running",
     "false",
   );
   await expect(page.locator(".screen-scene-outgoing")).toHaveCount(0);
 });
 
-test("broadcast eligibility changes do not restart the scene clock; mutual exit never flashes back", async ({
+test("legacy broadcast metadata cannot trigger Intersection or restart the World mode clock", async ({
   page,
 }) => {
-  test.setTimeout(35000);
+  test.setTimeout(25000);
   await scenario(page, "broadcast");
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!) as DemoState;
@@ -542,7 +522,9 @@ test("broadcast eligibility changes do not restart the scene clock; mutual exit 
   }, KEY);
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/screen");
-  await expect(page.locator('[data-scene-current="question"]')).toBeVisible();
+  const world = page.getByTestId("destiny-world");
+  await expect(world).toHaveAttribute("data-renderer", "webgl");
+  await expect(world).toHaveAttribute("data-mode", "CHOICE");
   await page.waitForTimeout(7000);
   await page.evaluate((key) => {
     const state = JSON.parse(localStorage.getItem(key)!) as DemoState;
@@ -551,57 +533,8 @@ test("broadcast eligibility changes do not restart the scene clock; mutual exit 
     localStorage.setItem(key, JSON.stringify(state));
     dispatchEvent(new StorageEvent("storage", { key }));
   }, KEY);
-  await expect(page.locator('[data-scene-current="mutual"]')).toBeVisible({
-    timeout: 6500,
-  });
-  const data = await page.evaluate(
-    () =>
-      new Promise<
-        Array<{
-          current: string;
-          outgoing: number;
-          color: string;
-          hiddenNetwork: boolean;
-        }>
-      >((resolve) => {
-        const samples: Array<{
-            current: string;
-            outgoing: number;
-            color: string;
-            hiddenNetwork: boolean;
-          }> = [],
-          start = performance.now();
-        function tick(now: number) {
-          const current = document.querySelector<HTMLElement>(
-            "[data-scene-current]",
-          )!;
-          const outgoing = document.querySelector<HTMLElement>(
-            ".screen-scene-outgoing",
-          );
-          samples.push({
-            current: current.dataset.sceneCurrent!,
-            outgoing: outgoing ? Number(getComputedStyle(outgoing).opacity) : 0,
-            color: outgoing
-              ? getComputedStyle(outgoing.querySelector("h1")!).color
-              : "",
-            hiddenNetwork:
-              !outgoing?.querySelector(".presence-network") ||
-              getComputedStyle(outgoing.querySelector(".presence-network")!)
-                .visibility === "hidden",
-          });
-          if (now - start < 7500) requestAnimationFrame(tick);
-          else resolve(samples);
-        }
-        requestAnimationFrame(tick);
-      }),
-  );
-  await record("broadcast-frames", data);
-  const exits = data.filter((sample) => sample.current === "question");
-  expect(exits.length).toBeGreaterThan(30);
-  expect(exits.at(-1)!.outgoing).toBe(0);
-  for (let i = 1; i < exits.length; i++)
-    expect(exits[i].outgoing).toBeLessThanOrEqual(
-      exits[i - 1].outgoing + 0.001,
-    );
-  expect(data.every((sample) => sample.hiddenNetwork)).toBe(true);
+  await expect(world).toHaveAttribute("data-intersection", "false");
+  await expect(world).toHaveAttribute("data-mode", "LIVE", { timeout: 6500 });
+  expect((await saved(page)).broadcastConsumed).toEqual([]);
+  await expect(world).toHaveAttribute("data-intersection", "false");
 });

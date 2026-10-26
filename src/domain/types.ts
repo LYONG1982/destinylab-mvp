@@ -1,3 +1,4 @@
+import type { TongzhouCommand, TongzhouSubmission } from "./tongzhou";
 export type Gender = "male" | "female";
 export type InviteStatus =
   | "SENT"
@@ -15,6 +16,8 @@ export interface Participant {
   name: string;
   gender: Gender;
   avatarId: string | null;
+  photo?: import("./photo").PhotoAvatar | null;
+  avatarVersion?: number;
   age: string;
   ready: boolean;
   present: boolean;
@@ -23,6 +26,8 @@ export interface Participant {
   answers: Record<string, string>;
   currentId: string | null;
   joinedAt: number;
+  /** Server-projected completion flag; never accepted as participant input. */
+  answerComplete?: boolean;
 }
 export interface CommonAnswer {
   questionId: string;
@@ -95,9 +100,36 @@ export interface DemoState {
   merchantViews: string[];
   commands: string[];
   broadcastConsumed: string[];
+  tongzhouSubmissions: TongzhouSubmission[];
+  displayQuestionId?: string;
+  displayGrants?: Record<string, Record<string, boolean>>;
+  /** Role-limited network view. Absent from authoritative state and local Mock. */
+  live?: {
+    activity: string;
+    role: "participant" | "operator";
+    metrics: ActivityMetrics;
+    questions: import("@/lib/api/live-types").QuestionSummary[];
+    recommendationIds: string[];
+    displayPermissions?: { invitationId: string; otherName: string }[];
+  };
+}
+export interface ActivityMetrics {
+  active: number;
+  canMeet: number;
+  waiting: number;
+  mutual: number;
+  going: number;
+  real: number;
+  scans: number;
+  answered: number;
+  completed: number;
+  sent: number;
+  merchant: number;
 }
 export type Actor = string | "operator";
 export type Command =
+  | import("./photo").AvatarCommand
+  | TongzhouCommand
   | { type: "answer"; questionId: string; value: string }
   | {
       type: "profile";
@@ -131,6 +163,7 @@ export type Command =
     }
   | { type: "help-status"; helpId: string; status: HelpRequest["status"] }
   | { type: "release"; pointId: string }
+  | { type: "point-status"; pointId: string; enabled: boolean }
   | { type: "merchant"; merchantId: string; active: boolean }
   | { type: "advance"; minutes: number }
   | { type: "broadcast-consume" }

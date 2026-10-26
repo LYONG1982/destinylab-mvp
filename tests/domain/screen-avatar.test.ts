@@ -80,16 +80,16 @@ test("legacy normalization is deterministic, leaves explicit null alone and pres
     null,
   );
 });
-test("display adapter exposes selected avatar with session code, never nickname, raw identity or pair details", () => {
+test("display adapter exposes approved nickname and selected avatar, never raw identity or pair details", () => {
   const s = createSeed("discover");
   const adapter = new ScreenAdapter();
   const snapshot = adapter.read(s);
   assert.equal(snapshot.events.length, 0);
   assert.equal(snapshot.nodes[0].image, getAvatarById("male_03")!.src);
+  assert.equal(snapshot.nodes[0].label, "山风");
+  assert.equal(snapshot.nodes[0].displayMode, "PUBLIC");
   const json = JSON.stringify(snapshot);
   for (const forbidden of [
-    "山风",
-    "小满",
     "p-shanfeng",
     "p-xiaoman",
     "4721",

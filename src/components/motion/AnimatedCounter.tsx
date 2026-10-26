@@ -7,11 +7,13 @@ export function AnimatedCounter({
   fromZero = false,
   suffix = "",
   ring = false,
+  duration,
 }: {
   value: number;
   fromZero?: boolean;
   suffix?: string;
   ring?: boolean;
+  duration?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const draw = useCallback((el: HTMLSpanElement, next: number) => {
@@ -21,7 +23,7 @@ export function AnimatedCounter({
     const circle = el.querySelector<SVGCircleElement>("[data-ring]");
     if (circle) circle.style.strokeDashoffset = String(1 - next / 100);
   }, []);
-  useAnimatedValue(ref, value, fromZero, draw);
+  useAnimatedValue(ref, value, fromZero, draw, duration);
   return (
     <span
       ref={ref}

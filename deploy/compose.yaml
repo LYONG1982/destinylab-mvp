@@ -1,0 +1,15 @@
+services:
+  app:
+    platform: linux/amd64
+    image: ${DESTINY_IMAGE:-destinylab:weapp-1.4.0-rc.1-amd64}
+    restart: unless-stopped
+    env_file:
+      - ${DESTINY_ENV_FILE:-/etc/destinylab/runtime.env}
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1000,gid=1000,mode=0700
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]

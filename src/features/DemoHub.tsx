@@ -1,4 +1,5 @@
 "use client";
+import { PRODUCT } from "@/config/product";
 import { useState } from "react";
 import Link from "next/link";
 import { useDemo, useAction } from "@/lib/demo/hooks";
@@ -46,7 +47,7 @@ export function DemoHub() {
     <main className="demo-shell">
       <header className="demo-header">
         <Brand />
-        <Badge tone="wine">本地体验 · MVP 1.1</Badge>
+        <Badge tone="wine">本地体验 · {PRODUCT.displayVersion}</Badge>
       </header>
       <div className="demo-main">
         <section className="demo-intro">
@@ -58,7 +59,8 @@ export function DemoHub() {
               <span>认真地发生。</span>
             </h1>
             <p>
-              这里是缘分实验室的本地体验入口。在同一浏览器中分别打开山风、小满、运营后台和现场大屏，亲手走完一段相遇。
+              这里是{PRODUCT.name}
+              的本地体验入口。在同一浏览器中分别打开山风、小满、运营后台和现场大屏，亲手走完一段相遇。
             </p>
             <div className="demo-status">
               <Badge tone="success">
@@ -217,6 +219,12 @@ export function DemoHub() {
             索引不会替你改变业务状态。状态不满足时会返回当前可操作步骤；先选择对应预设场景再查看后续页面。
           </p>
           <div className="route-index">
+            <Link href="/mobile/tongzhou?actor=p-shanfeng">
+              同舟资料填报 · 山风视角
+            </Link>
+            <Link href="/agency/tongzhou" target="_blank" rel="noopener">
+              同舟资料查看
+            </Link>
             {MOBILE_ROUTES.map((route, i) => (
               <Link href={`/mobile/${route}?actor=p-shanfeng`} key={route}>
                 {String(i + 1).padStart(2, "0")} · {MOBILE_TITLES[i]}
@@ -263,7 +271,9 @@ export function DemoHub() {
           <span>
             全部人物、事件和日期均为演示数据。角色选择不是正式身份认证。
           </span>
-          <span>首期：同一浏览器多标签联动 ／ 商户核销与服务授权暂不实现</span>
+          <span>
+            同一浏览器多标签联动 ／ 同舟资料授权仅为本地演示，商户核销暂不实现
+          </span>
         </footer>
       </div>
       {reset && (
