@@ -1,5 +1,7 @@
 # Destiny Lab MVP
 
+Default local development branch: `codex/weapp-release-20261013`, tracking `origin/codex/weapp-release-20261013`. Use this branch for subsequent work unless the user explicitly chooses another branch.
+
 All code changes require the user-approved plan in plans/active or plans/archive. The initial plan was explicitly approved on 2026-10-05. Do not modify the sibling legacy project.
 
 Read relevant guides in node_modules/next/dist/docs before Next.js edits. Keep PRD, journey, data model, acceptance and change records current. Keep demo and server-backed data isolated; do not claim production or real WeChat acceptance from local tests.
