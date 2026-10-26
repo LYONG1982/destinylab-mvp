@@ -7,7 +7,6 @@ import {
 import { randomUUID } from "node:crypto";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { Pool } from "pg";
-import sharp from "sharp";
 import { AGES, QUESTIONS } from "../../src/data/questions";
 import {
   emptyTongzhouProfile,
@@ -279,217 +278,64 @@ test("real submission, role boundaries, retries, agency withdrawal and return to
     await stranger.close();
   }
 });
-test("album crop, avatar persistence, owner checks, consent and cache revocation", async ({
+test("system avatars persist and custom-photo endpoints remain closed", async ({
   browser,
 }) => {
   const phone = await browser.newContext({
-      baseURL: origin,
-      viewport: { width: 390, height: 844 },
-      reducedMotion: "reduce",
-    }),
-    other = await browser.newContext({ baseURL: origin }),
-    publicContext = await browser.newContext({ baseURL: origin });
+    baseURL: origin,
+    viewport: { width: 390, height: 844 },
+    reducedMotion: "reduce",
+  });
   try {
-    const s = await join(phone),
-      otherState = await join(other, "测试乙", "female");
-    const epoch = s.state.epoch;
-    const page = await phone.newPage();
-    const errors: string[] = [];
-    page.on("pageerror", (e) => errors.push(e.message));
+    const joined = await join(phone),
+      page = await phone.newPage();
     await page.goto(route("/mobile/04-question"));
-    await page.getByRole("button", { name: "更换头像" }).click();
-    const bytes = await sharp({
-      create: { width: 900, height: 600, channels: 3, background: "#c49680" },
-    })
-      .jpeg()
-      .toBuffer();
-    await page
-      .locator("input[type=file]")
-      .setInputFiles({
-        name: "fictional-avatar.jpg",
-        mimeType: "image/jpeg",
-        buffer: bytes,
-      });
-    await expect(page.getByAltText("照片裁剪预览")).toBeVisible();
+    await page.getByRole("button", { name: "更换头像", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.locator('input[type="file"]')).toHaveCount(0);
     await expect(
-      page.getByLabel("允许本人照片在现场大屏展示"),
-    ).not.toBeChecked();
-    await page.getByLabel("照片缩放").fill("1.4");
-    await page.screenshot({ path: `${proof}/avatar-crop.png`, fullPage: true });
-    await page.getByRole("button", { name: "确认使用", exact: true }).click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    let state = await (
-      await phone.request.get(route("/api/live/snapshot?audience=participant"))
-    ).json();
-    let me = state.state.participants.find(
-      (p: { id: string }) => p.id === s.actor,
-    );
-    expect(me.photo.screen).toBe(false);
-    const first = me.photo.id;
-    expect((await phone.request.get(`/api/avatar/${first}`)).status()).toBe(
-      200,
-    );
-    expect(
-      (
-        await publicContext.request.get(`/api/avatar/${first}?screen=1`)
-      ).status(),
-    ).toBe(404);
-    expect(
-      (await publicContext.request.get(`/api/avatar/${first}`)).status(),
-    ).toBe(404);
-    expect((await other.request.get(`/api/avatar/${first}`)).status()).toBe(
-      404,
-    );
-    const set = {
-      type: "avatar",
-      assetId: first,
-      avatarId: "male_01",
-      allowScreen: true,
-      expectedVersion: 1,
-    };
-    await command(phone, epoch, set, "/api/avatar/command");
-    expect(
-      (
-        await publicContext.request.get(`/api/avatar/${first}?screen=1`)
-      ).status(),
-    ).toBe(200);
-    const world = await (
-      await publicContext.request.get(
-        route("/api/live/snapshot?audience=screen"),
-      )
-    ).json();
-    expect(JSON.stringify(world.world.participants)).toContain(first);
-    const screen = await publicContext.newPage();
-    await screen.setViewportSize({ width: 1920, height: 1080 });
-    await screen.goto(route("/screen"));
-    await expect(
-      screen.locator(`.destiny-player-avatar img[src*='${first}']`).first(),
-    ).toBeVisible();
-    await expect
-      .poll(async () =>
-        screen
-          .locator(`.destiny-player-avatar img[src*='${first}']`)
-          .first()
-          .evaluate((img) => {
-            const el = img as HTMLImageElement;
-            let opacity = 1;
-            for (let node: Element | null = el; node; node = node.parentElement)
-              opacity *= Number(getComputedStyle(node).opacity);
-            return el.complete && el.naturalWidth > 0 && opacity > 0.9;
-          }),
-      )
-      .toBe(true);
-    await screen.screenshot({ path: `${proof}/screen-photo.png` });
-    const cache = await publicContext.request.get(
-      `/_next/image?url=${encodeURIComponent(`/api/avatar/${first}?screen=1`)}&w=96&q=75`,
-    );
-    expect(cache.status()).toBe(400);
-    await command(
-      phone,
-      epoch,
-      { ...set, allowScreen: false, expectedVersion: 2 },
-      "/api/avatar/command",
-    );
-    expect(
-      (
-        await publicContext.request.get(`/api/avatar/${first}?screen=1`)
-      ).status(),
-    ).toBe(404);
-    expect(
-      await (
-        await publicContext.request.get(
-          route("/api/live/snapshot?audience=screen"),
-        )
-      ).text(),
-    ).not.toContain(first);
-    await expect(
-      screen.locator(`.destiny-player-avatar img[src*='${first}']`),
+      dialog.getByRole("button", { name: "从相册选择照片" }),
     ).toHaveCount(0);
-    for (const q of QUESTIONS.slice(1)) {
-      await command(phone, epoch, {
-        type: "answer",
-        questionId: q.id,
-        value: q.options[0],
-      });
-      await command(other, epoch, {
-        type: "answer",
-        questionId: q.id,
-        value: q.options[0],
-      });
-    }
-    expect((await other.request.get(`/api/avatar/${first}`)).status()).toBe(
-      200,
+    await dialog.getByRole("radio", { name: "男生虚拟头像 04" }).check();
+    await dialog.getByRole("button", { name: "确认使用" }).click();
+    await expect(dialog).toHaveCount(0);
+    await page.reload();
+    const snap = await (
+      await phone.request.get(route("/api/live/snapshot?audience=participant"))
+    ).json();
+    const me = snap.state.participants.find(
+      (p: { id: string }) => p.id === joined.actor,
     );
-    const forged = await post(other.request, "/api/avatar/command", {
-      epoch: otherState.state.epoch,
-      command: { ...set, avatarId: "female_01", expectedVersion: 0 },
-    });
-    expect(forged.status()).toBe(403);
-    const corrupt = await phone.request.post(route("/api/avatar/upload"), {
-      headers: { Origin: origin, "Content-Type": "image/jpeg" },
-      data: Buffer.from("not an image"),
-    });
-    expect(corrupt.status()).toBe(400);
-    const noOrigin = await phone.request.post(route("/api/avatar/upload"), {
-      headers: { "Content-Type": "image/jpeg" },
-      data: bytes,
-    });
-    expect(noOrigin.status()).toBe(403);
-    const tooBig = await phone.request.post(route("/api/avatar/upload"), {
-      headers: { Origin: origin, "Content-Type": "image/jpeg" },
-      data: Buffer.alloc(10 * 1024 * 1024 + 1),
-    });
-    expect(tooBig.status()).toBe(413);
+    expect(me.avatarId).toBe("male_04");
+    expect(me.photo).toBeNull();
     const uploaded = await phone.request.post(route("/api/avatar/upload"), {
-      headers: { Origin: origin, "Content-Type": "image/jpeg" },
-      data: bytes,
+      headers: { Origin: origin, "Content-Type": "image/png" },
+      data: Buffer.from("synthetic"),
     });
-    expect(uploaded.status()).toBe(200);
-    const newer = await uploaded.json();
-    expect(newer.bytes).toBeLessThanOrEqual(204800);
-    await command(
-      phone,
-      epoch,
-      { ...set, assetId: newer.id, allowScreen: false, expectedVersion: 3 },
-      "/api/avatar/command",
-    );
-    expect((await phone.request.get(`/api/avatar/${first}`)).status()).toBe(
+    expect(uploaded.status()).toBe(403);
+    const photo = randomUUID();
+    expect((await phone.request.get(`/api/avatar/${photo}`)).status()).toBe(
       404,
     );
     expect(
-      (
-        await post(phone.request, "/api/avatar/command", {
-          epoch,
-          command: { ...set, expectedVersion: 3 },
-        })
-      ).status(),
-    ).toBe(409);
-    await page.reload();
-    await page.getByRole("button", { name: "更换头像" }).click();
-    await expect(page.locator("img.avatar-photo")).toHaveAttribute(
-      "src",
-      new RegExp(`/api/avatar/${newer.id}$`),
-    );
-    await page.getByRole("button", { name: "移除照片，换回系统头像" }).click();
-    await page.getByRole("button", { name: "确认使用", exact: true }).click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    expect((await phone.request.get(`/api/avatar/${newer.id}`)).status()).toBe(
-      404,
-    );
-    state = await (
-      await phone.request.get(route("/api/live/snapshot?audience=participant"))
-    ).json();
-    me = state.state.participants.find((p: { id: string }) => p.id === s.actor);
-    expect(me.photo).toBeNull();
-    expect(me.answers.q1).toBe(QUESTIONS[0].options[0]);
-    expect(errors).toEqual([]);
+      (await phone.request.get(`/api/avatar/${photo}?screen=1`)).status(),
+    ).toBe(404);
+    const bound = await post(phone.request, "/api/avatar/command", {
+      epoch: joined.state.epoch,
+      command: {
+        type: "avatar",
+        assetId: photo,
+        avatarId: "male_04",
+        allowScreen: true,
+        expectedVersion: 1,
+      },
+    });
+    expect(bound.status()).toBe(403);
   } finally {
     await phone.close();
-    await other.close();
-    await publicContext.close();
   }
 });
-test("first profile can upload a photo after choosing gender without losing progress", async ({
+test("first profile uses a system avatar without losing progress", async ({
   browser,
 }) => {
   const phone = await browser.newContext({
@@ -511,28 +357,8 @@ test("first profile can upload a photo after choosing gender without losing prog
     await p.getByLabel("怎么称呼你？").fill("测试女生");
     await p.getByRole("button", { name: AGES[1], exact: true }).click();
     await p.getByRole("button", { name: "女生", exact: true }).click();
-    await p.getByRole("button", { name: "上传我的照片" }).click();
-    const bytes = await sharp({
-      create: { width: 512, height: 512, channels: 3, background: "#91b6bc" },
-    })
-      .png()
-      .toBuffer();
-    await p
-      .locator("input[type=file]")
-      .setInputFiles({
-        name: "fictional.png",
-        mimeType: "image/png",
-        buffer: bytes,
-      });
-    await expect(p.getByAltText("照片裁剪预览")).toBeVisible();
-    expect(
-      await p.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-    await p.getByRole("button", { name: "确认使用", exact: true }).click();
-    await expect(p.getByRole("dialog")).toHaveCount(0);
-    await expect(p.locator(".avatar-photo")).toBeVisible();
+    await p.getByRole("radio", { name: "女生虚拟头像 04" }).check();
+    await expect(p.locator('input[type="file"]')).toHaveCount(0);
     await p.getByRole("button", { name: "继续答题" }).click();
     await expect(p).toHaveURL(/04-question/);
     await expect(p.locator(".question-transition")).toHaveAttribute(
@@ -547,13 +373,28 @@ test("first profile can upload a photo after choosing gender without losing prog
     );
     expect(me.gender).toBe("female");
     expect(me.avatarId).toMatch(/^female_/);
-    expect(me.photo.screen).toBe(false);
+    expect(me.photo).toBeNull();
     expect(me.answers.q1).toBe(QUESTIONS[0].options[1]);
     if (process.env.DESTINY_PRIVATE_RESTART_DIR) {
-      await command(phone, joined.state.epoch, {type:"tongzhou-submit",fields,consent:true,consentVersion:TONGZHOU_CONSENT_VERSION,expectedVersion:0}, "/api/tongzhou/command");
-      const dir=process.env.DESTINY_PRIVATE_RESTART_DIR;
-      await phone.storageState({path:`${dir}/restart-browser.json`});
-      writeFileSync(`${dir}/restart-expected.json`,JSON.stringify({activity,actor:joined.actor,photo:me.photo.id,fields}),{mode:0o600});
+      await command(
+        phone,
+        joined.state.epoch,
+        {
+          type: "tongzhou-submit",
+          fields,
+          consent: true,
+          consentVersion: TONGZHOU_CONSENT_VERSION,
+          expectedVersion: 0,
+        },
+        "/api/tongzhou/command",
+      );
+      const dir = process.env.DESTINY_PRIVATE_RESTART_DIR;
+      await phone.storageState({ path: `${dir}/restart-browser.json` });
+      writeFileSync(
+        `${dir}/restart-expected.json`,
+        JSON.stringify({ activity, actor: joined.actor, photo: null, fields }),
+        { mode: 0o600 },
+      );
     }
   } finally {
     await phone.close();

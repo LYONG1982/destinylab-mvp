@@ -57,6 +57,16 @@ async function main() {
         randomUUID(),
         state.epoch,
       );
+    // Historical custom photo: retained in storage, but all live clients must use system avatars.
+    const legacyPhoto = randomUUID();
+    await database().query(
+      "INSERT INTO dl_avatar_assets(id,activity_id,actor,bytes,attached) VALUES($1,$2,$3,$4,true)",
+      [legacyPhoto, activity, actor, Buffer.from("synthetic-legacy-photo")],
+    );
+    await database().query(
+      "UPDATE dl_activities SET state=jsonb_set(state,'{participants,0,photo}',$2::jsonb) WHERE id=$1",
+      [activity, JSON.stringify({ id: legacyPhoto, screen: true })],
+    );
     const operatorToken = randomBytes(32).toString("base64url");
     await database().query(
       "INSERT INTO dl_sessions(token_hash,activity_id,role,actor,expires_at) VALUES($1,$2,'operator','operator',now()+interval '2 hours')",

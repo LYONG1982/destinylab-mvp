@@ -1,7 +1,6 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
-import { PNG } from "pngjs";
 import type { DemoState } from "../../src/domain/types";
 import type { LiveSnapshot } from "../../src/lib/api/live-types";
 
@@ -100,7 +99,7 @@ async function fill(page: Page) {
 }
 async function editor(page: Page) {
   await form(page)
-    .getByRole("button", { name: /上传我的照片|更换头像/ })
+    .getByRole("button", { name: /选择系统头像|更换头像/ })
     .click();
   return page.getByRole("dialog", { name: "选择你的头像" });
 }
@@ -217,7 +216,7 @@ for (const failure of ["server", "rejected", "network", "timeout"] as const) {
       form(page).getByRole("button", { name: "正在保存…" }),
     ).toBeDisabled();
     await expect(
-      form(page).getByRole("button", { name: "上传我的照片" }),
+      form(page).getByRole("button", { name: "选择系统头像" }),
     ).toBeDisabled();
     await form(page).evaluate((el: HTMLFormElement) => {
       el.requestSubmit();
@@ -248,12 +247,11 @@ for (const failure of ["server", "rejected", "network", "timeout"] as const) {
   });
 }
 
-test("editor system choice, cancellation, photo upload/removal preserve the profile draft and saved avatar", async ({
+test("editor system choice and cancellation preserve drafts; custom upload is unavailable", async ({
   page,
 }) => {
   await fill(page);
   let dialog = await editor(page);
-  await dialog.locator("summary").click();
   await dialog.getByRole("radio", { name: "男生虚拟头像 07" }).check();
   await expect(
     avatar(page).getByRole("radio", { name: "男生虚拟头像 03" }),
@@ -263,7 +261,6 @@ test("editor system choice, cancellation, photo upload/removal preserve the prof
     avatar(page).getByRole("radio", { name: "男生虚拟头像 03" }),
   ).toBeChecked();
   dialog = await editor(page);
-  await dialog.locator("summary").click();
   await dialog.getByRole("radio", { name: "男生虚拟头像 07" }).check();
   await dialog.getByRole("button", { name: "确认使用" }).click();
   await expect(dialog).toHaveCount(0);
@@ -272,42 +269,18 @@ test("editor system choice, cancellation, photo upload/removal preserve the prof
   ).toBeChecked();
   await expect(page.getByLabel("怎么称呼你？")).toHaveValue("测试清禾");
   dialog = await editor(page);
-  const png = new PNG({ width: 64, height: 64 });
-  png.data.fill(190);
-  for (let i = 3; i < png.data.length; i += 4) png.data[i] = 255;
-  await dialog.locator('input[type="file"]').setInputFiles({
-    name: "synthetic.png",
-    mimeType: "image/png",
-    buffer: PNG.sync.write(png),
-  });
+  await expect(dialog.locator('input[type="file"]')).toHaveCount(0);
   await expect(
-    dialog.getByRole("img", { name: "拖动照片调整圆形头像" }),
-  ).toBeVisible();
-  await expect(dialog.getByRole("checkbox")).not.toBeChecked();
-  await dialog.getByRole("button", { name: "确认使用" }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(form(page).locator(".person-card .avatar-photo")).toBeVisible();
-  const snapshot = await read(page);
-  expect(snapshot.state!.participants[0].photo?.screen).toBe(false);
-  expect(snapshot.state!.participants[0].avatarId).toBe("male_07");
-  const photo = snapshot.state!.participants[0].photo;
-  expect((await finish(page, "male_07")).photo).toEqual(photo);
-  await page.goto(`/mobile/03-profile?activity=${activity}`);
-  dialog = await editor(page);
-  await dialog.getByRole("button", { name: "移除照片，换回系统头像" }).click();
-  await dialog.locator("summary").click();
+    dialog.getByRole("button", { name: "从相册选择照片" }),
+  ).toHaveCount(0);
   await dialog.getByRole("radio", { name: "男生虚拟头像 08" }).check();
   await dialog.getByRole("button", { name: "确认使用" }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(
-    avatar(page).getByRole("radio", { name: "男生虚拟头像 08" }),
-  ).toBeChecked();
-  expect((await finish(page, "male_08")).photo).toBeNull();
+  expect((await finish(page, "male_08")).photo).toBeFalsy();
   // Re-editing a complete profile has one editor that synchronizes the draft.
   await page.goto(`/mobile/03-profile?activity=${activity}`);
   await expect(page.getByRole("button", { name: "更换头像" })).toHaveCount(1);
   dialog = await editor(page);
-  await dialog.locator("summary").click();
   await dialog.getByRole("radio", { name: "男生虚拟头像 09" }).check();
   await dialog.getByRole("button", { name: "确认使用" }).click();
   await expect(dialog).toHaveCount(0);
@@ -317,13 +290,49 @@ test("editor system choice, cancellation, photo upload/removal preserve the prof
   await finish(page, "male_09");
 });
 
+test("historical photo is hidden while system avatar editing preserves stored photo", async ({
+  page,
+}) => {
+  const id = randomUUID(),
+    bytes = Buffer.from("synthetic-historical-photo"),
+    state = await raw();
+  state.participants[0].photo = { id, screen: true };
+  state.participants[0].avatarId = "male_01";
+  state.revision++;
+  await pool.query(
+    "INSERT INTO dl_avatar_assets(id,activity_id,actor,bytes,attached) VALUES($1,$2,$3,$4,true)",
+    [id, activity, state.participants[0].id, bytes],
+  );
+  await pool.query(
+    "UPDATE dl_activities SET state=$2,revision=$3 WHERE id=$1",
+    [activity, JSON.stringify(state), state.revision],
+  );
+  await page.reload();
+  await expect(form(page)).toBeVisible();
+  await fill(page);
+  await expect(page.locator(".avatar-photo")).toHaveCount(0);
+  await expect(
+    form(page).locator('[data-avatar-id="male_03"]'),
+  ).not.toHaveCount(0);
+  const dialog = await editor(page);
+  await expect(dialog.locator('input[type="file"]')).toHaveCount(0);
+  await dialog.getByRole("radio", { name: "男生虚拟头像 05" }).check();
+  await dialog.getByRole("button", { name: "确认使用" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect((await finish(page, "male_05")).photo).toBeNull();
+  expect((await raw()).participants[0].photo).toEqual({ id, screen: true });
+  expect(
+    (await pool.query("SELECT bytes FROM dl_avatar_assets WHERE id=$1", [id]))
+      .rows[0].bytes,
+  ).toEqual(bytes);
+});
+
 test("editor result cannot silently undo an unsaved gender choice", async ({
   page,
 }) => {
   await fill(page);
   await page.getByRole("button", { name: "女生", exact: true }).click();
   const dialog = await editor(page);
-  await dialog.locator("summary").click();
   await dialog.getByRole("radio", { name: "男生虚拟头像 07" }).check();
   await dialog.getByRole("button", { name: "确认使用" }).click();
   await expect(dialog).toHaveCount(0);

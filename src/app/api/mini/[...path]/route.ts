@@ -1,10 +1,7 @@
 import { entryType } from "@/domain/mini-entry";
 import { reenterField } from "@/server/field-reentry";
-import {
-  checkMiniText,
-  reviewMiniAvatar,
-  requireMiniAvatarPass,
-} from "@/server/wechat-content";
+import { rejoinField } from "@/server/field-rejoin";
+import { checkMiniText } from "@/server/wechat-content";
 import {
   registrationEnabled,
   registrationView,
@@ -31,11 +28,7 @@ import {
   keys,
   origin,
 } from "@/server/private-http";
-import {
-  avatarCommand,
-  readMiniAvatar,
-  uploadAvatar,
-} from "@/server/avatar-service";
+import { avatarCommand } from "@/server/avatar-service";
 import { tongzhouCommand } from "@/server/tongzhou-service";
 import {
   entryCode,
@@ -97,17 +90,11 @@ export async function GET(request: Request, context: Context) {
         },
       });
     }
-    if (path === "enter") {
-      const identity = await miniIdentity(request, activity);
-      await body(request);
-      return json(
-        await snapshot(
-          activity,
-          "participant",
-          await miniEnter(identity, activity),
-        ),
+    if (path === "enter" || path === "rejoin")
+      return Response.json(
+        { error: "请主动点击进入现场。" },
+        { status: 405, headers: { ...headers, Allow: "POST" } },
       );
-    }
     if (path.startsWith("registration/")) {
       registrationEnabled();
       const who = `mini:${await miniIdentity(request, activity)}`;
@@ -140,10 +127,7 @@ export async function GET(request: Request, context: Context) {
       });
     if (path.startsWith("avatar/")) {
       enabled("AVATARS");
-      return new Response(
-        new Uint8Array(await readMiniAvatar(activity, session, path.slice(7))),
-        { headers: { ...headers, "Content-Type": "image/webp" } },
-      );
+      throw new HttpError(404, "本活动统一使用系统头像。");
     }
     throw new HttpError(404, "入口不存在。");
   } catch (e) {
@@ -178,6 +162,15 @@ export async function POST(request: Request, context: Context) {
       await miniIdentity(request, activity);
       await miniLogout(request, activity);
       return json({ ok: true });
+    }
+    if (path === "rejoin") {
+      const identity = await miniIdentity(request, activity);
+      const result = await rejoinField(
+        activity,
+        { identity },
+        await body(request),
+      );
+      return json(await snapshot(activity, "participant", result.session));
     }
     if (path === "enter") {
       const identity = await miniIdentity(request, activity);
@@ -226,20 +219,7 @@ export async function POST(request: Request, context: Context) {
     }
     const session = await miniSession(request, activity);
     if (path === "avatar/upload") {
-      enabled("AVATARS");
-      if (
-        !/^image\/(jpeg|png|webp)$/.test(
-          request.headers.get("content-type") || "",
-        )
-      )
-        throw new HttpError(415, "请选择 JPG、PNG 或 WebP 照片。");
-      return json(
-        await uploadAvatar(
-          activity,
-          session,
-          await boundedBody(request, 10 * 1024 * 1024),
-        ),
-      );
+      throw new HttpError(403, "本活动仅支持系统头像，已关闭自定义头像上传。");
     }
     const input = await body(request);
     if (path === "reenter") {
@@ -251,19 +231,8 @@ export async function POST(request: Request, context: Context) {
       );
       return json(await snapshot(activity, "participant", session));
     }
-    if (path === "avatar/review") {
-      keys(input, ["assetId"]);
-      await rateLimit(`avatar-review:${activity}:${session.actor}`, 30);
-      if (typeof input.assetId !== "string")
-        throw new HttpError(400, "照片编号无效。");
-      return json(
-        await reviewMiniAvatar(
-          activity,
-          await miniIdentity(request, activity),
-          input.assetId,
-        ),
-      );
-    }
+    if (path === "avatar/review")
+      throw new HttpError(403, "本活动仅支持系统头像，已关闭自定义头像上传。");
     if (path === "wall/consent") {
       await rateLimit(`wall-consent:${activity}:${session.actor}`, 30);
       if (input.allow === true)
@@ -288,16 +257,6 @@ export async function POST(request: Request, context: Context) {
       await tongzhouCommand(activity, session, input, id);
     } else if (path === "avatar/command") {
       enabled("AVATARS");
-      const command = input.command as Record<string, unknown> | undefined;
-      if (command?.assetId) {
-        if (typeof command.assetId !== "string")
-          throw new HttpError(400, "照片编号无效。");
-        await requireMiniAvatarPass(
-          activity,
-          await miniIdentity(request, activity),
-          command.assetId,
-        );
-      }
       await avatarCommand(activity, session, input, id);
     } else throw new HttpError(404, "入口不存在。");
     return json(await snapshot(activity, "participant", session));

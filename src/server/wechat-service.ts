@@ -2,7 +2,16 @@ import "server-only";
 import { isIP } from "node:net";
 import { randomBytes, randomUUID } from "node:crypto";
 import { database, transaction } from "./db";
-import { digest, HttpError, load, rateLimit, type Session } from "./service";
+import {
+  digest,
+  HttpError,
+  load,
+  rateLimit,
+  participationEnded,
+  verifyParticipantActor,
+  type Session,
+} from "./service";
+import type { DemoState } from "@/domain/types";
 import { newParticipant } from "./state";
 import { save } from "./service";
 import { entryType, type MiniEntry } from "@/domain/mini-entry";
@@ -89,11 +98,15 @@ export async function miniSession(
 ): Promise<Session> {
   const identity = await miniIdentity(request, activity);
   const found = await database().query(
-    "SELECT w.actor,w.epoch,a.state->>'epoch' AS current_epoch FROM dl_wechat_participants w JOIN dl_activities a ON a.id=w.activity_id WHERE w.identity_id=$1 AND w.activity_id=$2",
+    "SELECT w.actor,w.epoch,a.state FROM dl_wechat_participants w JOIN dl_activities a ON a.id=w.activity_id WHERE w.identity_id=$1 AND w.activity_id=$2",
     [identity, activity],
   );
-  if (!found.rows[0] || found.rows[0].epoch !== found.rows[0].current_epoch)
+  if (!found.rows[0] || found.rows[0].epoch !== found.rows[0].state.epoch)
     throw new HttpError(410, "本轮参与已结束，请主动进入现场互动。");
+  const state = found.rows[0].state as DemoState;
+  await verifyParticipantActor(request, activity, found.rows[0].actor);
+  if (!state.participants.some((p) => p.id === found.rows[0].actor))
+    throw await participationEnded(activity, state, found.rows[0].actor);
   return { actor: found.rows[0].actor, role: "participant" };
 }
 export async function miniEnter(identity: string, activity: string) {
@@ -107,7 +120,7 @@ export async function miniEnter(identity: string, activity: string) {
     ).rows[0];
     if (old?.epoch === before.epoch) {
       const p = before.participants.find((p) => p.id === old.actor);
-      if (!p) throw new HttpError(410, "你已从本场移除，请联系工作人员。");
+      if (!p) throw await participationEnded(activity, before, old.actor, c);
       return { actor: p.id, role: "participant" as const };
     }
     if (before.fieldOpen === false)

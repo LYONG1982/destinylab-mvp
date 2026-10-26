@@ -8,6 +8,7 @@ import {
   load,
   rateLimit,
   save,
+  participationEnded,
   type Session,
 } from "./service";
 
@@ -34,7 +35,7 @@ export async function reenterField(
     );
     const participant = before.participants.find((p) => p.id === session.actor);
     if (removed.rowCount || !participant)
-      throw new HttpError(410, "你已从本场移除，请联系工作人员。");
+      throw await participationEnded(activity, before, session.actor, c);
     if (before.fieldOpen === false)
       throw new HttpError(409, "现场暂未开放，请稍后再来。");
     const payload = { type: "field-reenter", epoch: before.epoch };

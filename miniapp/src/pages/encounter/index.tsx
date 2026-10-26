@@ -22,9 +22,13 @@ export default function Encounter() {
   return (
     <View className="reg-page">
       <View className="reg-card">
-        <Text className="reg-card-title">欢迎来到遇见现场</Text>
+        <Text className="reg-card-title">
+          {auth.removedEntry ? "上次参与已结束" : "欢迎来到遇见现场"}
+        </Text>
         <Text className="reg-copy">
-          回答几个轻问题，发现同频的人。无需提前报名。
+          {auth.removedEntry
+            ? "原参与记录已归档。重新参与需填写本场资料并重新答题。"
+            : "回答几个轻问题，发现同频的人。无需提前报名。"}
         </Text>
         {!auth.authenticated && (
           <View className="reg-consent">
@@ -61,7 +65,7 @@ export default function Encounter() {
             }
           }}
         >
-          {busy ? "正在进入…" : "进入现场互动"}
+          {busy ? "正在进入…" : auth.removedEntry ? "重新参与" : "进入现场互动"}
         </Button>
         <Button
           className="reg-link"

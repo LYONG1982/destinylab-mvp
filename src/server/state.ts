@@ -88,9 +88,10 @@ export function mobileProjection(
   const participants = state.participants
     .filter((p) => allowed.has(p.id))
     .map((p) => {
-      if (p.id === actor) return structuredClone(p);
+      if (p.id === actor) return { ...structuredClone(p), photo: null };
       return {
         ...p,
+        photo: null,
         joinedAt: 0,
         answerComplete: complete(p),
         currentId:
@@ -164,6 +165,7 @@ export function operatorProjection(
 ): DemoState {
   return {
     ...state,
+    participants: state.participants.map((p) => ({ ...p, photo: null })),
     commands: [],
     broadcastConsumed: [],
     tongzhouSubmissions: [],
@@ -182,7 +184,8 @@ export function worldProjection(
   previous?: DemoState,
 ) {
   const config = liveConfig();
-  if (process.env.DESTINY_AVATARS_ENABLED !== "true") {
+  {
+    // Historical photos remain in storage but never enter live projections.
     state = {
       ...state,
       participants: state.participants.map((p) => ({ ...p, photo: null })),

@@ -2,6 +2,11 @@ import type { Command, DemoState } from "@/domain/types";
 import type { WorldData } from "@/features/screen/world/types";
 
 export type Audience = "participant" | "operator" | "screen";
+/** Authenticated context for explicitly starting over after removal. */
+export interface RemovedEntry {
+  actor: string;
+  epoch: string;
+}
 export type LiveCommand =
   | Command
   | { type: "point-add"; name: string }

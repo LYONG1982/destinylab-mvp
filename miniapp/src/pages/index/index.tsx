@@ -377,20 +377,36 @@ export default function Index() {
     content = (
       <View className="card welcome">
         <Text className="eyebrow">缘分实验室 · V1.0</Text>
-        <Text className="hero-title">从一个共同话题，\n开始认识。</Text>
+        <Text className="hero-title">
+          {current.removedEntry
+            ? "上次参与已结束"
+            : "从一个共同话题，\n开始认识。"}
+        </Text>
         <Text className="muted">
-          扫码进入活动，发现同频的人。你的答案和选择会同步到现场；手机号等服务资料不会在大屏公开。
+          {current.removedEntry
+            ? "原参与记录已归档。重新参与需填写本场资料并重新答题。"
+            : "扫码进入活动，发现同频的人。你的答案和选择会同步到现场；手机号等服务资料不会在大屏公开。"}
         </Text>
         <Button
           className="primary"
           disabled={current.busy || !API_ORIGIN}
-          onClick={() =>
-            Taro.redirectTo({
+          onClick={async () => {
+            if (current.removedEntry) {
+              try {
+                await client.rejoin();
+              } catch {}
+              return;
+            }
+            await Taro.redirectTo({
               url: `/pages/encounter/index?activity=${encodeURIComponent(client.activity())}`,
-            })
-          }
+            });
+          }}
         >
-          返回现场入口
+          {current.busy
+            ? "正在进入…"
+            : current.removedEntry
+              ? "重新参与"
+              : "返回现场入口"}
         </Button>
         {!API_ORIGIN && (
           <Text className="notice">当前为本地开发包，尚未配置服务地址。</Text>

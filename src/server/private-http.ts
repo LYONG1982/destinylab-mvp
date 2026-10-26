@@ -13,6 +13,9 @@ export function fail(e: unknown) {
   return json(
     {
       error: e instanceof HttpError ? e.message : "服务暂不可用，请稍后重试。",
+      ...(e instanceof HttpError && e.removedEntry
+        ? { removedEntry: e.removedEntry }
+        : {}),
     },
     e instanceof HttpError ? e.status : 503,
   );

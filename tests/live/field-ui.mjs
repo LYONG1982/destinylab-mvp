@@ -169,7 +169,7 @@ await page
 await expect(page.locator("tbody tr")).toHaveCount(0);
 await mobile.reload();
 await expect(
-  mobile.getByText("你已从本场移除", { exact: false }),
+  mobile.getByText("上次参与已结束", { exact: false }),
 ).toBeVisible();
 await page.goto(url("/admin/registrations"));
 await expect(page.getByText("测试清禾", { exact: true })).toBeVisible();

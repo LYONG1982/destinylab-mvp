@@ -1,5 +1,13 @@
 # 遇见-缘分实验室 · V1.0 数据模型、状态与适配边界
 
+## 2026-10-26 · 重新参与幂等关联与头像投影
+
+复用已有 000–015 结构，无新迁移。移除标记 `dl_field_removed` 和 `dl_field_archives` 不删除。专用 POST `rejoin` 只接受本人旧 `actor` / `epoch`，活动行锁中验证活动开放、轮次与移除状态；`dl_commands` 在旧 actor 下以 `field-rejoin:<epoch摘要>` 保存 `{type:"field-rejoin",epoch,nextActor}`，冒号命名空间与普通客户端命令键分离。重复或并发请求返回既有 successor；successor 再次离场不恢复在场，再次移除不新建第三条。旧轮次请求拒绝。
+
+H5 新签发会话绑定新 actor，旧令牌仍指向旧 actor；微信保持 identity，原子更新活动 actor/epoch 与已验证报名关联。新 actor 的公开资料、答案、照片、邀请与展示许可均为空。新前端写请求携带 `X-Destiny-Actor`；重新参与后的缺少该头的旧客户端写请求同样拒绝，要求刷新/更新。卡牌许可页从本人读取接口取得 actor 并在提交时校验。原始私有资料不迁移到新公开身份。
+
+现场手机、运营、大屏投影一律去掉 Participant.photo；头像读取返回 404，上传/照片绑定返回 403。系统头像命令只更新 avatarId/avatarVersion，历史 photo 引用、授权标记和资产字节保留；它们不再产生现场展示许可。独立报名/机构照片不受影响。
+
 ## 2026-10-26 · 资料页提交反馈（无模型变更）
 
 新增状态仅为 H5 本地表单的校验、焦点和保存反馈。沿用 `profile` / `avatar` 命令、Participant.avatarId/photo/avatarVersion、原服务端校验及幂等机制。头像弹窗从已接受的当前本人快照返回 gender/avatarId/photo，外层只同步头像草稿，不覆盖昵称、年龄或准备状态。请求期间页面、身份、轮次变化沿用现有响应保护。无新表、字段或迁移，不自动扩大照片公开许可。

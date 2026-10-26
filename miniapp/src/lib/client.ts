@@ -6,6 +6,7 @@ import { MINI_ENTRY_PAGES, type MiniEntry } from "@/domain/mini-entry";
 import type { WallConsentView } from "@/domain/member-wall";
 import Taro from "@tarojs/taro";
 import type { DemoState } from "@/domain/types";
+import type { RemovedEntry } from "@/lib/api/live-types";
 import { SnapshotGate, retryDelay } from "./session-core";
 export const API_ORIGIN = process.env.TARO_APP_API_ORIGIN || "";
 export interface Snapshot {
@@ -27,6 +28,7 @@ export interface ViewState {
   features: Features;
   pending: boolean;
   authenticated: boolean;
+  removedEntry: RemovedEntry | null;
 }
 let view: ViewState = {
   snapshot: null,
@@ -36,6 +38,7 @@ let view: ViewState = {
   features: { avatars: false, tongzhou: false },
   pending: false,
   authenticated: false,
+  removedEntry: null,
 };
 const listeners = new Set<() => void>();
 const gate = new SnapshotGate();
@@ -73,6 +76,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
+    public removedEntry?: RemovedEntry,
   ) {
     super(message);
   }
@@ -83,13 +87,20 @@ async function request<T>(
   data?: object | ArrayBuffer,
   extra = {},
 ) {
-  const response = await Taro.request<T & { error?: string }>({
+  const response = await Taro.request<
+    T & { error?: string; removedEntry?: RemovedEntry }
+  >({
     url: endpoint(path),
     method,
     data,
     header: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(method === "POST" &&
+      view.snapshot?.actor &&
+      !["enter", "rejoin", "login"].includes(path)
+        ? { "X-Destiny-Actor": view.snapshot.actor }
+        : {}),
       ...extra,
     },
     timeout: 15000,
@@ -98,6 +109,7 @@ async function request<T>(
     throw new ApiError(
       response.data?.error || "服务暂不可用，请重试。",
       response.statusCode,
+      response.data?.removedEntry,
     );
   return response.data as T;
 }
@@ -123,7 +135,7 @@ function apply(value: Snapshot, generation: number) {
       photos.delete(id);
     }
   });
-  update({ snapshot: value, online: true, error: "" });
+  update({ snapshot: value, online: true, error: "", removedEntry: null });
 }
 function clearSession() {
   gate.reset();
@@ -135,6 +147,7 @@ function clearSession() {
   update({
     snapshot: null,
     authenticated: false,
+    removedEntry: null,
     online: false,
     pending: false,
     busy: false,
@@ -143,8 +156,8 @@ function clearSession() {
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : "网络暂不可用，请稍后重试。";
 }
-async function refresh() {
-  if (!visible || !token || reading || view.busy) return;
+async function refresh(force = false) {
+  if ((!visible && !force) || !token || reading || view.busy) return;
   reading = true;
   const generation = gate.generation;
   try {
@@ -165,8 +178,14 @@ async function refresh() {
     if (e instanceof ApiError && e.status === 410) {
       gate.reset();
       pending = null;
+      pendingReentry = null;
       erasePhotos();
-      update({ snapshot: null, pending: false, busy: false });
+      update({
+        snapshot: null,
+        pending: false,
+        busy: false,
+        removedEntry: e.removedEntry || null,
+      });
     }
     update({ error: errorText(e), online: false });
   } finally {
@@ -197,6 +216,7 @@ async function restorePresence(snapshot: Snapshot, generation: number) {
       { epoch: snapshot.state.epoch },
       {
         "Idempotency-Key": pendingReentry.id,
+        "X-Destiny-Actor": snapshot.actor,
       },
     );
     if (generation !== gate.generation)
@@ -278,6 +298,7 @@ export const client = {
   },
   clearPhotos: erasePhotos,
   async startInteraction() {
+    if (view.removedEntry) return client.rejoin();
     if (view.busy) return;
     const generation = gate.generation;
     update({ busy: true, error: "" });
@@ -294,6 +315,35 @@ export const client = {
         await restorePresence(snapshot, generation);
       if (generation !== gate.generation)
         throw new Error("活动身份已变化，请重新进入。");
+      await Taro.redirectTo({
+        url: `/pages/index/index?activity=${encodeURIComponent(activity)}`,
+      });
+    } catch (e) {
+      if (generation === gate.generation)
+        update({
+          error: errorText(e),
+          ...(e instanceof ApiError && e.removedEntry
+            ? { removedEntry: e.removedEntry }
+            : {}),
+        });
+      throw e;
+    } finally {
+      if (generation === gate.generation) update({ busy: false });
+    }
+  },
+  async rejoin() {
+    if (view.busy || !view.removedEntry) return;
+    const input = view.removedEntry;
+    gate.reset();
+    const generation = gate.generation;
+    pending = null;
+    pendingReentry = null;
+    erasePhotos();
+    update({ busy: true, error: "", snapshot: null, pending: false });
+    try {
+      const result = await request<Snapshot>("rejoin", "POST", input);
+      if (generation !== gate.generation) return;
+      apply(result, generation);
       await Taro.redirectTo({
         url: `/pages/index/index?activity=${encodeURIComponent(activity)}`,
       });
@@ -367,6 +417,7 @@ export const client = {
     update({
       snapshot: null,
       authenticated: false,
+      removedEntry: null,
       pending: false,
       busy: false,
       error: "",
@@ -399,7 +450,7 @@ export const client = {
       if (readSnapshot) {
         await refresh();
         schedule();
-      }
+      } else if (defaultEntry === "encounter" && token) await refresh(true);
       return entry;
     } catch (e) {
       if (generation === gate.generation) update({ error: errorText(e) });
@@ -498,55 +549,5 @@ export const client = {
     } finally {
       update({ busy: false });
     }
-  },
-  async upload(path: string) {
-    const data = await new Promise<ArrayBuffer>((resolve, reject) =>
-      Taro.getFileSystemManager().readFile({
-        filePath: path,
-        success: (result) => resolve(result.data as ArrayBuffer),
-        fail: reject,
-      }),
-    );
-    if (data.byteLength > 10 * 1024 * 1024)
-      throw new Error("照片不能超过 10MB。");
-    const info = await Taro.getImageInfo({ src: path });
-    const type = info.type === "jpg" ? "jpeg" : info.type;
-    if (!["jpeg", "png", "webp"].includes(type))
-      throw new Error("请选择 JPG、PNG 或 WebP 照片。");
-    return request<{ id: string }>("avatar/upload", "POST", data, {
-      "Content-Type": `image/${type}`,
-    });
-  },
-  async reviewAvatar(assetId: string) {
-    return request<{
-      status: "pending" | "pass" | "review" | "risky" | "error";
-    }>("avatar/review", "POST", { assetId });
-  },
-  async photo(id: string) {
-    if (photos.has(id)) return photos.get(id)!;
-    const generation = gate.generation;
-    const response = await Taro.downloadFile({
-      url: endpoint(`avatar/${id}`),
-      header: { Authorization: `Bearer ${token}` },
-      timeout: 15000,
-    });
-    const valid = view.snapshot?.state.participants.some(
-      (p) => p.photo?.id === id,
-    );
-    if (
-      response.statusCode !== 200 ||
-      generation !== gate.generation ||
-      !visible ||
-      !valid
-    ) {
-      if (response.tempFilePath)
-        Taro.getFileSystemManager().unlink({
-          filePath: response.tempFilePath,
-          fail: () => {},
-        });
-      throw new Error("照片不可查看。");
-    }
-    photos.set(id, response.tempFilePath);
-    return response.tempFilePath;
   },
 };

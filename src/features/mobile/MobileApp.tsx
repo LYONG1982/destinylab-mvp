@@ -1357,7 +1357,7 @@ function Profile({
       </fieldset>
       <p className="fine privacy-note">
         <Icon name="help" size={18} />
-        对方会看到昵称、活动头像、性别、年龄段和相同答案。昵称、系统头像及当前大屏问题的选择会在现场大屏展示；本人照片需单独允许上屏。联系方式不会自动分享。
+        对方会看到昵称、活动头像、性别、年龄段和相同答案。昵称、系统头像及当前大屏问题的选择会在现场大屏展示。联系方式不会自动分享。
       </p>
       <div className="profile-submit">
         {feedback && (

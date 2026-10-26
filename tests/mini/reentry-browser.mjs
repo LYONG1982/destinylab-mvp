@@ -233,11 +233,29 @@ try {
     });
     if (partial)
       expect(Object.keys(after.participants[0].answers)).toHaveLength(3);
+    await expect(
+      page.locator('img[src*="/api/avatar/"], img[src*="/api/mini/avatar/"]'),
+    ).toHaveCount(0);
     await page.screenshot({
       path: `${out}/${f.kind}-restored.png`,
       fullPage: true,
     });
     if (!partial) {
+      await page.getByRole("button", { name: "更换头像", exact: true }).click();
+      await expect(
+        page.getByRole("button", { name: "从相册选择照片" }),
+      ).toHaveCount(0);
+      await expect(page.locator('input[type="file"]')).toHaveCount(0);
+      if (isMini) await page.locator(".avatar-grid img").nth(3).click();
+      else
+        await page
+          .getByRole("dialog")
+          .getByRole("radio", { name: "女生虚拟头像 04" })
+          .check();
+      await page.getByRole("button", { name: "确认使用", exact: true }).click();
+      await expect
+        .poll(async () => (await snapshot(f)).participants[0].avatarId)
+        .toBe("female_04");
       await action(f, "leave");
       await expect(
         page.getByRole("button", { name: "继续参与", exact: true }),
@@ -289,12 +307,100 @@ try {
       await action(f, "open");
       await action(f, "remove");
       await page.goto(start);
-      if (isMini)
+      const rejoin = page.getByRole("button", {
+        name: "重新参与",
+        exact: true,
+      });
+      await expect(rejoin).toBeVisible();
+      await expect(page.getByText(/上次参与已结束/).first()).toBeVisible();
+      await page.reload();
+      await expect(rejoin).toBeVisible();
+      expect((await snapshot(f)).participants.length).toBe(0);
+      // Commit on the server, but lose the first response. Retrying must reuse it.
+      let rejoinCalls = 0;
+      await page.route("**/rejoin?**", async (route) => {
+        rejoinCalls++;
+        await route.fetch();
+        await route.abort("failed");
+      });
+      await rejoin.click();
+      await expect(rejoin).toBeEnabled();
+      await expect
+        .poll(async () => (await snapshot(f)).participants.length)
+        .toBe(1);
+      const created = (await snapshot(f)).participants[0];
+      await page.unroute("**/rejoin?**");
+      await rejoin.click();
+      await expect(rejoin).toHaveCount(0);
+      if (isMini) await page.waitForURL("**/pages/index/index?**");
+      const joined = (await snapshot(f)).participants;
+      expect(joined).toHaveLength(1);
+      expect(joined[0].id).toBe(created.id);
+      expect(joined[0].id).not.toBe(f.actor);
+      expect(joined[0].profileComplete).toBe(false);
+      expect(joined[0].answers).toEqual({});
+      expect(joined[0].ready).toBe(false);
+      expect(joined[0].name).toBe("");
+      expect((await snapshot(f)).scans).toEqual([created.id]);
+      expect(rejoinCalls).toBe(1);
+      await page.reload();
+      expect((await snapshot(f)).participants[0].id).toBe(created.id);
+      const firstAnswer = page
+        .getByRole("button", { name: /轻松聊聊/ })
+        .first();
+      await expect(firstAnswer).toBeVisible();
+      await page.screenshot({
+        path: `${out}/${f.kind}-rejoined.png`,
+        fullPage: true,
+      });
+      await firstAnswer.click();
+      if (isMini) {
+        await page
+          .getByRole("button", { name: "完善活动资料", exact: true })
+          .click();
+        await page.getByPlaceholder("1–5 个汉字").fill("新参与者");
+        await page
+          .getByRole("button", { name: "保存，继续探索", exact: true })
+          .click();
+      } else {
+        await page
+          .getByRole("button", { name: /看看现场还有谁和我一样/ })
+          .click();
+        await page.getByLabel("怎么称呼你？").fill("新参与者");
+        await page.getByRole("button", { name: "26–29", exact: true }).click();
+        await page.getByRole("radio", { name: "男生虚拟头像 04" }).check();
+        await page
+          .getByRole("button", { name: "继续答题", exact: true })
+          .click();
+      }
+      await expect
+        .poll(async () => (await snapshot(f)).participants[0].profileComplete)
+        .toBe(true);
+      const continued = (await snapshot(f)).participants[0];
+      expect(continued.id).toBe(created.id);
+      expect(continued.name).toBe("新参与者");
+      expect(continued.answers).toEqual({ q1: "轻松聊聊" });
+      expect(continued.ready).toBe(false);
+      if (isMini) {
+        f.actor = created.id;
+        await action(f, "leave");
+        // A welcome-page read can fail; the enter response must still guard the restore by actor.
+        await page.route("**/snapshot?**", (route) =>
+          route.fulfill({ status: 503, json: { error: "合成测试读取失败" } }),
+        );
+        await page.goto(start);
+        await expect(page.getByText("合成测试读取失败").first()).toBeVisible();
+        await page.unroute("**/snapshot?**");
         await page
           .getByRole("button", { name: "进入现场互动", exact: true })
           .click();
-      await expect(page.getByText(/你已从本场移除/).first()).toBeVisible();
-      expect((await snapshot(f)).participants.length).toBe(0);
+        await page.waitForURL("**/pages/index/index?**");
+        expect((await snapshot(f)).participants[0]).toEqual({
+          ...continued,
+          present: true,
+          currentId: null,
+        });
+      }
     }
     results.push({
       kind: f.kind,
@@ -302,6 +408,9 @@ try {
       identityAndAnswersPreserved: true,
       noImplicitRestore: true,
       partialAnswers: partial,
+      removedCreatesFreshIdentity: !partial,
+      newIdentityCanAnswerAndSaveProfile: !partial,
+      lostResponseRejoinIdempotent: !partial,
     });
     await context.close();
   }

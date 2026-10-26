@@ -8,7 +8,7 @@ import { Brand, Button, Notice } from "@/components/ui";
 import styles from "./settings.module.css";
 export function MemberWallConsent() {
   const params = useSearchParams(), activity = params.get("activity") || "meet";
-  const [data, setData] = useState<WallConsentView | null>(null), [nickname, setNickname] = useState("");
+  const [data, setData] = useState<(WallConsentView & { actor: string }) | null>(null), [nickname, setNickname] = useState("");
   const [confirmed, setConfirmed] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState(""), [message, setMessage] = useState("");
   const [side, setSide] = useState<"front" | "back">("front");
   useEffect(() => {
@@ -23,10 +23,10 @@ export function MemberWallConsent() {
     setBusy(true); setError(""); setMessage("");
     try {
       if (allow) wallNickname(nickname);
-      const r = await fetch(`/api/member-wall/consent?activity=${encodeURIComponent(activity)}`, { method: "POST", headers: { "Content-Type": "application/json" },
+      const r = await fetch(`/api/member-wall/consent?activity=${encodeURIComponent(activity)}`, { method: "POST", headers: { "Content-Type": "application/json", "X-Destiny-Actor": data.actor },
         body: JSON.stringify({ allow, nickname, expectedVersion: data.version, consentVersion: WALL_CONSENT_VERSION }) });
       const d = await r.json(); if (!r.ok) throw Error(d.error || "保存失败。");
-      setData(d); setConfirmed(false); setMessage(allow ? "已开启；符合展示条件后，在下一换人周期加入。" : "已停止在卡牌墙展示。");
+      setData({ ...d, actor: data.actor }); setConfirmed(false); setMessage(allow ? "已开启；符合展示条件后，在下一换人周期加入。" : "已停止在卡牌墙展示。");
     } catch (e) { setError(e instanceof Error ? e.message : "暂时无法保存。"); } finally { setBusy(false); }
   }
   let preview = data?.preview;

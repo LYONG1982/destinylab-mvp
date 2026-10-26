@@ -6,6 +6,7 @@ import { writeFileSync } from "node:fs";
 import { database, transaction } from "../../src/server/db";
 import { emptyActivity, newParticipant } from "../../src/server/state";
 import { fieldAction, fieldPreview } from "../../src/server/field-service";
+import { rejoinField } from "../../src/server/field-rejoin";
 import { reenterField } from "../../src/server/field-reentry";
 import {
   execute,
@@ -31,7 +32,7 @@ import {
   TONGZHOU_CONSENT_VERSION,
 } from "../../src/domain/tongzhou";
 import { tongzhouCommand } from "../../src/server/tongzhou-service";
-import { uploadAvatar, avatarCommand } from "../../src/server/avatar-service";
+import { uploadAvatar } from "../../src/server/avatar-service";
 import {
   agencyDetail,
   agencyList,
@@ -197,21 +198,18 @@ test("field lifecycle, privacy preservation and admission", async (t) => {
     .png()
     .toBuffer();
   const asset = await uploadAvatar(f.a, session, photo);
-  await avatarCommand(
-    f.a,
-    session,
-    {
-      epoch: f.s.epoch,
-      command: {
-        type: "avatar",
-        assetId: asset.id,
-        avatarId: "female_01",
-        allowScreen: true,
-        expectedVersion: 0,
-      },
-    },
-    key(),
-  );
+  // Simulate a photo attached before custom uploads were disabled.
+  await transaction(async (c) => {
+    const before = await load(c, f.a, true),
+      next = structuredClone(before);
+    const me = next.participants.find((p) => p.id === actor)!;
+    me.photo = { id: asset.id, screen: true };
+    me.avatarVersion = 1;
+    await c.query("UPDATE dl_avatar_assets SET attached=true WHERE id=$1", [
+      asset.id,
+    ]);
+    await save(c, f.a, before, next);
+  });
   const member = (await agencyList(f.a, "", 1, "", "", "")).records[0].actor;
   let d = await agencyDetail(f.a, member);
   const draft = {
@@ -359,6 +357,48 @@ test("field lifecycle, privacy preservation and admission", async (t) => {
     assert.equal((await read(f.a)).participants.length, 1);
     assert.equal((await read(other.a)).participants.length, 0);
   });
+  await t.test(
+    "removed rejoin preserves private records and updates only verified admission binding",
+    async () => {
+      const regBefore = (await registrationView(f.a, owner)).record!;
+      const agencyBefore = await agencyDetail(f.a, member),
+        publicBefore = await publishedProfile(slug);
+      const oldActor = actor!;
+      await action(f.a, "remove", [oldActor]);
+      const rejoined = await rejoinField(
+        f.a,
+        { identity: auth.identity },
+        { actor: oldActor, epoch: f.s.epoch },
+      );
+      actor = rejoined.session.actor;
+      assert.notEqual(actor, oldActor);
+      const regAfter = (await registrationView(f.a, owner)).record!;
+      // Public form data/version/consent remain unchanged; the checked-in identity gets a new live link.
+      assert.deepEqual({ ...regAfter, entered: regBefore.entered }, regBefore);
+      const binding = (
+        await database().query(
+          "SELECT participant_id,participant_epoch FROM dl_registrations WHERE id=$1",
+          [regBefore.id],
+        )
+      ).rows[0];
+      assert.equal(binding.participant_id, actor);
+      assert.equal(binding.participant_epoch, f.s.epoch);
+      assert.deepEqual(await agencyDetail(f.a, member), agencyBefore);
+      assert.deepEqual(await publishedProfile(slug), publicBefore);
+      assert.deepEqual(
+        await galleryPhoto(f.a, member, asset.id, false),
+        beforePhoto,
+      );
+      assert.deepEqual(
+        await publishedGalleryPhoto(slug, asset.id),
+        beforePhoto,
+      );
+      const fresh = (await read(f.a)).participants[0];
+      assert.equal(fresh.name, "");
+      assert.deepEqual(fresh.answers, {});
+      assert.ok(!fresh.photo);
+    },
+  );
   const regBefore = JSON.stringify((await registrationView(f.a, owner)).record),
     agencyBefore = JSON.stringify(await agencyDetail(f.a, member)),
     otherBefore = JSON.stringify(await read(other.a));

@@ -97,6 +97,8 @@ export async function avatarCommand(
     fieldParticipant(state, session.actor);
     if (!me || input.epoch !== state.epoch)
       throw new HttpError(409, "活动状态已变化，请刷新。");
+    if (c.assetId || c.allowScreen)
+      throw new HttpError(403, "本活动仅支持系统头像，不能设置自定义照片。");
     const hash = digest(JSON.stringify(c));
     const done = await client.query(
       "SELECT payload_hash FROM dl_private_commands WHERE activity_id=$1 AND actor=$2 AND command_id=$3",
@@ -111,28 +113,12 @@ export async function avatarCommand(
       throw new HttpError(409, "头像已在其他页面更新，请刷新后再试。");
     if (!validAvatar(c.avatarId as string, me.gender))
       throw new HttpError(400, "系统备用头像无效。");
-    if (c.assetId) {
-      const asset = await client.query(
-        "SELECT id FROM dl_avatar_assets WHERE id=$1 AND activity_id=$2 AND actor=$3 AND (attached OR created_at>now()-interval '24 hours') FOR UPDATE",
-        [c.assetId, activity, session.actor],
-      );
-      if (!asset.rowCount)
-        throw new HttpError(403, "照片无效、已过期或不属于你。");
-      await client.query(
-        "UPDATE dl_avatar_assets SET attached=true WHERE id=$1",
-        [c.assetId],
-      );
-    }
     me.avatarId = c.avatarId as string;
-    me.photo = c.assetId
-      ? { id: c.assetId as string, screen: c.allowScreen as boolean }
-      : null;
+    // Preserve the historical photo reference for private archives/agency records.
+    // Live projections always omit it, regardless of its former consent flag.
     me.avatarVersion = (me.avatarVersion || 0) + 1;
     await save(client, activity, state, next);
-    await client.query(
-      "DELETE FROM dl_avatar_assets WHERE activity_id=$1 AND actor=$2 AND attached=true AND ($3::uuid IS NULL OR id<>$3::uuid)",
-      [activity, session.actor, c.assetId],
-    );
+    // Keep historical photo bytes; the system-avatar policy only changes display.
     await client.query(
       "INSERT INTO dl_private_commands(activity_id,actor,command_id,payload_hash) VALUES($1,$2,$3,$4)",
       [activity, session.actor, id, hash],

@@ -8,7 +8,7 @@ import {
 import { promisify } from "node:util";
 import type { PoolClient } from "pg";
 import type { DemoState } from "@/domain/types";
-import type { Audience, LiveCommand } from "@/lib/api/live-types";
+import type { Audience, LiveCommand, RemovedEntry } from "@/lib/api/live-types";
 import type { WorldEvent } from "@/features/screen/world/types";
 import { applyCommand } from "@/domain/commands";
 import { ACTIVE_STATUSES } from "@/domain/selectors";
@@ -28,6 +28,7 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
+    public removedEntry?: RemovedEntry,
   ) {
     super(message);
   }
@@ -79,7 +80,51 @@ export async function sessionFor(
   );
   if (!result.rows[0])
     throw new HttpError(401, "会话已失效，请重新进入活动或登录。");
+  if (role === "participant")
+    await verifyParticipantActor(request, activity, result.rows[0].actor);
   return result.rows[0] as Session;
+}
+/** Reject stale pages, including older clients without the actor guard, after rejoin. */
+export async function verifyParticipantActor(
+  request: Request,
+  activity: string,
+  actor: string,
+) {
+  const expected = request.headers.get("x-destiny-actor");
+  if (expected && expected !== actor)
+    throw new HttpError(409, "参与身份已变化，请刷新页面后再操作。");
+  if (
+    request.method !== "POST" ||
+    expected ||
+    /\/(session|enter|rejoin|login|logout)$/.test(new URL(request.url).pathname)
+  )
+    return;
+  const successor = await database().query(
+    "SELECT 1 FROM dl_commands WHERE activity_id=$1 AND payload->>'type'='field-rejoin' AND payload->>'nextActor'=$2 LIMIT 1",
+    [activity, actor],
+  );
+  if (successor.rowCount)
+    throw new HttpError(
+      409,
+      "参与身份已变化，请刷新页面或更新小程序后再操作。",
+    );
+}
+export async function participationEnded(
+  activity: string,
+  state: DemoState,
+  actor: string,
+  client?: PoolClient,
+) {
+  const removed = await (client || database()).query(
+    "SELECT 1 FROM dl_field_removed WHERE activity_id=$1 AND epoch=$2 AND actor=$3",
+    [activity, state.epoch, actor],
+  );
+  return removed.rowCount
+    ? new HttpError(410, "上次参与已结束，原记录已归档，可点击重新参与。", {
+        actor,
+        epoch: state.epoch,
+      })
+    : new HttpError(410, "本轮参与已结束，请点击重新进入现场。");
 }
 export async function load(
   client: PoolClient,
@@ -140,12 +185,8 @@ export async function join(
     const state = await readState(activity);
     if (state.participants.some((p) => p.id === session.actor))
       return { session, token: "" };
-    const removed = await database().query(
-      "SELECT 1 FROM dl_field_removed WHERE activity_id=$1 AND epoch=$2 AND actor=$3",
-      [activity, state.epoch, session.actor],
-    );
-    if (removed.rowCount)
-      throw new HttpError(410, "你已从本场移除，请联系工作人员。");
+    const ended = await participationEnded(activity, state, session.actor);
+    if (ended.removedEntry) throw ended;
     if (!explicit)
       throw new HttpError(410, "本轮参与已结束，请点击重新进入现场。");
   } catch (e) {
@@ -285,7 +326,7 @@ export async function snapshot(
     audience === "participant" &&
     !state.participants.some((p) => p.id === session.actor)
   )
-    throw new HttpError(410, "本轮参与已结束，请点击重新进入现场。");
+    throw await participationEnded(activity, state, session.actor);
   const own =
     audience === "participant" &&
     process.env.DESTINY_TONGZHOU_ENABLED === "true"

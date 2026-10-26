@@ -1,5 +1,6 @@
 import { database } from "@/server/db";
 import { reenterField } from "@/server/field-reentry";
+import { rejoinField } from "@/server/field-rejoin";
 import { liveConfig } from "@/server/config";
 import { logServerError } from "@/server/logging";
 import {
@@ -36,7 +37,13 @@ function fail(error: unknown, method: string, stage: string) {
         method,
         stage,
       });
-    return json({ error: error.message }, error.status);
+    return json(
+      {
+        error: error.message,
+        ...(error.removedEntry ? { removedEntry: error.removedEntry } : {}),
+      },
+      error.status,
+    );
   }
   // Database connection strings, query errors and stack traces never cross this boundary.
   logServerError("api.live.failed", error, {
@@ -232,6 +239,23 @@ export async function POST(request: Request, context: Context) {
     const role = audience(url.searchParams.get("audience"));
     if (role === "screen") throw new HttpError(403, "大屏仅能读取数据。");
     const session = await sessionFor(request, activity, role);
+    if (path === "rejoin") {
+      const result = await rejoinField(activity, { session }, input);
+      return json(
+        await snapshot(activity, "participant", result.session),
+        200,
+        result.token
+          ? {
+              "Set-Cookie": sessionCookie(
+                activity,
+                "participant",
+                result.token,
+                30 * 86400,
+              ),
+            }
+          : {},
+      );
+    }
     if (path === "reenter") {
       await reenterField(
         activity,

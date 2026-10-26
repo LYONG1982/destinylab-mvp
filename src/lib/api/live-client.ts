@@ -1,7 +1,12 @@
 "use client";
 import type { DemoState } from "@/domain/types";
 import type { WorldData } from "@/features/screen/world/types";
-import type { Audience, LiveCommand, LiveSnapshot } from "./live-types";
+import type {
+  Audience,
+  LiveCommand,
+  LiveSnapshot,
+  RemovedEntry,
+} from "./live-types";
 import { clientId } from "@/lib/client-id";
 
 export const isLive = () =>
@@ -48,6 +53,8 @@ let loading = false,
 let bound = false;
 const listeners = new Set<() => void>();
 const pending = new Map<string, string>();
+let removedEntry: RemovedEntry | null = null;
+let rejoining = false;
 const notify = () => listeners.forEach((f) => f());
 const endpoint = (path: string, role = audience(), act = activity()) =>
   `/api/live/${path}?activity=${encodeURIComponent(act)}&audience=${role}`;
@@ -55,6 +62,7 @@ class RequestError extends Error {
   constructor(
     public status: number,
     message: string,
+    public removedEntry?: RemovedEntry,
   ) {
     super(message);
   }
@@ -75,6 +83,7 @@ async function fetchTimed(url: string, options: RequestInit = {}) {
       throw new RequestError(
         response.status,
         body.error || "请求未完成，请重试。",
+        body.removedEntry,
       );
     return body;
   } finally {
@@ -106,6 +115,7 @@ function accept(next: LiveSnapshot, ticket: number) {
   state = next.state || null;
   world = next.world || null;
   actor = next.actor || "";
+  removedEntry = null;
   problem = "";
   unauthorized = false;
   lastSuccess = Date.now();
@@ -116,6 +126,7 @@ function report(error: unknown, ticket: number) {
   const ended = error instanceof RequestError && error.status === 410;
   unauthorized = error instanceof RequestError && error.status === 401;
   if (ended) {
+    removedEntry = error.removedEntry || null;
     state = null;
     actor = "";
     source?.close();
@@ -131,6 +142,7 @@ function report(error: unknown, ticket: number) {
   if (!unauthorized && lastSuccess)
     problem += ` 上次同步 ${new Date(lastSuccess).toLocaleTimeString("zh-CN", { hour12: false })}。`;
   if (unauthorized) {
+    removedEntry = null;
     state = null;
     actor = "";
     source?.close();
@@ -150,6 +162,7 @@ function report(error: unknown, ticket: number) {
   notify();
 }
 async function refresh() {
+  if (rejoining) return;
   if (loading) {
     again = true;
     return;
@@ -200,6 +213,7 @@ function connect(ticket: number) {
   };
 }
 async function start(ticket: number, explicit = false) {
+  if (rejoining) return;
   try {
     if (audience() === "participant") {
       const open = async () =>
@@ -236,6 +250,7 @@ export function initialize() {
   unauthorized = false;
   lastSuccess = 0;
   pending.clear();
+  removedEntry = null;
   notify();
   const ticket = generation;
   void start(ticket);
@@ -267,6 +282,31 @@ export function initialize() {
 export function reenter() {
   void start(generation, true);
 }
+export const getRemovedEntry = () => removedEntry;
+export async function rejoin() {
+  if (rejoining || !removedEntry || audience() !== "participant") return;
+  rejoining = true;
+  const input = removedEntry;
+  // Invalidate reads begun against the archived identity before accepting a new one.
+  const ticket = ++generation;
+  source?.close();
+  source = null;
+  pending.clear();
+  try {
+    const next = await request("rejoin", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    if (ticket !== generation) return;
+    accept(next, ticket);
+    connect(ticket);
+  } catch (e) {
+    report(e, ticket);
+    throw e;
+  } finally {
+    rejoining = false;
+  }
+}
 export async function resumePresence() {
   const ticket = generation,
     epoch = state?.epoch,
@@ -280,7 +320,7 @@ export async function resumePresence() {
     const next = await request("reenter", {
       method: "POST",
       body: JSON.stringify({ epoch }),
-      headers: { "Idempotency-Key": id },
+      headers: { "Idempotency-Key": id, "X-Destiny-Actor": actor },
     });
     if (ticket !== generation || actor !== owner || state?.epoch !== epoch)
       throw new Error("活动身份已变化，请重新进入。");
@@ -355,7 +395,7 @@ export async function command(command: LiveCommand, signal?: AbortSignal) {
     const options: RequestInit = {
       method: "POST",
       body: signature,
-      headers: { "Idempotency-Key": id },
+      headers: { "Idempotency-Key": id, "X-Destiny-Actor": actor },
       signal,
     };
     const next = commandPath

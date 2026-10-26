@@ -8,7 +8,10 @@ export async function GET(request: Request, context: Context) {
   try {
     wallEnabled(); const path = (await context.params).path.join("/"), activity = activityId(new URL(request.url).searchParams.get("activity"));
     if (path === "snapshot") return json(await wallSnapshot(activity));
-    if (path === "me") return json(await wallMe(activity, await sessionFor(request, activity, "participant")));
+    if (path === "me") {
+      const session = await sessionFor(request, activity, "participant");
+      return json({ ...await wallMe(activity, session), actor: session.actor });
+    }
     if (path === "admin") return json(await wallAdmin(activity, await sessionFor(request, activity, "operator")));
     throw new HttpError(404, "入口不存在。");
   } catch (e) { return fail(e); }

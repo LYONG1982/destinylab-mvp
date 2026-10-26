@@ -1,5 +1,5 @@
 "use client";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import type { DemoState, Invitation } from "@/domain/types";
 import * as live from "@/lib/api/live-client";
 import { Brand, Button, Loading, Notice } from "./ui";
@@ -15,13 +15,22 @@ export function LiveGate({ problem }: { problem: string }) {
     [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const locked = useRef(false);
   if (!mounted || !live.isLive()) return <Loading />;
   const operator = location.pathname.startsWith("/admin");
+  const removed = !operator && !!live.getRemovedEntry();
   return (
     <main className="live-access">
       <Brand />
-      <h1>{operator ? "现场运营登录" : "正在连接活动"}</h1>
+      <h1>
+        {operator
+          ? "现场运营登录"
+          : removed
+            ? "上次参与已结束"
+            : "正在连接活动"}
+      </h1>
       <p>活动：{live.activity()}</p>
+      {removed && <p>原参与记录已归档。重新参与需填写本场资料并重新答题。</p>}
       {operator ? (
         <form
           onSubmit={async (e) => {
@@ -64,11 +73,35 @@ export function LiveGate({ problem }: { problem: string }) {
         </form>
       ) : (
         <Button
-          onClick={
-            problem.includes("本轮参与已结束") ? live.reenter : live.retry
-          }
+          disabled={busy}
+          onClick={async () => {
+            if (locked.current) return;
+            if (!removed) {
+              (problem.includes("本轮参与已结束")
+                ? live.reenter
+                : live.retry)();
+              return;
+            }
+            locked.current = true;
+            setBusy(true);
+            setError("");
+            try {
+              await live.rejoin();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "进入失败，请重试。");
+            } finally {
+              locked.current = false;
+              setBusy(false);
+            }
+          }}
         >
-          {problem.includes("本轮参与已结束") ? "重新进入现场" : "重新连接"}
+          {busy
+            ? "正在进入…"
+            : removed
+              ? "重新参与"
+              : problem.includes("本轮参与已结束")
+                ? "重新进入现场"
+                : "重新连接"}
         </Button>
       )}
       {(error || problem) && (

@@ -173,9 +173,8 @@ export function Avatar({
       avatarId={
         validAvatar(person.avatarId, person.gender) ? person.avatarId : null
       }
-      photo={person.photo}
       size={size}
-      alt={`${person.name}的${person.photo ? "上传照片" : "系统虚拟头像，不代表本人长相"}`}
+      alt={`${person.name}的系统虚拟头像，不代表本人长相`}
     />
   );
 }
