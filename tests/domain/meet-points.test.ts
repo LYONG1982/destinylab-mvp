@@ -14,14 +14,14 @@ function run(state: DemoState, command: Command, actor = "operator") {
     state.now,
   );
 }
-test("20 fresh points have unique IDs and numbers, without invented addresses", () => {
+test("30 fresh points have unique IDs and numbers, without invented addresses", () => {
   const points = defaultMeetPoints();
-  assert.equal(points.length, 20);
-  assert.equal(new Set(points.map((p) => p.id)).size, 20);
+  assert.equal(points.length, 30);
+  assert.equal(new Set(points.map((p) => p.id)).size, 30);
   assert.deepEqual(
     points.map((p) => p.name),
     Array.from(
-      { length: 20 },
+      { length: 30 },
       (_, i) => `Meet${String(i + 1).padStart(2, "0")}`,
     ),
   );
@@ -43,7 +43,7 @@ test("backfill preserves IDs, occupancy, custom fields and disabled state, avoid
   ];
   const before = structuredClone(existing);
   const filled = completeMeetPoints(existing);
-  assert.equal(filled.length, 21);
+  assert.equal(filled.length, 31);
   assert.deepEqual(filled.slice(0, 3), before);
   assert.deepEqual(existing, before);
   assert.equal(new Set(filled.map((p) => p.id)).size, filled.length);

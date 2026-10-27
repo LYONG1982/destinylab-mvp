@@ -95,6 +95,7 @@ async function request<T>(
     data,
     header: {
       "Content-Type": "application/json",
+      "X-Destiny-Protocol": "520-v1",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(method === "POST" &&
       view.snapshot?.actor &&
@@ -282,7 +283,10 @@ export const client = {
       url: endpoint(
         `registration/photo?photo=${encodeURIComponent(id)}&thumb=1`,
       ),
-      header: { Authorization: `Bearer ${token}` },
+      header: {
+        "X-Destiny-Protocol": "520-v1",
+        Authorization: `Bearer ${token}`,
+      },
       timeout: 15000,
     });
     if (response.statusCode !== 200 || generation !== gate.generation) {

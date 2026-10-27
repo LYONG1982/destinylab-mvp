@@ -66,7 +66,7 @@ test("mutual paths actually draw, do not gate the CTA, and replay once per invit
     "true",
   );
   await expect(
-    page.getByRole("button", { name: "查看见面指引" }),
+    page.getByRole("button", { name: "我已遇见 TA", exact: true }),
   ).toBeEnabled();
   const samples: number[] = [];
   for (let i = 0; i < 8; i++) {
@@ -121,9 +121,8 @@ test("reduced motion, mid-flight preference change and visibility finish without
     "data-playing",
     "false",
   );
-  await expect(
-    page.getByText("Meet01 已为你们准备好。", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Meet 01", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("own-encounter-code")).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(
@@ -133,12 +132,18 @@ test("reduced motion, mid-flight preference change and visibility finish without
       ),
     )
     .toBe(0);
-  await page.getByRole("button", { name: "查看见面指引" }).click();
-  await expect(page).toHaveURL(/09-meet/);
-  await page.getByRole("button", { name: "确认出发", exact: true }).click();
-  await expect(
-    page.locator('.meet-status-track[data-status="departed"]'),
-  ).toHaveCount(1);
+  await page.getByRole("button", { name: "我已遇见 TA", exact: true }).click();
+  await expect(page).toHaveURL(/10-next-step/);
+  const recorded = (await saved(page)).invitations.find(
+    (i: {
+      confirmations: Record<string, number>;
+      departures: Record<string, number>;
+      arrivals: Record<string, number>;
+    }) =>
+      i.confirmations["p-shanfeng"],
+  );
+  expect(recorded?.departures).toEqual({});
+  expect(recorded?.arrivals).toEqual({});
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await scenario(page, "mutual");
   await mobile(page, "08-mutual");
@@ -205,7 +210,7 @@ test("incoming signal settles at the center, remains SENT and does not replay on
   await mobile(page, "07-invitation", "p-xiaoman");
   await expect(page.getByText("山风想认识你", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "我也愿意认识" }),
+    page.getByRole("button", { name: "确认认识" }),
   ).toBeEnabled();
   await expect
     .poll(() => page.locator(".signal-arrival circle").getAttribute("cx"))
@@ -250,32 +255,34 @@ test("a saved first answer updates only actual screen percentages across tabs", 
     await expect(screen.getByTestId("destiny-world")).not.toContainText(secret);
 });
 
-test("waiting point, arrival and merchant feedback reflect only persisted facts", async ({
+test("waiting point, individual meeting record and merchant feedback reflect only persisted facts", async ({
   page,
 }) => {
   await scenario(page, "busy");
   await mobile(page, "08-mutual");
+  await expect(page.locator(".mutual-place-copy")).toContainText("正在分配");
   await expect(
-    page.getByRole("heading", { name: "正在等候相遇点" }),
-  ).toBeVisible();
-  await expect(page.getByText(/Meet\d+ 已为你们准备好/)).toHaveCount(0);
+    page.getByRole("button", { name: "我已遇见 TA", exact: true }),
+  ).toBeDisabled();
   await scenario(page, "mutual");
   await mobile(page, "09-meet");
-  await expect(
-    page.locator('.meet-status-track[data-status="waiting"]'),
-  ).toHaveCount(2);
+  await expect(page.getByTestId("own-encounter-code")).toBeVisible();
   await page.waitForTimeout(1600);
-  await expect(
-    page.locator('.meet-status-track[data-status="waiting"]'),
-  ).toHaveCount(2);
-  await page.getByRole("button", { name: "确认出发", exact: true }).click();
-  await expect(
-    page.locator('.meet-status-track[data-status="departed"]'),
-  ).toHaveCount(1);
-  await page.getByRole("button", { name: "我已经到了", exact: true }).click();
-  await expect(
-    page.locator('.meet-status-track[data-status="arrived"]'),
-  ).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "确认出发" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "我已经到了" })).toHaveCount(0);
+  await page.getByRole("button", { name: "我已遇见 TA", exact: true }).click();
+  await expect(page).toHaveURL(/10-next-step/);
+  const state = await saved(page);
+  const invitation = state.invitations.find(
+    (i: {
+      confirmations: Record<string, number>;
+      departures: Record<string, number>;
+      arrivals: Record<string, number>;
+    }) =>
+      i.confirmations["p-shanfeng"],
+  );
+  expect(invitation?.departures).toEqual({});
+  expect(invitation?.arrivals).toEqual({});
   await scenario(page, "confirmed");
   await mobile(page, "10-next-step");
   await expect(page.locator(".route-draw")).toHaveCount(0);

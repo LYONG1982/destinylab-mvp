@@ -206,24 +206,26 @@ test("a persisted six-answer invitation completes two-person meeting then explic
   const receiver = await context.newPage();
   await receiver.setViewportSize({ width: 390, height: 844 });
   await mobile(receiver, "07-invitation", "p-xiaoman");
-  await receiver.getByRole("button", { name: "我也愿意认识" }).click();
+      await receiver.getByRole("button", { name: "确认认识" }).click();
   await expect(receiver).toHaveURL(/08-mutual/);
   await page.getByRole("button", { name: "查看相遇任务" }).click();
   for (const p of [page, receiver]) {
     await expect(p).toHaveURL(/08-mutual/);
-    await p.getByRole("button", { name: "查看见面指引" }).click();
-    await expect(p).toHaveURL(/09-meet/);
-    await p.getByRole("button", { name: "确认出发", exact: true }).click();
-    await p.getByRole("button", { name: "我已经到了", exact: true }).click();
+    await expect(p.getByRole("button", { name: "确认出发" })).toHaveCount(0);
+    await expect(p.getByRole("button", { name: "我已经到了" })).toHaveCount(0);
+    await expect(
+      p.getByRole("button", { name: "我已遇见 TA", exact: true }),
+    ).toBeEnabled();
   }
   await page
-    .getByRole("button", { name: "我已经见到 TA", exact: true })
+    .getByRole("button", { name: "我已遇见 TA", exact: true })
     .click();
+  await expect(page).toHaveURL(/10-next-step/);
   expect(
     (await saved(page)).invitations.filter((i) => i.realMeetAt),
   ).toHaveLength(28);
   await receiver
-    .getByRole("button", { name: "我已经见到 TA", exact: true })
+    .getByRole("button", { name: "我已遇见 TA", exact: true })
     .click();
   await expect(page).toHaveURL(/10-next-step/);
   await expect(receiver).toHaveURL(/10-next-step/);
@@ -266,9 +268,7 @@ test("legacy waiting and ended task pages stay readable without a redirect loop"
   await legacy(page, "busy");
   await mobile(page, "05-discover");
   await expect(page).toHaveURL(/08-mutual/);
-  await expect(
-    page.getByRole("heading", { name: "正在等候相遇点" }),
-  ).toBeVisible();
+  await expect(page.locator(".mutual-place-copy")).toContainText("正在分配");
   for (const scene of ["declined", "expired"]) {
     await legacy(page, scene);
     await mobile(page, "09-meet");

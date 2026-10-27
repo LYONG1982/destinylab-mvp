@@ -9,6 +9,7 @@ import {
   miniLogin as identityLogin,
   miniEnter,
   limitMiniLoginSource,
+  trustedMiniSourceLimit,
 } from "../../src/server/wechat-service";
 import { exchangeWechatCode } from "../../src/server/wechat-provider";
 import { snapshot, execute, digest } from "../../src/server/service";
@@ -605,8 +606,16 @@ test("real mini API, identity races, 20 users, consent and Web isolation", async
 
 test("trusted source quota rejects missing or multi-source headers and isolates callers", async () => {
   const previous = process.env.DESTINY_TRUSTED_CLIENT_IP_HEADER;
+  const previousLimit = process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE;
   process.env.DESTINY_TRUSTED_CLIENT_IP_HEADER = "x-real-ip";
+  delete process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE;
   try {
+    assert.equal(trustedMiniSourceLimit(), 300);
+    process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE = "600";
+    assert.equal(trustedMiniSourceLimit(), 600);
+    process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE = "601";
+    assert.throws(() => trustedMiniSourceLimit(), /额度配置无效/);
+    process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE = "20";
     await assert.rejects(
       limitMiniLoginSource(new Request(origin)),
       /暂不可验证/,
@@ -633,5 +642,8 @@ test("trusted source quota rejects missing or multi-source headers and isolates 
     if (previous === undefined)
       delete process.env.DESTINY_TRUSTED_CLIENT_IP_HEADER;
     else process.env.DESTINY_TRUSTED_CLIENT_IP_HEADER = previous;
+    if (previousLimit === undefined)
+      delete process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE;
+    else process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE = previousLimit;
   }
 });

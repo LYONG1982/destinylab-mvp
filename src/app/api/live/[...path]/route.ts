@@ -1,8 +1,8 @@
-import { database } from "@/server/db";
 import { reenterField } from "@/server/field-reentry";
 import { rejoinField } from "@/server/field-rejoin";
 import { liveConfig } from "@/server/config";
 import { logServerError } from "@/server/logging";
+import { subscribeLiveVersion } from "@/server/live-version-poller";
 import {
   activityId,
   execute,
@@ -112,20 +112,31 @@ export async function GET(request: Request, context: Context) {
       return json(await snapshot(activity, role, session, after));
     }
     if (path !== "events") throw new HttpError(404, "入口不存在。");
-    // Versions are durable in PostgreSQL. Any instance can serve reconnections.
-    await snapshot(activity, role, session);
     const encoder = new TextEncoder();
     let stopped = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
+    let authentication: ReturnType<typeof setTimeout> | undefined;
+    let rotation: ReturnType<typeof setTimeout> | undefined;
     let closeStream = () => {};
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         let last = -1;
-        const started = Date.now();
+        let unsubscribe = () => {};
+        const send = (value: string) => {
+          if (stopped) return;
+          try {
+            controller.enqueue(encoder.encode(value));
+          } catch {
+            stop();
+          }
+        };
         const stop = () => {
           if (stopped) return;
           stopped = true;
-          clearTimeout(timer);
+          clearInterval(heartbeat);
+          clearTimeout(authentication);
+          clearTimeout(rotation);
+          unsubscribe();
           request.signal.removeEventListener("abort", stop);
           try {
             controller.close();
@@ -133,45 +144,42 @@ export async function GET(request: Request, context: Context) {
         };
         closeStream = stop;
         request.signal.addEventListener("abort", stop, { once: true });
-        const tick = async () => {
+        const authenticate = async () => {
           if (stopped || request.signal.aborted) return stop();
           try {
             if (role !== "screen") await sessionFor(request, activity, role);
-            const result = await database().query(
-              "SELECT revision FROM dl_activities WHERE id=$1",
-              [activity],
-            );
-            if (!result.rows[0]) return stop();
-            if (stopped) return;
-            const revision = Number(result.rows[0].revision);
-            if (revision !== last) {
-              controller.enqueue(
-                encoder.encode(
-                  `id: ${revision}\nevent: version\ndata: ${JSON.stringify({ revision })}\n\n`,
-                ),
-              );
-              last = revision;
-            } else controller.enqueue(encoder.encode(": heartbeat\n\n"));
-            if (Date.now() - started > 25000) return stop();
-            timer = setTimeout(tick, 750);
           } catch (error) {
-            if (
-              !request.signal.aborted &&
-              !stopped &&
-              (!(error instanceof HttpError) || error.status >= 500)
-            )
-              logServerError("api.live.sse_poll_failed", error, {
-                route: "/api/live/events",
-                method: "GET",
-                stage: "revision_poll",
-                activity,
-                audience: role,
-              });
-            stop();
+            if (!request.signal.aborted && !stopped) {
+              if (!(error instanceof HttpError) || error.status >= 500)
+                logServerError("api.live.sse_poll_failed", error, {
+                  route: "/api/live/events",
+                  method: "GET",
+                  stage: "session_revalidation",
+                  activity,
+                  audience: role,
+                });
+              stop();
+              return;
+            }
           }
+          authentication = setTimeout(() => void authenticate(), 750);
         };
-        controller.enqueue(encoder.encode("retry: 1000\n\n"));
-        void tick();
+        const onVersion = (revision: number | null, error?: unknown) => {
+          if (error) {
+            stop();
+            return;
+          }
+          if (revision === null || revision === last) return;
+          last = revision;
+          send(
+            `id: ${revision}\nevent: version\ndata: ${JSON.stringify({ revision })}\n\n`,
+          );
+        };
+        send("retry: 1000\n\n");
+        unsubscribe = subscribeLiveVersion(activity, onVersion);
+        heartbeat = setInterval(() => send(": heartbeat\n\n"), 15000);
+        authentication = setTimeout(() => void authenticate(), 750);
+        rotation = setTimeout(stop, 25000);
       },
       cancel() {
         closeStream();
@@ -280,6 +288,7 @@ export async function POST(request: Request, context: Context) {
       input.command,
       request.headers.get("idempotency-key") || "",
       input.epoch,
+      request.headers.get("x-destiny-protocol") || "",
     );
     return json(await snapshot(activity, role, session));
   } catch (e) {

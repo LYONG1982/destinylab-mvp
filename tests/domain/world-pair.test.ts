@@ -31,20 +31,20 @@ function stateWithPair() {
   inv.status = "CONFIRMED";
   return { state, inv };
 }
-test("pair projection is absent by default, both grants required and read-only", () => {
+test("pair projection is public by default, historical grants ignored and read-only", () => {
   const { state, inv } = stateWithPair(),
     raw = JSON.stringify(state);
   assert.equal(
-    new WorldAdapter().read(state).meetScene!.qualifiedPairs.length,
-    0,
+    new WorldAdapter().read(state).meetScene!.qualifiedPairs.length > 0,
+    true,
   );
   const provider = {
     revision: 0,
     allows: (_i: string, p: string) => p === inv.from,
   };
   assert.equal(
-    new WorldAdapter(provider).read(state).meetScene!.qualifiedPairs.length,
-    0,
+    new WorldAdapter(provider).read(state).meetScene!.qualifiedPairs.length > 0,
+    true,
   );
   const adapter = new WorldAdapter({ revision: 0, allows: () => true });
   const data = adapter.read(state);
@@ -61,7 +61,7 @@ test("pair projection is absent by default, both grants required and read-only",
   for (const id of [inv.id, inv.from, inv.to])
     assert.equal(JSON.stringify(data.meetScene).includes(id), false);
 });
-test("grant revision revokes a pair on the identical business snapshot without affecting total", () => {
+test("historical grant changes cannot change default display or meeting totals", () => {
   const { state } = stateWithPair();
   let granted = true;
   const grants = { revision: 0, allows: () => granted };
@@ -71,21 +71,13 @@ test("grant revision revokes a pair on the identical business snapshot without a
   granted = false;
   grants.revision++;
   const removed = adapter.read(state);
-  assert.deepEqual(removed.meetScene!.qualifiedPairs, []);
+  assert.deepEqual(removed.meetScene!.qualifiedPairs, first.meetScene!.qualifiedPairs);
   assert.equal(first.totalMeetings, removed.totalMeetings);
   assert.strictEqual(adapter.read(state), removed);
 });
-test("provider errors, invalid avatars or missing profiles cannot disclose pairs", () => {
+test("historical provider errors do not block defaults; invalid profiles still do", () => {
   const { state, inv } = stateWithPair();
-  assert.deepEqual(
-    new WorldAdapter({
-      revision: 1,
-      allows: () => {
-        throw Error("offline");
-      },
-    }).read(state).meetScene!.qualifiedPairs,
-    [],
-  );
+  assert.ok(new WorldAdapter({ revision: 1, allows: () => { throw Error("old provider"); } }).read(state).meetScene!.qualifiedPairs.length > 0);
   state.invitations = [inv];
   state.participants.find((p) => p.id === inv.to)!.avatarId = null;
   assert.deepEqual(
@@ -399,7 +391,7 @@ test("mock pair fixtures preserve actual genders and avatars after empty and dir
   assert.equal(pair.male.avatar, players[1].avatar);
 });
 
-test("uploaded photo display requires its own grant as well as both pair grants", () => {
+test("pair display always uses system avatars while retained private photos never enter output", () => {
   const { state, inv } = stateWithPair();
   state.invitations = [inv];
   const owner = state.participants.find((p) => p.id === inv.from)!;
@@ -412,7 +404,7 @@ test("uploaded photo display requires its own grant as well as both pair grants"
   state.revision++;
   const visible = adapter.read(structuredClone(state));
   assert.ok(
-    visible.meetScene!.qualifiedPairs[0].male.avatar.includes(owner.photo.id),
+    !visible.meetScene!.qualifiedPairs[0].male.avatar.includes(owner.photo.id),
   );
   assert.equal(displayablePair(visible.meetScene!.qualifiedPairs[0]), true);
   assert.equal(
@@ -432,8 +424,5 @@ test("uploaded photo display requires its own grant as well as both pair grants"
   assert.equal(visible.totalMeetings, revoked.totalMeetings);
   provider.allows = () => false;
   provider.revision++;
-  assert.deepEqual(
-    adapter.read(structuredClone(state)).meetScene!.qualifiedPairs,
-    [],
-  );
+  assert.ok(adapter.read(structuredClone(state)).meetScene!.qualifiedPairs.length > 0);
 });

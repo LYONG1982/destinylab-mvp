@@ -22,9 +22,15 @@ export function avatarSource(
     return `/api/avatar/${p.photo.id}${screen ? "?screen=1" : ""}`;
   return getAvatarById(p.avatarId)?.src || "";
 }
+export function isPublicSystemAvatarSource(src: string) {
+  return (
+    /^\/assets\/avatars-v520\/(male|female)\/\1_(0[1-9]|10)\.webp$/.test(src) ||
+    /^\/assets\/avatars\/(male|female)\/\1_(0[1-9]|10)\.png$/.test(src)
+  );
+}
 export function allowedAvatarSource(src: string) {
   return (
-    /^\/assets\/avatars\/(male|female)\/\1_(0[1-9]|10)\.png$/.test(src) ||
+    isPublicSystemAvatarSource(src) ||
     /^\/api\/avatar\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\?screen=1$/.test(
       src,
     )

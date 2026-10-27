@@ -1,0 +1,320 @@
+.encounterShell {
+  background: #f6f0e8;
+  color: #29231f;
+}
+
+.encounterShell::before {
+  height: 340px;
+  background:
+    linear-gradient(180deg, #fffdf9b3, #f6f0e8eb 78%, #f6f0e8),
+    url("/assets/gulou-autumn-v520.webp") 60% 28% / cover;
+}
+
+.encounterShell :global(.mobile-header) {
+  padding: 15px 20px 8px;
+}
+
+.encounterShell :global(.mobile-utility) {
+  padding: 0 20px;
+}
+
+.encounterContent {
+  padding: 0 20px;
+  gap: 12px;
+}
+
+.guide {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding-bottom: 6px;
+}
+
+.pointCard,
+.codeCard {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid #b28a5038;
+  border-radius: 16px;
+  background: #fffdf9ed;
+  box-shadow: 0 8px 24px #452c1710;
+}
+
+.eyebrow {
+  color: #8a6940;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.meetName {
+  margin-top: 1px;
+  color: #761c32;
+  font-family: var(--serif);
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  line-height: 1.04;
+}
+
+.pointName {
+  margin-top: 8px;
+  color: #761c32;
+  font-family: var(--serif);
+  font-size: clamp(25px, 8vw, 38px);
+  font-weight: 700;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.pointTitle {
+  margin: 2px 0 0;
+  color: #761c32;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.location {
+  margin: 5px 0 0;
+  color: #29231f;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.pointHint {
+  margin: 3px 0 0;
+  color: #776b61;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.codeCard {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.codeHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: #761c32;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.codeCaption {
+  color: #8d8074;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.codePair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.codeCell,
+.sharedCode {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.codeCell > span,
+.sharedCode > span {
+  color: #776b61;
+  font-size: 11px;
+}
+
+.codeCell > strong,
+.sharedCode > strong {
+  color: #29231f;
+  font-family: var(--serif);
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  line-height: 1.03;
+  font-variant-numeric: tabular-nums;
+}
+
+.codeCell > strong {
+  overflow-wrap: anywhere;
+}
+
+.sharedCode {
+  align-items: center;
+  margin-top: 4px;
+}
+
+.codeHint {
+  margin: 5px 0 0;
+  color: #62574e;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 27px;
+}
+
+.steps li > span {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  place-items: center;
+  border: 1px solid #b28a5070;
+  border-radius: 50%;
+  color: #761c32;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.steps p {
+  margin: 0;
+  color: #29231f;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.actions {
+  display: grid;
+  gap: 7px;
+  padding-top: 1px;
+}
+
+.primaryButton,
+.secondaryButton,
+.helpButton {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 1px solid #761c32;
+  background: #761c32;
+  color: #fffdf9;
+  box-shadow: 0 5px 14px #761c3226;
+}
+
+.secondaryButton {
+  border: 1px solid #b28a5070;
+  background: #fffdf9;
+  color: #761c32;
+}
+
+.helpButton {
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  color: #776b61;
+  font-size: 12px;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.helpButton:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.encounterContent :global(.mutual-motion) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.encounterContent :global(.mutual-portraits) {
+  display: grid;
+  width: min(100%, 250px);
+  min-height: 64px;
+  margin: 0 auto;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  align-items: center;
+}
+
+.encounterContent :global(.mutual-person) {
+  gap: 1px;
+}
+
+.encounterContent :global(.mutual-person .avatar) {
+  width: 72px;
+  height: 72px;
+  max-width: none;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.encounterContent :global(.mutual-person h3) {
+  max-width: 92px;
+  margin: 1px 0 0;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.encounterContent :global(.mutual-person p) {
+  margin: 0;
+  font-size: 9px;
+}
+
+.encounterContent :global(.mutual-tracks) {
+  width: 100%;
+  height: 44px;
+  margin-top: -28px;
+}
+
+.encounterContent :global(.mutual-copy) {
+  margin: 0;
+  color: #761c32;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 360px) {
+  .encounterContent {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .pointCard,
+  .codeCard {
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+
+  .meetName {
+    font-size: 48px;
+  }
+
+  .codeCell > strong,
+  .sharedCode > strong {
+    font-size: 48px;
+  }
+}

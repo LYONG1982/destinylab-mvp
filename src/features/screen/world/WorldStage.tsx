@@ -7,7 +7,6 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import QRCode from "qrcode";
 import { AnimatedCounter } from "@/components/motion/AnimatedCounter";
 import { WorldClock } from "./state-machine";
 import { pairPath } from "./pair-geometry";
@@ -22,64 +21,6 @@ import styles from "./world.module.css";
 type Control = { mode: WorldMode; fixed: boolean; revision: number };
 const fieldX = [328 / 19.2, 832 / 19.2, 1336 / 19.2];
 const reduceQuery = "(prefers-reduced-motion: reduce)";
-
-function WorldQR({ joinUrl }: { joinUrl?: string }) {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    if (document.documentElement.dataset.mini === "true") {
-      const activity = new URL(joinUrl || location.href, location.origin).searchParams.get("activity") || document.documentElement.dataset.activity || "meet";
-      const controller = new AbortController();
-      let objectUrl = "", timer: ReturnType<typeof setTimeout>;
-      const update = async () => {
-        try {
-          const response = await fetch(`/api/mini/code?activity=${encodeURIComponent(activity)}`, { signal: controller.signal, cache: "no-store" });
-          if (!response.ok) throw new Error();
-          const blob = await response.blob();
-          if (!alive) return;
-          if (objectUrl) URL.revokeObjectURL(objectUrl);
-          objectUrl = URL.createObjectURL(blob); setCode(objectUrl); setError(false);
-        } catch { if (alive) { setCode(""); setError(true); } }
-        if (alive) timer = setTimeout(update, 15000);
-      };
-      void update();
-      return () => { alive = false; controller.abort(); clearTimeout(timer); if (objectUrl) URL.revokeObjectURL(objectUrl); };
-    }
-    let url = joinUrl || "http://localhost:3210/mobile/01-start";
-    try {
-      if (!joinUrl) url = localStorage.getItem("destinylab:qr-url") || url;
-    } catch {}
-    void QRCode.toDataURL(url, {
-      width: 1024,
-      margin: 4,
-      errorCorrectionLevel: "M",
-      color: { dark: "#21191e", light: "#fff9ec" },
-    })
-      .then((value) => {
-        if (alive) setCode(value);
-      })
-      .catch(() => {
-        if (alive) setError(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [joinUrl]);
-  return (
-    <aside className={styles.qr} data-testid="world-qr" aria-label="扫码入口">
-      {code ? (
-        <img src={code} width={1024} height={1024} alt="扫码加入" />
-      ) : (
-        <div className={styles.qrPlaceholder}>
-          {error ? "活动入口待配置" : ""}
-        </div>
-      )}
-      <strong>你呢？</strong>
-      <small>扫码加入</small>
-    </aside>
-  );
-}
 
 function ChoiceMark({ index }: { index: number }) {
   return (
@@ -641,8 +582,7 @@ export function WorldStage({
         <strong>又一次交汇</strong>
         <span>愿意认识彼此</span>
       </div>
-      <WorldQR joinUrl={data.joinUrl} />
-      {data.joinUrl && data.meetScene?.connection === "offline" &&
+      {data.meetScene?.connection === "offline" &&
         <div className="live-screen-status" role="status">连接中断，正在重新同步 · 暂停展示具体相遇
           {data.meetScene?.snapshotAt && <> · 最近数据 {new Date(data.meetScene.snapshotAt).toLocaleTimeString("zh-CN", { hour12: false })}</>}
         </div>}

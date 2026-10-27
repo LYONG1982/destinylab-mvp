@@ -251,7 +251,7 @@ export async function POST(request: Request, context: Context) {
           await miniIdentity(request, activity),
           command.name,
         );
-      await execute(activity, session, input.command, id, input.epoch);
+      await execute(activity, session, input.command, id, input.epoch, request.headers.get("x-destiny-protocol") || "");
     } else if (path === "tongzhou/command") {
       enabled("TONGZHOU");
       await tongzhouCommand(activity, session, input, id);

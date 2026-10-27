@@ -21,7 +21,7 @@ export function previewFields(
       key: `preview-join-${n}`,
       label: "演示来宾",
       displayMode: "PUBLIC",
-      image: `/assets/avatars/female/female_${String((n % 10) + 1).padStart(2, "0")}.png`,
+      image: `/assets/avatars-v520/female/female_${String((n % 10) + 1).padStart(2, "0")}.webp`,
       optionKey: `${id}:${n % length}`,
       seed: 100000 + n,
     });

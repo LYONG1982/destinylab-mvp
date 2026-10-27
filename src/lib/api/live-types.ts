@@ -9,7 +9,9 @@ export interface RemovedEntry {
 }
 export type LiveCommand =
   | Command
-  | { type: "point-add"; name: string }
+  | { type: "point-add"; name: string; location?: string; capacity?: number }
+  | { type: "point-remove"; pointId: string }
+  | { type: "point-capacity-defaults"; mode: "apply" }
   | { type: "display-question"; questionId: string }
   | { type: "display-consent"; invitationId: string; allow: boolean };
 export interface LiveSnapshot {

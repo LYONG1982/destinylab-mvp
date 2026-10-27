@@ -109,7 +109,7 @@ export class WorldAdapter {
         return {
           id,
           nickname: [...p.name.trim()].slice(0, 5).join(""),
-          avatar: avatarSource(p, true),
+          avatar: avatarSource({ ...p, photo: null }, true),
           gender: p.gender,
           joinedAt: p.joinedAt,
           field: optionId(responses[p.id], question.id),

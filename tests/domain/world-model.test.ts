@@ -67,7 +67,7 @@ test("adapter preserves source, anonymizes identifiers and cannot expose private
   assert.ok(
     data.participants.every(
       (p) =>
-        [...p.nickname].length <= 5 && p.avatar.startsWith("/assets/avatars/"),
+        [...p.nickname].length <= 5 && p.avatar.startsWith("/assets/avatars-v520/"),
     ),
   );
 });
@@ -96,7 +96,7 @@ test("answer precedes a single avatar join, then field move and actual availabil
   assert.equal(joined.totalParticipants, answered.totalParticipants);
   assert.ok(
     joined.participants.some(
-      (p) => p.id === event.playerId && p.avatar.endsWith("male_08.png"),
+      (p) => p.id === event.playerId && p.avatar.endsWith("male_08.webp"),
     ),
   );
   state = run(state, { type: "answer", questionId: "q1", value: "认真认识" });

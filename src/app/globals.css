@@ -667,7 +667,7 @@ svg {
   height: 380px;
   background:
     linear-gradient(180deg, #fffdf9a8, #f6efe6d6 70%, var(--cream)),
-    url("/assets/gulou-autumn.png") 60% 28% / cover;
+    url("/assets/gulou-autumn-v520.webp") 60% 28% / cover;
   pointer-events: none;
   z-index: 0;
 }
@@ -796,7 +796,7 @@ svg {
       #f6efe600 90%,
       var(--cream) 100%
     ),
-    url("/assets/gulou-autumn.png") center 60% / cover;
+    url("/assets/gulou-autumn-v520.webp") center 60% / cover;
 }
 .start-copy {
   position: absolute;
@@ -1634,7 +1634,7 @@ svg {
   place-items: center;
   background:
     linear-gradient(0deg, #54311266, #dbc2a133),
-    url("/assets/gulou-autumn.png") 50% 75% / cover;
+    url("/assets/gulou-autumn-v520.webp") 50% 75% / cover;
   color: #fffdf9;
   border-radius: 8px;
   flex-shrink: 0;
@@ -2337,7 +2337,7 @@ svg {
   border-radius: 14px;
   background:
     linear-gradient(90deg, #f8f4ee00, #f8f4ee22),
-    url("/assets/gulou-autumn.png") center 56% / cover;
+    url("/assets/gulou-autumn-v520.webp") center 56% / cover;
   position: relative;
 }
 .demo-scene > span {
@@ -2504,7 +2504,7 @@ svg {
   pointer-events: none;
   background:
     linear-gradient(90deg, #f6efe6 15%, #f6efe6eb 55%, #f6efe640),
-    url("/assets/gulou-autumn.png") right 53% / cover;
+    url("/assets/gulou-autumn-v520.webp") right 53% / cover;
   opacity: 0.6;
 }
 .screen-canvas > * {
@@ -3227,7 +3227,7 @@ html[data-motion="true"] .ambient[data-inview="true"] .pulse-dot {
       #f6efe600 90%,
       var(--cream) 100%
     ),
-    url("/assets/gulou-autumn.png") center 60% / cover;
+    url("/assets/gulou-autumn-v520.webp") center 60% / cover;
 }
 .start-copy h1 .title-primary,
 .start-copy h1 .title-secondary {
@@ -3464,7 +3464,7 @@ html[data-motion="true"] .ambient.city-steam[data-inview="true"] > svg {
   z-index: -2;
   background:
     linear-gradient(90deg, #f6efe6 15%, #f6efe6eb 55%, #f6efe640),
-    url("/assets/gulou-autumn.png") right 53% / cover;
+    url("/assets/gulou-autumn-v520.webp") right 53% / cover;
   opacity: 0.6;
   transform-origin: 75% 50%;
   transition: opacity 0.8s;

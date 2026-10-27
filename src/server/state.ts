@@ -1,6 +1,7 @@
 import "server-only";
 import { createHmac, randomUUID } from "node:crypto";
-import { QUESTIONS } from "@/data/questions";
+import { QUESTIONS, activeQuestionId } from "@/data/questions";
+import { isPointDeleted, pointOccupants } from "@/domain/encounters";
 import { defaultMeetPoints } from "@/domain/meet-points";
 import type { DemoState, Participant } from "@/domain/types";
 import {
@@ -104,6 +105,8 @@ export function mobileProjection(
       };
     });
   const ownInvitation = invitation ? structuredClone(invitation) : null;
+  if (ownInvitation?.encounterCodes) ownInvitation.encounterCodes = ownInvitation.encounterCodes[actor]
+    ? { [actor]: ownInvitation.encounterCodes[actor] } : {};
   if (ownInvitation)
     ownInvitation.choices = ownInvitation.choices[actor]
       ? { [actor]: ownInvitation.choices[actor] }
@@ -112,9 +115,11 @@ export function mobileProjection(
     ...state,
     participants,
     invitations: ownInvitation ? [ownInvitation] : [],
-    points: state.points.map((p) => ({
+    points: state.points.filter((p) => !isPointDeleted(p) || p.id === invitation?.pointId).map((p) => ({
       ...p,
-      occupant: p.occupant === invitation?.id ? p.occupant : null,
+      retainedCodes: undefined,
+      occupant: invitation && pointOccupants(p).includes(invitation.id) ? invitation.id : null,
+      occupants: invitation && pointOccupants(p).includes(invitation.id) ? [invitation.id] : [],
     })),
     helps: state.helps.filter((h) => h.participantId === actor),
     events: state.events
@@ -126,35 +131,15 @@ export function mobileProjection(
     commands: [],
     broadcastConsumed: [],
     tongzhouSubmissions: [],
-    displayGrants: invitation
-      ? {
-          [invitation.id]: {
-            [actor]: !!state.displayGrants?.[invitation.id]?.[actor],
-          },
-        }
-      : {},
+    displayGrants: {},
     live: {
       activity,
       role: "participant",
       metrics: stats(state),
       // Only the current public question is available to participants; full per-question analytics are operator-only.
       questions: questionSummaries(state).filter(
-        (q) => q.id === (state.displayQuestionId || "q1"),
+        (q) => q.id === activeQuestionId(state.displayQuestionId),
       ),
-      displayPermissions: state.invitations
-        .filter(
-          (i) =>
-            i.id !== me.currentId &&
-            [i.from, i.to].includes(actor) &&
-            state.displayGrants?.[i.id]?.[actor] === true,
-        )
-        .map((i) => ({
-          invitationId: i.id,
-          otherName:
-            state.participants.find(
-              (p) => p.id === (i.from === actor ? i.to : i.from),
-            )?.name || "对方",
-        })),
       recommendationIds: candidates.map((p) => p.participant.id),
     },
   };
@@ -196,13 +181,8 @@ export function worldProjection(
         participants: previous.participants.map((p) => ({ ...p, photo: null })),
       };
   }
-  const consent = {
-    revision: state.revision,
-    allows: (invitationId: string, participantId: string) =>
-      state.displayGrants?.[invitationId]?.[participantId] === true,
-  };
   const adapter = new WorldAdapter(
-    consent,
+    undefined,
     (id) =>
       `public-${createHmac("sha256", config.secret)
         .update(`${activity}:${id}`)

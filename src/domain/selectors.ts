@@ -1,4 +1,4 @@
-import { QUESTIONS } from "@/data/questions";
+import { QUESTIONS, activeQuestionId } from "@/data/questions";
 import type { DemoState, Participant, Invitation } from "./types";
 export const ACTIVE_STATUSES = [
   "SENT",
@@ -18,6 +18,11 @@ export const commonAnswers = (a: Participant, b: Participant) =>
   ).map((q) => ({ questionId: q.id, answer: a.answers[q.id] }));
 export function currentInvite(s: DemoState, p: Participant) {
   return s.invitations.find((i) => i.id === p.currentId);
+}
+/** Personal progress is independent of whether the other participant has recorded meeting. */
+export function hasPersonalEncounter(i: Invitation | undefined, actor: string): boolean {
+  return !!i && [i.from, i.to].includes(actor) &&
+    (!!i.confirmations[actor] || i.status === "CONFIRMED");
 }
 export function available(s: DemoState, p: Participant) {
   const i = currentInvite(s, p);
@@ -54,6 +59,8 @@ export function phase(s: DemoState, p: Participant) {
   if (p.paused) return "暂停推荐";
   if (!p.profileComplete) return p.answers.q1 ? "补充资料" : "刚进入";
   const i = currentInvite(s, p);
+  if (hasPersonalEncounter(i, p.id))
+    return i!.choices[p.id] ? "已选择下一站" : "已记录相遇";
   if (i?.status === "SENT") return "等待回应";
   if (i?.status === "ACCEPTED") return "等待相遇点";
   if (i?.status === "MEET_ASSIGNED") return "双方愿意见面";
@@ -67,6 +74,7 @@ export function routeFor(s: DemoState, p: Participant) {
   if (!p.answers.q1) return "01-start";
   if (!p.profileComplete) return "03-profile";
   const i = currentInvite(s, p);
+  if (hasPersonalEncounter(i, p.id)) return "10-next-step";
   if (i?.status === "SENT") return "07-invitation";
   if (i && ["ACCEPTED", "MEET_ASSIGNED"].includes(i.status)) return "08-mutual";
   if (i?.status === "ARRIVING") return "09-meet";
@@ -126,7 +134,7 @@ export function pendingBroadcast(s: DemoState) {
 }
 export function screenProjection(s: DemoState) {
   const m = stats(s);
-  const question = QUESTIONS.find((q) => q.id === s.displayQuestionId) || QUESTIONS[0];
+  const question = QUESTIONS.find((q) => q.id === activeQuestionId(s.displayQuestionId)) || QUESTIONS[0];
   const options = distribution(s, question.id);
   return {
     active: m.active,
@@ -157,19 +165,6 @@ export function alerts(s: DemoState) {
           id: i.id,
           text: "邀请等待超过 10 分钟",
           detail: "可以查看详情或结束本次等待",
-        },
-      ];
-    const arrived = Object.values(i.arrivals);
-    if (
-      i.status === "ARRIVING" &&
-      arrived.length === 1 &&
-      now - arrived[0] >= 180000
-    )
-      return [
-        {
-          id: i.id,
-          text: "相遇点单方等候超过 3 分钟",
-          detail: "请关注尚未到达的一方",
         },
       ];
     return [];

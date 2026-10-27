@@ -14,12 +14,10 @@ export function MutualEncounterMotion({
   me,
   other,
   identity,
-  pointName,
 }: {
   me: Participant;
   other: Participant;
   identity: string;
-  pointName?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const key = `hasPlayedMutualMotion:${identity}`;
@@ -75,7 +73,6 @@ export function MutualEncounterMotion({
         0.5,
       );
       run(".mutual-copy", [{ opacity: 0.4 }, { opacity: 1 }], 0.2, 0.65);
-      run(".mutual-place-copy", [{ opacity: 0.4 }, { opacity: 1 }], 0.15, 0.85);
       const finish = () => {
         animations.forEach((a) => a.cancel());
         el.dataset.playing = "false";
@@ -129,11 +126,6 @@ export function MutualEncounterMotion({
         </div>
       </div>
       <p className="mutual-copy">你们都愿意认识彼此。</p>
-      <p className="mutual-place-copy">
-        {pointName
-          ? `${pointName} 已为你们准备好。`
-          : "你们的意愿已保留，正在等候相遇点。"}
-      </p>
     </div>
   );
 }

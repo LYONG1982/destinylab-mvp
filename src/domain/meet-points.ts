@@ -1,12 +1,13 @@
 import type { MeetPoint } from "./types";
 
 export function defaultMeetPoints(): MeetPoint[] {
-  return Array.from({ length: 20 }, (_, index) => ({
+  return Array.from({ length: 30 }, (_, index) => ({
     id: `meet-${index + 1}`,
     name: `Meet${String(index + 1).padStart(2, "0")}`,
     location: "",
     distance: 0,
     occupant: null,
+    capacity: 30,
     closed: false,
   }));
 }
@@ -15,9 +16,7 @@ export function defaultMeetPoints(): MeetPoint[] {
 export function completeMeetPoints(existing: MeetPoint[]): MeetPoint[] {
   const names = new Set(existing.map((point) => point.name));
   const ids = new Set(existing.map((point) => point.id));
-  const additions = defaultMeetPoints().filter(
-    (point) => !names.has(point.name),
-  );
+  const additions = defaultMeetPoints().filter((point) => !names.has(point.name));
   for (const point of additions) {
     const base = `point-${point.name}`;
     let suffix = 0;

@@ -128,8 +128,11 @@ test("meet point label survives while direction/distance disappear and encounter
     );
     await expect(page.locator("main")).not.toContainText("步行约");
   }
-  await expect(page.locator(".verification-code small")).toHaveText(
-    "缘分相遇码",
+  await expect(page.locator(".mutual-code-copy")).toContainText("缘分相遇码");
+  await expect(page.locator(".mutual-code-copy")).not.toContainText("520");
+  await expect(page.locator(".mutual-code-copy")).not.toContainText("???");
+  await expect(page.locator(".mutual-code-copy")).toContainText(
+    "见面时核对相遇码与活动昵称",
   );
   const state = await page.evaluate(
     () =>
@@ -138,10 +141,10 @@ test("meet point label survives while direction/distance disappear and encounter
   const invitation = state.invitations.find(
     (i) => i.id === state.participants[0].currentId,
   )!;
-  await expect(page.locator(".verification-code strong")).toHaveText(
+  await expect(page.locator(".sharedCode strong")).toHaveText(
     invitation.code,
   );
-  await expect(page.locator(".pass-top > span strong")).toHaveText("01");
+  await expect(page.getByText("Meet 01", { exact: true })).toBeVisible();
   await page.screenshot({
     path: `${evidence}/meet-simplified.png`,
     fullPage: true,

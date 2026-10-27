@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
+import { reconcileEncounters } from "@/domain/encounters";
 import { completeMeetPoints } from "@/domain/meet-points";
 import { transaction } from "./db";
 import { activityId, load, save } from "./service";
@@ -32,6 +33,7 @@ export async function migrateMeetPoints(activity: string, backupDir: string) {
       type: "POINT_DEFAULTS",
       text: `补齐 ${added} 个默认相遇点`,
     });
+    reconcileEncounters(next, Date.now());
     await save(client, activity, before, next);
     return { activity, added, total: points.length, backup };
   });

@@ -1,5 +1,7 @@
 # 遇见 · 缘分实验室
 
+当前开发分支为 [`codex/weapp-release-20261013`](https://github.com/LYONG1982/destinylab-mvp/tree/codex/weapp-release-20261013)。2026-10-27 已完成个人相遇流程、动态地点/本人码指引、后台点位增删与新点默认30对，连同六题、520和默认大屏展示纳入本分支源码；工程师请读 [本次源码交付与部署说明](docs/releases/2026-10-27-personal-encounter-source.md)。本机入口为 http://127.0.0.1:3244 ，详见 [本轮验证与截图交付记录](docs/weapp/23-personal-encounter-and-meet-points-uat.md)。下文 v1.4.0 和旧LAN地址是历史记录；源码发布不表示线上部署完成。
+
 微信小程序开发候选工程。用户端采用 Taro/React 原生小程序，运营后台、同舟机构后台和现场大屏保留 Web，共用 Next.js 服务与 PostgreSQL。
 
 ## GitHub 与当前版本

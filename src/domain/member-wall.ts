@@ -1,5 +1,6 @@
 import { AGES, QUESTIONS } from "../data/questions";
 import { defaultAvatarId, getAvatarById } from "../config/avatars";
+import { isPublicSystemAvatarSource } from "./photo";
 import type { Participant } from "./types";
 
 export const WALL_CONSENT_VERSION = "member-wall-2026-10-12-v4";
@@ -211,9 +212,7 @@ export function safeWallCard(value: PublicMemberCard): boolean {
       (value.ageRange === null ||
         (typeof value.ageRange === "string" &&
           wallAgeRange(value.ageRange) === value.ageRange)) &&
-      /^\/assets\/avatars\/(male|female)\/\1_(0[1-9]|10)\.png$/.test(
-        value.avatarUrl,
-      ) &&
+      isPublicSystemAvatarSource(value.avatarUrl) &&
       Array.isArray(value.tags) &&
       value.tags.length <= 2 &&
       value.tags.every((s) => typeof s === "string" && s.length <= 20) &&

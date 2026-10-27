@@ -53,7 +53,7 @@ test("answer-before-profile counts once, selected avatar then joins with the sub
   assert.equal(event.field?.optionKey, "q1:1");
   assert.ok(
     joined.members.some(
-      (n) => n.key === event.node && n.image?.endsWith("male_08.png"),
+      (n) => n.key === event.node && n.image?.endsWith("male_08.webp"),
     ),
   );
   const renamed = adapter.read(run(state, { ...profile, name: "山风" }));
@@ -91,7 +91,7 @@ test("anonymous historical totals never fabricate people; public model includes 
   const snapshot = a.read(s);
   assert.ok(snapshot.question.total > snapshot.members.length);
   assert.ok(
-    snapshot.members.every((n) => n.image?.startsWith("/assets/avatars/")),
+    snapshot.members.every((n) => n.image?.startsWith("/assets/avatars-v520/")),
   );
   const json = JSON.stringify(snapshot);
   for (const forbidden of [

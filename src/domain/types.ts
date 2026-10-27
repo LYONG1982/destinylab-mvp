@@ -49,6 +49,9 @@ export interface Invitation {
   choices: Record<string, NextChoice>;
   pass: string;
   code: string;
+  /** New pairs allocate personal complementary codes only after mutual acceptance. */
+  codeVersion?: "520";
+  encounterCodes?: Record<string, string>;
 }
 export interface MeetPoint {
   id: string;
@@ -56,6 +59,13 @@ export interface MeetPoint {
   location: string;
   distance: number;
   occupant: string | null;
+  /** Legacy occupant remains the first entry; reads safely preserve old single slots. */
+  occupants?: string[];
+  capacity?: number;
+  /** Unix timestamp marking a soft-deleted point while preserving its historical identity. */
+  deletedAt?: number;
+  /** Private numeric holds after archived occupants leave the live list; clear only on physical release. */
+  retainedCodes?: string[];
   closed: boolean;
 }
 export interface HelpRequest {
@@ -163,8 +173,12 @@ export type Command =
       action: "pause" | "resume" | "leave" | "return" | "hint";
     }
   | { type: "help-status"; helpId: string; status: HelpRequest["status"] }
-  | { type: "release"; pointId: string }
+  | { type: "release"; pointId: string; invitationId?: string }
+  | { type: "point-config"; pointId: string; location: string; capacity: number }
   | { type: "point-status"; pointId: string; enabled: boolean }
+  | { type: "point-add"; name: string; location?: string; capacity?: number }
+  | { type: "point-remove"; pointId: string }
+  | { type: "point-capacity-defaults"; mode: "apply" }
   | { type: "merchant"; merchantId: string; active: boolean }
   | { type: "advance"; minutes: number }
   | { type: "broadcast-consume" }

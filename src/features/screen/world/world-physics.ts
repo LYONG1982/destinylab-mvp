@@ -12,7 +12,6 @@ export interface PhysicsBody {
   radius: number;
 }
 export interface SafeRect { left: number; top: number; right: number; bottom: number }
-export const QR_SAFE_RECT: SafeRect = { left: 1572, top: 675, right: 1920, bottom: 1080 };
 const titleRect: SafeRect = { left: 200, top: 0, right: 1720, bottom: 211 };
 const totalRect: SafeRect = { left: 590, top: 897, right: 1340, bottom: 1080 };
 const choiceRects = FIELD_ANCHORS.map((p) => ({ left: p.x - 112, right: p.x + 112, top: p.y - 112, bottom: p.y + 112 }));
@@ -61,7 +60,7 @@ export function freeTarget(seed: number) {
 }
 export function safeRects(choiceWeight: number): readonly SafeRect[] {
   const weight = clamp(choiceWeight, 0, 1);
-  const rects: SafeRect[] = [QR_SAFE_RECT, titleRect, totalRect];
+  const rects: SafeRect[] = [titleRect, totalRect];
   if (weight > .02) for (const rect of choiceRects) {
     const cx = (rect.left + rect.right) / 2, cy = (rect.top + rect.bottom) / 2;
     rects.push({ left: cx - 112 * weight, right: cx + 112 * weight, top: cy - 112 * weight, bottom: cy + 112 * weight });
@@ -72,8 +71,7 @@ export function safeRects(choiceWeight: number): readonly SafeRect[] {
   }
   return rects;
 }
-/** A hard final projection is deliberate: neither QR quiet zone nor text may be
- * crossed even on a long frame, resize, newly-created player or reduced motion. */
+/** A hard final projection keeps players clear of the title, statistics and type. */
 export function constrainBody(body: PhysicsBody, rects: readonly SafeRect[]) {
   const padX = Math.max(36, body.radius + 13);
   const padTop = body.radius + 8;
@@ -92,11 +90,6 @@ export function constrainBody(body: PhysicsBody, rects: readonly SafeRect[]) {
     else if (smallest === distances[1]) { body.x = right; body.vx = Math.max(0, body.vx); }
     else if (smallest === distances[2]) { body.y = top; body.vy = Math.min(0, body.vy); }
     else { body.y = bottom; body.vy = Math.max(0, body.vy); }
-  }
-  // Other guards can touch this corner: QR exclusion is the final invariant.
-  if (body.x > QR_SAFE_RECT.left - padX && body.y > QR_SAFE_RECT.top - padBottom) {
-    if (body.x - (QR_SAFE_RECT.left - padX) < body.y - (QR_SAFE_RECT.top - padBottom)) { body.x = QR_SAFE_RECT.left - padX; body.vx = Math.min(0, body.vx); }
-    else { body.y = QR_SAFE_RECT.top - padBottom; body.vy = Math.min(0, body.vy); }
   }
 }
 export function stepBodies(bodies: PhysicsBody[], elapsedSeconds: number, deltaSeconds: number, choiceWeight: number, quiet = false) {

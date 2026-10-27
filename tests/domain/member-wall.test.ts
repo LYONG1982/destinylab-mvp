@@ -14,6 +14,10 @@ test("wall privacy projection never uses uploaded photo, raw identity, or unlist
   assert.equal(JSON.stringify(card).includes("安静咖啡馆"),false);assert.equal(JSON.stringify(card).includes("先做朋友"),false);
   assert.equal(JSON.stringify(card).includes("PRIVATE"), false);
   assert.equal(safeWallCard({ ...card, avatarUrl: "/api/avatar/private?screen=1" }), false);
+  assert.ok(safeWallCard({ ...card, avatarUrl: "/assets/avatars/female/female_02.png" }));
+  assert.ok(safeWallCard({ ...card, avatarUrl: "/assets/avatars-v520/female/female_02.webp" }));
+  assert.equal(safeWallCard({ ...card, avatarUrl: "https://outside.example/avatar.webp" }), false);
+  assert.equal(safeWallCard({ ...card, avatarUrl: "/assets/avatars-v520/female/other.webp" }), false);
   assert.equal(safeWallCard({ ...card, consentToPublicDisplay: false } as never), false);
 });
 test("explicit nicknames reject contact and markup; config rejects unbounded timings", () => {

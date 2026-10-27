@@ -163,6 +163,12 @@ function validateParticipant(value: RecordValue): LiveCommand {
 function validateOperator(value: RecordValue): LiveCommand {
   const type = string(value.type, "命令类型", 40);
   switch (type) {
+    case "point-config": {
+      exactKeys(value, ["type", "pointId", "location", "capacity"]);
+      if (typeof value.location !== "string" || value.location.length > 100 || !Number.isInteger(value.capacity) || Number(value.capacity) < 1 || Number(value.capacity) > 160)
+        invalid("现场位置最多100字，容量须为1至160对。");
+      return { type, pointId: id(value.pointId, "相遇点编号"), location: (value.location as string).trim(), capacity: value.capacity as number };
+    }
     case "point-status": {
       exactKeys(value, ["type", "pointId", "enabled"]);
       return {
@@ -192,8 +198,8 @@ function validateOperator(value: RecordValue): LiveCommand {
       };
     }
     case "release": {
-      exactKeys(value, ["type", "pointId"]);
-      return { type, pointId: id(value.pointId, "相遇点编号") };
+      exactKeys(value, value.invitationId === undefined ? ["type", "pointId"] : ["type", "pointId", "invitationId"]);
+      return { type, pointId: id(value.pointId, "相遇点编号"), ...(value.invitationId === undefined ? {} : { invitationId: id(value.invitationId, "相遇编号") }) };
     }
     case "merchant": {
       exactKeys(value, ["type", "merchantId", "active"]);
@@ -204,11 +210,27 @@ function validateOperator(value: RecordValue): LiveCommand {
       };
     }
     case "point-add": {
-      exactKeys(value, ["type", "name"]);
+      const keys = ["type", "name", ...(value.location !== undefined ? ["location"] : []), ...(value.capacity !== undefined ? ["capacity"] : [])];
+      exactKeys(value, keys);
       const name = string(value.name, "相遇点名称");
       if (!/^Meet\d{2,3}$/.test(name))
         invalid("相遇点名称须符合 Meet 加 2 至 3 位数字的格式。");
-      return { type, name };
+      const location = value.location === undefined ? undefined : value.location;
+      if (location !== undefined && (typeof location !== "string" || location.length > 100))
+        invalid("现场位置最多100字。");
+      const capacity = value.capacity === undefined ? undefined : value.capacity;
+      if (capacity !== undefined && (!Number.isInteger(capacity) || Number(capacity) < 1 || Number(capacity) > 160))
+        invalid("容量须为1至160对。");
+      return { type, name, ...(location === undefined ? {} : { location: (location as string).trim() }), ...(capacity === undefined ? {} : { capacity: capacity as number }) };
+    }
+    case "point-remove": {
+      exactKeys(value, ["type", "pointId"]);
+      return { type, pointId: id(value.pointId, "相遇点编号") };
+    }
+    case "point-capacity-defaults": {
+      exactKeys(value, ["type", "mode"]);
+      if (value.mode !== "apply") invalid("容量回填仅支持明确应用。");
+      return { type, mode: "apply" };
     }
     case "cancel": {
       exactKeys(value, ["type", "invitationId"]);

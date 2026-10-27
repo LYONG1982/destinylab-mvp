@@ -7,7 +7,13 @@ import { AvatarEditor } from "@/components/shared/AvatarEditor";
 import { avatarDescription } from "@/domain/photo";
 import { AvatarSelector } from "@/components/shared/AvatarSelector";
 import { validAvatar, defaultAvatarId } from "@/config/avatars";
-import { AGES, QUESTIONS, STATUS_LABELS } from "@/data/questions";
+import {
+  AGES,
+  ALL_QUESTIONS,
+  QUESTIONS,
+  STATUS_LABELS,
+  questionById,
+} from "@/data/questions";
 import type {
   DemoState,
   Participant,
@@ -26,6 +32,7 @@ import {
   recommendations,
   routeFor,
   stats,
+  hasPersonalEncounter,
 } from "@/domain/selectors";
 import { useAction, useDemo } from "@/lib/demo/hooks";
 import { resumePresence } from "@/lib/api/live-client";
@@ -50,9 +57,10 @@ import {
 
 import { CommonAnswerLink } from "@/components/motion/CommonAnswerLink";
 import { CandidateCard, IcebreakerCard } from "./MatchDetail";
+import { EncounterGuide } from "./EncounterGuide";
+import encounterStyles from "./EncounterGuide.module.css";
 import { SignalArrival, useSendSignal } from "@/components/motion/SignalMotion";
 import { MutualEncounterMotion } from "@/components/motion/MutualEncounterMotion";
-import { MeetStatusTrack } from "@/components/motion/MeetStatusTrack";
 import { Motion, Ambient } from "@/components/motion/Motion";
 import { getSnapshot } from "@/lib/demo/store";
 
@@ -62,11 +70,8 @@ import { RouteDraw } from "@/components/motion/RouteDraw";
 import { DestinyTrack } from "@/components/motion/DestinyTrack";
 import { useCityResponse } from "@/components/motion/CityResponseToast";
 import { motionTiming } from "@/lib/motion-tokens";
-import {
-  LiveGate,
-  PairDisplayPermission,
-  PastDisplayPermissions,
-} from "@/components/LiveControls";
+import { LiveGate } from "@/components/LiveControls";
+import { is520Encounter, ownEncounterCode } from "@/domain/encounters";
 
 type Actions = ReturnType<typeof useAction>;
 function FieldAccess({ state, me }: { state: DemoState; me: Participant }) {
@@ -161,17 +166,24 @@ function MobileFlow({
   const a = useAction(me.id);
   const sendSignal = useSendSignal();
   const inv = currentInvite(s, me);
+  const ownEncounterRecorded = hasPersonalEncounter(inv, me.id);
   const candidates = recommendations(s, me.id);
   const invitationBlocked =
-    !!inv && [...ACTIVE_STATUSES, "CONFIRMED"].includes(inv.status);
+    !!inv &&
+    (ownEncounterRecorded ||
+      [...ACTIVE_STATUSES, "CONFIRMED"].includes(inv.status));
   const currentTaskLabel =
-    inv?.status === "SENT"
+    ownEncounterRecorded
+      ? "前往相遇的下一站"
+      : inv?.status === "SENT"
       ? "查看当前邀请"
       : inv?.status === "CONFIRMED"
         ? "前往下一站"
         : "查看当前相遇";
   const invitationMessage =
-    inv?.status === "SENT"
+    ownEncounterRecorded
+      ? "你已记录这次相遇。请先前往下一站，选择“我想继续探索”，再发出新邀请。"
+      : inv?.status === "SENT"
       ? `${inv.from === me.id ? "你发出的邀请正在等待回应" : "你收到了一条待回应的邀请"}。请先处理当前邀请，暂时不能再发出新邀请。`
       : inv?.status === "CONFIRMED"
         ? "你已完成这次相遇。请先前往下一站，选择“我想继续探索”，再发出新邀请。"
@@ -197,19 +209,20 @@ function MobileFlow({
       destination = resumeRoute;
     else if (n >= 7 && !inv) destination = "05-discover";
     else if (n === 8 && inv?.status === "SENT") destination = "07-invitation";
-    else if (n === 9 && inv?.status === "CONFIRMED")
+    else if (n >= 8 && ownEncounterRecorded)
       destination = "10-next-step";
     else if (
       n >= 8 &&
+      !ownEncounterRecorded &&
       inv &&
       ["DECLINED", "CANCELLED", "EXPIRED", "MEET_FAILED"].includes(inv.status)
     )
       destination = "07-invitation";
-    else if (n === 10 && inv?.status !== "CONFIRMED")
-      destination = inv?.status === "SENT" ? "07-invitation" : "09-meet";
+    else if (n === 10 && !ownEncounterRecorded)
+      destination = inv?.status === "SENT" ? "07-invitation" : resumeRoute;
     if (destination && destination !== page)
       router.replace(`/mobile/${destination}`);
-  }, [s.epoch, me, page, inv, router, resumeRoute]);
+  }, [s.epoch, me, page, inv, router, resumeRoute, ownEncounterRecorded]);
   const hero = (eyebrow: string, title: React.ReactNode, subtitle?: string) => (
     <div className="page-hero">
       <div className="eyebrow">{eyebrow}</div>
@@ -282,40 +295,28 @@ function MobileFlow({
           "从一个共同话题，走向真实的相遇",
         );
       case "08-mutual":
-        return hero(
-          "THE FEELING IS MUTUAL",
-          <>
-            你们都愿意
-            <br />
-            <span>认识彼此</span>
-          </>,
-          "那就去见一面吧",
-        );
       case "09-meet":
-        return hero(
-          "A REAL MOMENT",
-          <>
-            去{" "}
-            <span>
-              {s.points.find((p) => p.id === inv?.pointId)?.name || "相遇点"}
-            </span>{" "}
-            见面
-          </>,
-          "一次认真相遇，从这里开始",
-        );
+        return null;
       case "10-next-step":
         return hero(
           "THE STORY GOES ON",
           <>
             相遇后的<span>下一站</span>
           </>,
-          "接下来，你想怎么继续？",
         );
       default:
         return null;
     }
   };
   const other = inv ? person(s, counterpart(inv, me.id)) : null;
+  const point = inv?.pointId
+    ? s.points.find((candidate) => candidate.id === inv.pointId)
+    : undefined;
+  const encounterCode = inv
+    ? is520Encounter(inv)
+      ? ownEncounterCode(inv, me.id)
+      : inv.code
+    : "";
   const help = inv
     ? s.helps
         .filter((h) => h.participantId === me.id && h.invitationId === inv.id)
@@ -333,7 +334,7 @@ function MobileFlow({
   );
   return (
     <main
-      className={`mobile-shell ${page === "01-start" ? "start-shell" : ""} ${page === "06-common" ? "match-detail-shell" : ""}`}
+      className={`mobile-shell ${page === "01-start" ? "start-shell" : ""} ${page === "06-common" ? "match-detail-shell" : ""} ${["08-mutual", "09-meet"].includes(page) ? encounterStyles.encounterShell : ""}`}
     >
       <header className="mobile-header">
         <Brand />
@@ -392,12 +393,10 @@ function MobileFlow({
           {["02-result", "05-discover"].includes(page) && (
             <PresenceIndicator count={stats(s).active} />
           )}
-          <div className="mobile-content">
+          <div
+            className={`mobile-content ${["08-mutual", "09-meet"].includes(page) ? encounterStyles.encounterContent : ""}`}
+          >
             {notices}
-            <PastDisplayPermissions state={s} />
-            {inv && ["08-mutual", "09-meet", "10-next-step"].includes(page) && (
-              <PairDisplayPermission state={s} invitation={inv} actor={me.id} />
-            )}
             {page === "02-result" && (
               <Result
                 state={s}
@@ -437,8 +436,14 @@ function MobileFlow({
                   >
                     <Icon name="heart" />
                     <span>
-                      {STATUS_LABELS[inv.status]}
-                      <small>查看你的相遇任务</small>
+                      {ownEncounterRecorded
+                        ? "已记录你的这次相遇"
+                        : STATUS_LABELS[inv.status]}
+                      <small>
+                        {ownEncounterRecorded
+                          ? "前往相遇的下一站"
+                          : "查看你的相遇任务"}
+                      </small>
                     </span>
                     <Icon name="arrow" />
                   </Link>
@@ -615,7 +620,7 @@ function MobileFlow({
                             )
                           }
                         >
-                          我也愿意认识
+                          确认认识
                           <Icon name="heart" />
                         </Button>
                         <Button
@@ -695,93 +700,30 @@ function MobileFlow({
                 )}
               </>
             )}
-            {page === "08-mutual" && inv && other && (
+            {["08-mutual", "09-meet"].includes(page) && inv && other && (
               <>
                 <MutualEncounterMotion
                   me={me}
                   other={other}
                   identity={`${s.epoch}:${me.id}:${inv.id}`}
-                  pointName={s.points.find((p) => p.id === inv.pointId)?.name}
                 />
-                {inv.pointId ? (
-                  <>
-                    <div className="meet-ticket">
-                      <div className="eyebrow">— 相遇点 —</div>
-                      <h2>
-                        {s.points.find((p) => p.id === inv.pointId)?.name}
-                      </h2>
-                    </div>
-                    <Notice tone="success">
-                      {inv.departures[other.id]
-                        ? "TA 已确认出发"
-                        : "TA 也愿意见面，尚未确认出发。"}
-                    </Notice>
-                    <Button onClick={() => go("09-meet")}>
-                      查看见面指引
-                      <Icon name="arrow" />
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Empty title="正在等候相遇点">
-                      你们的意愿已保留。空位准备好后，这里会自动更新。
-                    </Empty>
-                    <Notice>工作人员正在协调相遇点，请稍候。</Notice>
-                  </>
-                )}
-                <Button kind="text" onClick={() => setConfirmExit(true)}>
-                  暂时不见面
-                </Button>
-              </>
-            )}
-            {page === "09-meet" && inv && other && (
-              <>
-                <div className="meet-ticket pass-ticket">
-                  <div className="pass-top">
-                    <span>
-                      MEET
-                      <br />
-                      <strong>
-                        {s.points
-                          .find((p) => p.id === inv.pointId)
-                          ?.name.replace("Meet", "") || "—"}
-                      </strong>
-                    </span>
-                    <div>
-                      <small>DESTINY LAB</small>
-                      <p>
-                        一次认真的线下见面
-                        <br />
-                        从这里开始
-                      </p>
-                      <Badge>{inv.pass}</Badge>
-                    </div>
-                  </div>
-                  <div className="verification-code">
-                    <small>缘分相遇码</small>
-                    <Motion
-                      as="span"
-                      className="code-motion"
-                      preset="code"
-                      key={inv.id}
-                    >
-                      <strong>{inv.code}</strong>
-                    </Motion>
-                    <span>到场后核对昵称与缘分相遇码，请勿仅凭头像认人。</span>
-                  </div>
-                </div>
-                <MeetStatusTrack
-                  people={[me, other]}
-                  invitation={inv}
-                  pointName={
-                    s.points.find((p) => p.id === inv.pointId)?.name ||
-                    "等待分配"
+                <EncounterGuide
+                  pointName={point?.name}
+                  pointLocation={point?.location}
+                  hasPoint={Boolean(inv.pointId && point)}
+                  encounterCode={encounterCode}
+                  is520={is520Encounter(inv)}
+                  busy={a.busy}
+                  onConfirm={() =>
+                    a.run({ type: "confirm", invitationId: inv.id }, () =>
+                      go("10-next-step"),
+                    )
+                  }
+                  onPause={() => setConfirmExit(true)}
+                  onHelp={() =>
+                    a.run({ type: "help", invitationId: inv.id })
                   }
                 />
-                <div className="arrival-status">
-                  <PersonStatus p={me} inv={inv} />
-                  <PersonStatus p={other} inv={inv} />
-                </div>
                 {help && (
                   <Notice
                     tone={help.status === "RESOLVED" ? "success" : "info"}
@@ -789,63 +731,6 @@ function MobileFlow({
                     {help.reply || "帮助请求已送达，等待工作人员接单。"}
                   </Notice>
                 )}
-                {!inv.pointId ? (
-                  <Button onClick={() => go("08-mutual")}>等待相遇点</Button>
-                ) : !inv.departures[me.id] ? (
-                  <Button
-                    disabled={a.busy}
-                    onClick={() =>
-                      a.run({ type: "depart", invitationId: inv.id })
-                    }
-                  >
-                    确认出发
-                    <Icon name="arrow" />
-                  </Button>
-                ) : !inv.arrivals[me.id] ? (
-                  <Button
-                    disabled={a.busy}
-                    onClick={() =>
-                      a.run({ type: "arrive", invitationId: inv.id })
-                    }
-                  >
-                    我已经到了
-                    <Icon name="check" />
-                  </Button>
-                ) : !inv.arrivals[other.id] ? (
-                  <Button disabled>已到达，等待 TA</Button>
-                ) : !inv.confirmations[me.id] ? (
-                  <Button
-                    disabled={a.busy}
-                    onClick={() =>
-                      a.run({ type: "confirm", invitationId: inv.id })
-                    }
-                  >
-                    我已经见到 TA
-                    <Icon name="check" />
-                  </Button>
-                ) : (
-                  <Button disabled>等待 TA 确认见面</Button>
-                )}
-                <Button
-                  kind="secondary"
-                  disabled={a.busy}
-                  onClick={() => a.run({ type: "help", invitationId: inv.id })}
-                >
-                  需要工作人员帮助
-                  <Icon name="help" />
-                </Button>
-                <div className="inline-actions">
-                  <button
-                    onClick={() =>
-                      a.run({ type: "help", invitationId: inv.id })
-                    }
-                  >
-                    还没找到 TA
-                  </button>
-                  <button onClick={() => setConfirmExit(true)}>
-                    结束本次安排
-                  </button>
-                </div>
               </>
             )}
             {page === "10-next-step" && inv && (
@@ -1035,7 +920,7 @@ function Start({
                 )}
                 <Icon name={["chat", "pin", "people"][index]} size={27} />
                 <strong>{v}</strong>
-                <small>{QUESTIONS[0].hints[index]}</small>
+                <small>{ALL_QUESTIONS[0].hints[index]}</small>
                 {touched && selected === v && (
                   <DestinyTrack key={v} className="intent-track" />
                 )}
@@ -1357,7 +1242,7 @@ function Profile({
       </fieldset>
       <p className="fine privacy-note">
         <Icon name="help" size={18} />
-        对方会看到昵称、活动头像、性别、年龄段和相同答案。昵称、系统头像及当前大屏问题的选择会在现场大屏展示。联系方式不会自动分享。
+        对方会看到昵称、活动头像、性别、年龄段和相同答案。双方愿意认识后，活动昵称、系统头像与相遇连线会在现场大屏展示。联系方式不会自动分享。
       </p>
       <div className="profile-submit">
         {feedback && (
@@ -1550,38 +1435,10 @@ function CommonList({
           </span>
           <div>
             <strong>都选择了「{c.answer}」</strong>
-            <small>{QUESTIONS.find((q) => q.id === c.questionId)?.short}</small>
+            <small>{questionById(c.questionId)?.short}</small>
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-function PersonStatus({ p, inv }: { p: Participant; inv: Invitation }) {
-  return (
-    <div className="status-person">
-      <Avatar person={p} size="sm" />
-      <span>
-        <strong>{p.name}</strong>
-        <small>
-          {inv.confirmations[p.id]
-            ? "已确认见到对方"
-            : inv.arrivals[p.id]
-              ? "已经到达"
-              : inv.departures[p.id]
-                ? "已确认出发"
-                : "尚未确认出发"}
-        </small>
-      </span>
-      <Badge tone={inv.arrivals[p.id] ? "success" : "neutral"}>
-        {inv.confirmations[p.id]
-          ? "已见面"
-          : inv.arrivals[p.id]
-            ? "已到达"
-            : inv.departures[p.id]
-              ? "已出发"
-              : "待出发"}
-      </Badge>
     </div>
   );
 }
@@ -1604,7 +1461,9 @@ function NextStep({
   const choice = inv.choices[me.id];
   return (
     <>
-      <Notice tone="success">双方均已确认见面。谢谢你认真认识了一个人。</Notice>
+      <Notice tone="success">
+        已记录你的这次相遇。接下来，想怎样继续？
+      </Notice>
       <div className="next-options">
         {(
           [

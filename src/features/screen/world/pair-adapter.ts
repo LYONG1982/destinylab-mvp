@@ -3,8 +3,7 @@ import { validAvatar } from "@/config/avatars";
 import type { DemoState, Participant } from "@/domain/types";
 import type { MeetPair, MeetParticipant } from "./types";
 
-/** A separate, pair-specific display grant. No provider means no public pair.
- * The provider must change revision and notify its owner when a grant is withdrawn. */
+/** Legacy adapter input retained for source compatibility. Public pair eligibility now follows the activity default display rule. */
 export interface PairDisplayConsent {
   readonly revision: number | string;
   allows(invitationId: string, participantId: string): boolean;
@@ -63,7 +62,7 @@ export function projectMeetPairs(
   token: (id: string) => string,
   consent?: PairDisplayConsent,
 ): MeetPair[] {
-  if (!consent) return [];
+
   const people = new Map(state.participants.map((p) => [p.id, p]));
   const old = new Map(previous?.invitations.map((i) => [i.id, i]) ?? []);
   const eligible = (p: Participant | undefined): p is Participant =>
@@ -75,7 +74,7 @@ export function projectMeetPairs(
   const ref = (p: Participant): MeetParticipant => ({
     id: token(p.id),
     nickname: [...p.name.trim()].slice(0, 5).join(""),
-    avatar: avatarSource(p, true),
+    avatar: avatarSource({ ...p, photo: null }, true),
     gender: p.gender,
     joinedAt: p.joinedAt,
     field: null,
@@ -97,12 +96,8 @@ export function projectMeetPairs(
       b = people.get(i.to);
     if (!eligible(a) || !eligible(b) || a.gender === b.gender || a.id === b.id)
       continue;
-    // Fail closed even if an external permission source fails.
-    try {
-      if (!consent.allows(i.id, a.id) || !consent.allows(i.id, b.id)) continue;
-    } catch {
-      continue;
-    }
+    // Default public pair display is an activity rule; old opt-in records remain historical only.
+    void consent;
     const male = ref(a.gender === "male" ? a : b),
       female = ref(a.gender === "female" ? a : b);
     pairs.push({

@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { DemoState } from "@/domain/types";
+import { pointOccupants, setPointOccupants } from "@/domain/encounters";
 import { applyCommand } from "@/domain/commands";
 import { emptyActivity } from "./state";
 import { database, transaction } from "./db";
@@ -202,7 +203,7 @@ export async function fieldAction(
       const fresh = emptyActivity();
       fresh.fieldOpen = false;
       if (input.copySettings === true) {
-        fresh.points = s.points.map((p) => ({ ...p, occupant: null }));
+        fresh.points = s.points.map((p) => ({ ...p, occupant: null, occupants: [], retainedCodes: [] }));
         fresh.merchants = structuredClone(s.merchants);
         fresh.displayQuestionId = s.displayQuestionId;
       }
@@ -236,7 +237,7 @@ export async function fieldAction(
       );
       next = emptyActivity();
       next.fieldOpen = false;
-      next.points = s.points.map((p) => ({ ...p, occupant: null }));
+      next.points = s.points.map((p) => ({ ...p, occupant: null, occupants: [], retainedCodes: [] }));
       next.merchants = s.merchants;
       next.displayQuestionId = s.displayQuestionId;
       for (const table of [
@@ -296,8 +297,9 @@ export async function fieldAction(
         );
         for (const key of removedInv) delete next.displayGrants?.[key];
         for (const p of next.points)
-          if (p.occupant && removedInv.includes(p.occupant)) {
-            p.occupant = null;
+          if (pointOccupants(p).some(id => removedInv.includes(id))) {
+            p.retainedCodes = [...new Set([...(p.retainedCodes || []), ...s.invitations.filter(i => removedInv.includes(i.id) && pointOccupants(p).includes(i.id)).flatMap(i => Object.values(i.encounterCodes || {}))])];
+            setPointOccupants(p, pointOccupants(p).filter(id => !removedInv.includes(id)));
             p.closed = true;
           }
         for (const key of ids)

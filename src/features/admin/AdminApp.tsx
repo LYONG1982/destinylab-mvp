@@ -8,6 +8,7 @@ import type {
   Command,
   DemoState,
   Invitation,
+  MeetPoint,
   Participant,
 } from "@/domain/types";
 import {
@@ -15,11 +16,13 @@ import {
   alerts,
   available,
   complete,
+  hasPersonalEncounter,
   nowOf,
   person,
   phase,
   stats,
 } from "@/domain/selectors";
+import { pointCapacity, pointOccupants } from "@/domain/encounters";
 import { QUESTIONS, STATUS_LABELS } from "@/data/questions";
 import {
   Avatar,
@@ -208,15 +211,19 @@ function AdminView({
                   icon: "heart",
                 },
                 {
-                  label: "正在前往",
-                  value: m.going,
-                  hint: "已出发的相遇安排",
+                  label: "已分配相遇点",
+                  value: s.invitations.filter(
+                    (invitation) =>
+                      !!invitation.pointId &&
+                      ACTIVE_STATUSES.includes(invitation.status),
+                  ).length,
+                  hint: "当前已分配点位",
                   icon: "pin",
                 },
                 {
                   label: "今日真实相遇",
                   value: m.real,
-                  hint: "双方均确认已经见面",
+                  hint: "按双方记录去重",
                   icon: "spark",
                 },
               ].map((v, i) => (
@@ -323,108 +330,13 @@ function AdminView({
                     )}
                 </div>
               </Panel>
-              <Panel
-                title="相遇点状态"
-                subtitle="见面确认后，场地仍需单独确认空闲"
-              >
-                <div className="table-scroll">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>相遇点</th>
-                        <th>状态</th>
-                        <th>当前相遇</th>
-                        <th>操作</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {s.points.map((p) => {
-                        const i = s.invitations.find(
-                          (i) => i.id === p.occupant,
-                        );
-                        return (
-                          <tr key={p.id}>
-                            <td>
-                              <strong>{p.name}</strong>
-                              {p.location && (
-                                <div className="fine">{p.location}</div>
-                              )}
-                            </td>
-                            <td>
-                              <Badge
-                                tone={
-                                  !p.occupant && !p.closed
-                                    ? "success"
-                                    : "warning"
-                                }
-                              >
-                                {p.closed
-                                  ? "暂停开放"
-                                  : i
-                                    ? i.status === "CONFIRMED" ||
-                                      !ACTIVE_STATUSES.includes(i.status)
-                                      ? "待确认空闲"
-                                      : "使用中"
-                                    : "空闲"}
-                              </Badge>
-                            </td>
-                            <td>
-                              {i ? (
-                                <button
-                                  className="table-action"
-                                  onClick={() => setInviteId(i.id)}
-                                >
-                                  {person(s, i.from)?.name} ·{" "}
-                                  {person(s, i.to)?.name}
-                                </button>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td>
-                              <button
-                                className="table-action"
-                                disabled={
-                                  (!!i && ACTIVE_STATUSES.includes(i.status)) ||
-                                  !p.occupant
-                                }
-                                onClick={() =>
-                                  confirm(
-                                    `确认 ${p.name} 已空闲？`,
-                                    "确认场地已无人使用后，系统可能为等待中的两人分配此处。",
-                                    { type: "release", pointId: p.id },
-                                  )
-                                }
-                              >
-                                确认空闲
-                              </button>
-                              <button
-                                className="table-action"
-                                disabled={a.busy || !!p.occupant}
-                                onClick={() =>
-                                  confirm(
-                                    `${p.closed ? "启用" : "停用"} ${p.name}？`,
-                                    p.closed
-                                      ? "启用后系统可将等待中的双方分配至此编号。"
-                                      : "停用后，此编号不再参与新的相遇分配。",
-                                    {
-                                      type: "point-status",
-                                      pointId: p.id,
-                                      enabled: p.closed,
-                                    },
-                                  )
-                                }
-                              >
-                                {p.closed ? "启用" : "停用"}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </Panel>
+              <MeetPointPanel
+                state={s}
+                busy={a.busy}
+                onOpenInvitation={setInviteId}
+                onRun={perform}
+                onConfirm={confirm}
+              />
               <Panel title="实时动态" subtitle="最近发生的现场事件">
                 <div className="panel-body">
                   {s.events
@@ -450,21 +362,20 @@ function AdminView({
                 <Badge tone="wine">当前相遇安排</Badge>
                 <span className="fine">状态由参与者操作和系统规则驱动</span>
               </div>
-              <small>不可拖拽改变见面事实</small>
+              <small>地点由系统自动分配；工作人员不能代替参与者确认见面</small>
             </div>
             <div className="kanban">
               {[
-                { title: "等待回应", states: ["SENT"] },
-                {
-                  title: "双方愿意见面",
-                  states: ["ACCEPTED", "MEET_ASSIGNED"],
-                },
-                { title: "前往相遇点", states: ["ARRIVING"] },
-                { title: "已确认见面", states: ["CONFIRMED"] },
+                { title: "等待回应", matches: (i: Invitation) => i.status === "SENT" },
+                { title: "等待相遇点", matches: (i: Invitation) => i.status === "ACCEPTED" && !i.pointId },
+                { title: "已分配相遇点", matches: (i: Invitation) => !!i.pointId && !hasPersonalEncounter(i, i.from) && !hasPersonalEncounter(i, i.to) },
+                { title: "单方已记录", matches: (i: Invitation) => hasPersonalEncounter(i, i.from) !== hasPersonalEncounter(i, i.to) },
+                { title: "双方已记录", matches: (i: Invitation) => hasPersonalEncounter(i, i.from) && hasPersonalEncounter(i, i.to) },
               ].map((col) => {
                 const items = s.invitations.filter(
                   (i) =>
-                    col.states.includes(i.status) &&
+                    col.matches(i) &&
+                    ["SENT", "ACCEPTED", "MEET_ASSIGNED", "ARRIVING", "CONFIRMED"].includes(i.status) &&
                     (i.status !== "CONFIRMED" ||
                       nowOf(s) - (i.realMeetAt || 0) < 1800000),
                 );
@@ -699,7 +610,7 @@ function AdminView({
               onClick={() =>
                 confirm(
                   "标记该参与者离场？",
-                  "进行中的邀请将结束；已出发的相遇点仍需工作人员确认空闲。",
+                  "进行中的邀请将结束；仍被相遇安排占用的点位需在确认现场空闲后释放。",
                   {
                     type: "participant",
                     participantId: selectedPerson.id,
@@ -743,18 +654,23 @@ function AdminView({
           <div className="encounter-detail-pair">
             {[selectedInvite.from, selectedInvite.to].map((id) => {
               const p = person(s, id)!;
+              const recordedAt =
+                selectedInvite.confirmations[id] ||
+                (selectedInvite.status === "CONFIRMED"
+                  ? selectedInvite.realMeetAt
+                  : undefined);
               return (
                 <div key={id}>
                   <Avatar person={p} size="md" />
                   <strong>{p.name}</strong>
                   <small>
-                    {selectedInvite.confirmations[id]
-                      ? "已确认见面"
+                    {hasPersonalEncounter(selectedInvite, id)
+                      ? `已记录相遇 · ${recordedAt ? timeText(recordedAt) : "时间未知"}`
                       : selectedInvite.arrivals[id]
-                        ? "已到达"
+                        ? "历史记录：已到达"
                         : selectedInvite.departures[id]
-                          ? "已出发"
-                          : "尚未出发"}
+                          ? "历史记录：已出发"
+                          : "未记录相遇"}
                   </small>
                 </div>
               );
@@ -763,7 +679,18 @@ function AdminView({
           <div className="detail-meta">
             <div>
               <small>状态</small>
-              <strong>{STATUS_LABELS[selectedInvite.status]}</strong>
+              <strong>
+                {hasPersonalEncounter(selectedInvite, selectedInvite.from) &&
+                hasPersonalEncounter(selectedInvite, selectedInvite.to)
+                  ? "双方已记录"
+                  : hasPersonalEncounter(selectedInvite, selectedInvite.from) ||
+                      hasPersonalEncounter(selectedInvite, selectedInvite.to)
+                    ? "单方已记录"
+                    : selectedInvite.pointId
+                      ? "已分配相遇点"
+                      : STATUS_LABELS[selectedInvite.status]}
+                {selectedInvite.status === "CANCELLED" ? " · 邀请已取消" : ""}
+              </strong>
             </div>
             <div>
               <small>相遇点</small>
@@ -775,6 +702,30 @@ function AdminView({
             <div>
               <small>见面卡</small>
               <strong>{selectedInvite.pass}</strong>
+            </div>
+            <div>
+              <small>
+                {selectedInvite.codeVersion === "520"
+                  ? "双方 520 相遇码"
+                  : "旧版见面码"}
+              </small>
+              <strong>
+                {selectedInvite.codeVersion === "520"
+                  ? [selectedInvite.from, selectedInvite.to]
+                      .map((participantId) => {
+                        const participant = person(s, participantId);
+                        const code = selectedInvite.encounterCodes?.[participantId];
+                        const label =
+                          participant?.gender === "male"
+                            ? "男生"
+                            : participant?.gender === "female"
+                              ? "女生"
+                              : "参与者";
+                        return `${label} ${participant?.name || participantId}：${code || "待分配"}`;
+                      })
+                      .join(" · ")
+                  : selectedInvite.code}
+              </strong>
             </div>
             <div>
               <small>发出时间</small>
@@ -831,7 +782,7 @@ function AdminView({
               结束本次安排
             </Button>
           )}
-          <Notice>工作人员不能代替任一参与者确认出发、到达或已经见面。</Notice>
+          <Notice>工作人员不能代替参与者记录本人的相遇。</Notice>
           <section className="detail-section">
             <h3>相遇时间线</h3>
             {s.events
@@ -874,19 +825,566 @@ function Panel({
   title,
   subtitle,
   children,
+  wide = false,
 }: {
   title: string;
   subtitle?: string;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <section className="panel">
+    <section className={`panel${wide ? " wide" : ""}`}>
       <div className="panel-header">
         <h2>{title}</h2>
         <small>{subtitle}</small>
       </div>
       {children}
     </section>
+  );
+}
+function MeetPointPanel({
+  state: s,
+  busy,
+  onOpenInvitation,
+  onRun,
+  onConfirm,
+}: {
+  state: DemoState;
+  busy: boolean;
+  onOpenInvitation: (id: string) => void;
+  onRun: (command: Command) => void;
+  onConfirm: (title: string, body: string, command: Command) => void;
+}) {
+  const activePoints = s.points.filter((point) => point.deletedAt === undefined);
+  const deletedPoints = s.points.filter((point) => point.deletedAt !== undefined);
+  const missingCapacityPoints = activePoints.filter(
+    (point) => point.capacity === undefined,
+  );
+  const occupancy = activePoints.flatMap((point) =>
+    pointOccupants(point).map((invitationId) => ({
+      point,
+      invitationId,
+      invitation: s.invitations.find((item) => item.id === invitationId),
+    })),
+  );
+  const remaining = activePoints.reduce(
+    (total, point) =>
+      total +
+      (point.closed
+        ? 0
+        : Math.max(0, pointCapacity(point) - pointOccupants(point).length)),
+    0,
+  );
+  const inUse = occupancy.filter(
+    ({ invitation }) =>
+      invitation && ACTIVE_STATUSES.includes(invitation.status),
+  ).length;
+  const pendingFree = occupancy.filter(
+    ({ invitation }) =>
+      !invitation || !ACTIVE_STATUSES.includes(invitation.status),
+  ).length + activePoints.reduce(
+    (total, point) => total + Math.ceil((point.retainedCodes?.length || 0) / 2),
+    0,
+  );
+  const waiting = s.invitations.filter(
+    (invitation) => invitation.status === "ACCEPTED" && !invitation.pointId,
+  ).length;
+  const totalOpenCapacity = activePoints.reduce(
+    (total, point) => total + (point.closed ? 0 : pointCapacity(point)),
+    0,
+  );
+  const summaries = [
+    ["相遇点", activePoints.length, "个"],
+    ["开放点", activePoints.filter((point) => !point.closed).length, "个"],
+    ["开放点总容量", totalOpenCapacity, "对"],
+    ["可分配剩余容量", remaining, "对"],
+    ["当前使用中", inUse, "对"],
+    ["待确认空闲", pendingFree, "对"],
+    ["等待分配", waiting, "对"],
+    ["已删除点位", deletedPoints.length, "个"],
+  ] as const;
+  const usedNames = new Set(s.points.map((point) => point.name));
+  const usedNumbers = new Set(
+    s.points.flatMap((point) => {
+      const match = point.name.match(/^Meet(\d{2,3})$/);
+      return match ? [Number(match[1])] : [];
+    }),
+  );
+  let suggestedNumber = 1;
+  while (suggestedNumber <= 999 && usedNumbers.has(suggestedNumber))
+    suggestedNumber += 1;
+  const suggestedName =
+    suggestedNumber <= 999
+      ? `Meet${String(suggestedNumber).padStart(2, "0")}`
+      : "";
+  return (
+    <Panel
+      wide
+      title="相遇点配置与状态"
+      subtitle="容量按可同时接待的配对数计算；单点最多160对，实际分配仍受活动相遇码池限制"
+    >
+      <div className="meet-point-summary" aria-label="相遇点数量统计">
+        {summaries.map(([label, value, unit]) => (
+          <div key={label}>
+            <span>{label}（{unit}）</span>
+            <strong>{value} <small>{unit}</small></strong>
+          </div>
+        ))}
+      </div>
+      <AddMeetPointForm
+        suggestedName={suggestedName}
+        usedNames={usedNames}
+        busy={busy}
+        onRun={onRun}
+      />
+      <section className="point-capacity-defaults" aria-label="缺省容量预览">
+        <div>
+          <strong>缺省容量预览</strong>
+          <p>
+            {missingCapacityPoints.length
+              ? `${missingCapacityPoints.length} 个未配置容量的点位将设为30对；已有明确容量的点位保持原值。`
+              : "没有需要补齐的点位。"}
+          </p>
+          {missingCapacityPoints.length > 0 && (
+            <details>
+              <summary>查看待补齐点位</summary>
+              <p>{missingCapacityPoints.map((point) => point.name).join("、")}</p>
+            </details>
+          )}
+        </div>
+        <button
+          className="table-action"
+          disabled={busy || missingCapacityPoints.length === 0}
+          onClick={() =>
+            onConfirm(
+              "将未配置容量设为30对？",
+              `当前预览：${missingCapacityPoints.map((point) => point.name).join("、")}，共${missingCapacityPoints.length}个。应用时会把活动事务中所有仍有效且未配置容量的点位设为30对；已经明确设置的容量不变。`,
+              { type: "point-capacity-defaults", mode: "apply" },
+            )
+          }
+        >
+          应用缺省30对
+        </button>
+      </section>
+      <div className="table-scroll meet-point-table-scroll">
+        <table className="data-table meet-point-table">
+          <thead>
+            <tr>
+              <th>编号与现场位置</th>
+              <th>使用状态</th>
+              <th>关联配对</th>
+              <th>配置</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activePoints.map((point) => {
+              const occupants = pointOccupants(point);
+              const pairs = occupants.map((invitationId) => ({
+                invitationId,
+                invitation: s.invitations.find(
+                  (item) => item.id === invitationId,
+                ),
+              }));
+              const activeCount = pairs.filter(
+                ({ invitation }) =>
+                  invitation && ACTIVE_STATUSES.includes(invitation.status),
+              ).length;
+              const endedCount = pairs.length - activeCount;
+              const retainedPairCount = Math.ceil(
+                (point.retainedCodes?.length || 0) / 2,
+              );
+              const activeReferences = s.invitations.some(
+                (invitation) =>
+                  invitation.pointId === point.id &&
+                  ACTIVE_STATUSES.includes(invitation.status),
+              );
+              const removalBlocked =
+                occupants.length > 0 ||
+                retainedPairCount > 0 ||
+                activeReferences;
+              const removalReason = occupants.length || retainedPairCount
+                ? "请先结束相关安排、确认现场空闲并释放全部占用后再删除。"
+                : activeReferences
+                  ? "仍有进行中的邀请引用此点位，请先结束安排。"
+                  : "";
+              const stateLabel = retainedPairCount
+                ? "已归档占用待确认空闲"
+                : point.closed
+                  ? "停用"
+                  : activeCount
+                    ? "使用中"
+                    : endedCount
+                      ? "待确认空闲"
+                      : occupants.length >= pointCapacity(point)
+                        ? "容量已满"
+                        : "可分配";
+              return (
+                <tr key={point.id}>
+                  <td>
+                    <strong>{point.name}</strong>
+                    <div className="fine">
+                      {point.location || "尚未填写现场位置"}
+                    </div>
+                    <small className="meet-point-capacity">
+                      {occupants.length} / {pointCapacity(point)} 对
+                    </small>
+                  </td>
+                  <td>
+                    <Badge
+                      tone={
+                        stateLabel === "可分配"
+                          ? "success"
+                          : stateLabel === "使用中"
+                            ? "wine"
+                            : "warning"
+                      }
+                    >
+                      {stateLabel}
+                    </Badge>
+                  </td>
+                  <td>
+                    {pairs.length || retainedPairCount ? (
+                      <div className="meet-point-pairs">
+                        {pairs.map(({ invitationId, invitation }) => (
+                          <div
+                            className="meet-point-pair"
+                            key={invitationId}
+                          >
+                            {invitation ? (
+                              <>
+                                <button
+                                  className="table-action"
+                                  onClick={() =>
+                                    onOpenInvitation(invitation.id)
+                                  }
+                                >
+                                  {person(s, invitation.from)?.name ||
+                                    invitation.from}{" "}
+                                  · {person(s, invitation.to)?.name || invitation.to}
+                                </button>
+                                <small>
+                                  {ACTIVE_STATUSES.includes(invitation.status)
+                                    ? "使用中"
+                                    : "已结束，待核实空闲"}
+                                </small>
+                                {!ACTIVE_STATUSES.includes(
+                                  invitation.status,
+                                ) && (
+                                  <button
+                                    className="table-action"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      onConfirm(
+                                        `释放 ${point.name} 上的这对占用？`,
+                                        "请先确认这对参与者已离开该点位。系统只释放这条已结束的相遇关系，并可能自动安排等待中的配对。",
+                                        {
+                                          type: "release",
+                                          pointId: point.id,
+                                          invitationId: invitation.id,
+                                        },
+                                      )
+                                    }
+                                  >
+                                    确认已空闲并释放
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <span>占用记录待核对 · {invitationId}</span>
+                            )}
+                          </div>
+                        ))}
+                        {retainedPairCount > 0 && (
+                          <div className="meet-point-pair">
+                            <small>
+                              已归档占用待确认空闲 · {retainedPairCount} 对
+                            </small>
+                            <button
+                              className="table-action"
+                              disabled={busy || activeCount > 0}
+                              title={
+                                activeCount > 0
+                                  ? "请先结束并释放此点位上的进行中安排"
+                                  : undefined
+                              }
+                              onClick={() =>
+                                onConfirm(
+                                  `确认 ${point.name} 整点空闲？`,
+                                  "请先确认现场已无人使用。此操作会释放该点位所有已结束占用，并清除已归档配对的码对保留；有进行中占用时不能执行。",
+                                  { type: "release", pointId: point.id },
+                                )
+                              }
+                            >
+                              确认整点空闲并释放
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span>暂无配对占用</span>
+                    )}
+                  </td>
+                  <td>
+                    <PointConfiguration
+                      key={`${point.id}:${point.location}:${point.capacity ?? 1}`}
+                      point={point}
+                      currentOccupancy={occupants.length + Math.ceil((point.retainedCodes?.length || 0) / 2)}
+                      disabled={busy}
+                      onRun={onRun}
+                    />
+                  </td>
+                  <td>
+                    <div className="meet-point-actions">
+                      <button
+                        className="table-action"
+                        disabled={
+                          busy ||
+                          occupants.length > 0 ||
+                          (point.closed && retainedPairCount > 0)
+                        }
+                        title={
+                          point.closed && retainedPairCount > 0
+                            ? "请先确认归档配对的场地已空闲，再启用点位"
+                            : occupants.length > 0
+                              ? "请先逐对确认已结束的占用并释放"
+                              : undefined
+                        }
+                        onClick={() =>
+                          onConfirm(
+                            `${point.closed ? "启用" : "停用"} ${point.name}？`,
+                            point.closed
+                              ? "启用后，系统可把等待配对自动分配到此点位。"
+                              : "停用后，系统不再把新配对分配到此点位。",
+                            {
+                              type: "point-status",
+                              pointId: point.id,
+                              enabled: point.closed,
+                            },
+                          )
+                        }
+                      >
+                        {point.closed ? "启用" : "停用"}
+                      </button>
+                      <button
+                        className="table-action danger"
+                        disabled={busy || removalBlocked}
+                        title={removalBlocked ? removalReason : undefined}
+                        onClick={() =>
+                          onConfirm(
+                            `删除 ${point.name}？`,
+                            `此点位将从可分配清单移除。历史相遇仍保留原编号和位置（${point.location || "未填写位置"}），且该编号不会再次使用。`,
+                            { type: "point-remove", pointId: point.id },
+                          )
+                        }
+                      >
+                        删除
+                      </button>
+                      {removalBlocked && (
+                        <small className="point-remove-reason">
+                          {removalReason}
+                        </small>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {deletedPoints.length > 0 && (
+        <details className="deleted-point-history">
+          <summary>已删除点位历史 · {deletedPoints.length} 个</summary>
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>原编号</th>
+                  <th>原现场位置</th>
+                  <th>历史相遇</th>
+                  <th>删除时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deletedPoints.map((point) => (
+                  <tr key={point.id}>
+                    <td><strong>{point.name}</strong></td>
+                    <td>{point.location || "未填写位置"}</td>
+                    <td>
+                      {s.invitations.filter(
+                        (invitation) => invitation.pointId === point.id,
+                      ).length} 对
+                    </td>
+                    <td>{point.deletedAt ? timeText(point.deletedAt) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
+    </Panel>
+  );
+}
+function AddMeetPointForm({
+  suggestedName,
+  usedNames,
+  busy,
+  onRun,
+}: {
+  suggestedName: string;
+  usedNames: Set<string>;
+  busy: boolean;
+  onRun: (command: Command) => void;
+}) {
+  const [name, setName] = useState("");
+  const [location, setLocation] = useState("");
+  const [capacity, setCapacity] = useState("30");
+  const pointName = name.trim() || suggestedName;
+  const parsedCapacity = Number(capacity);
+  const nameValid = /^Meet\d{2,3}$/.test(pointName) && !usedNames.has(pointName);
+  const capacityValid =
+    Number.isInteger(parsedCapacity) && parsedCapacity >= 1 && parsedCapacity <= 160;
+  return (
+    <form
+      className="add-meet-point-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!nameValid || !capacityValid || location.trim().length > 100) return;
+        onRun({
+          type: "point-add",
+          name: pointName,
+          location: location.trim(),
+          capacity: parsedCapacity,
+        });
+        setName("");
+        setLocation("");
+        setCapacity("30");
+      }}
+    >
+      <div className="add-meet-point-copy">
+        <strong>新增相遇点</strong>
+        <small>自动建议下一个未使用编号；新点默认30对，可在此修改。</small>
+      </div>
+      <label>
+        编号
+        <input
+          value={name}
+          placeholder={suggestedName || "编号已用尽"}
+          maxLength={7}
+          disabled={busy || !suggestedName}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </label>
+      <label className="add-point-location">
+        现场位置
+        <input
+          value={location}
+          maxLength={100}
+          disabled={busy}
+          onChange={(event) => setLocation(event.target.value)}
+          placeholder="填写现场可识别的位置"
+        />
+      </label>
+      <label>
+        容量（对）
+        <input
+          type="number"
+          min="1"
+          max="160"
+          step="1"
+          required
+          value={capacity}
+          disabled={busy}
+          onChange={(event) => setCapacity(event.target.value)}
+        />
+      </label>
+      <button
+        className="table-action"
+        type="submit"
+        disabled={busy || !suggestedName || !nameValid || !capacityValid || location.trim().length > 100}
+      >
+        新增点位
+      </button>
+      {!nameValid && name.trim() !== "" && (
+        <small className="point-form-error">编号须为未使用的 Meet 加2至3位数字。</small>
+      )}
+      {!suggestedName && <small className="point-form-error">已无可用的三位数字编号。</small>}
+    </form>
+  );
+}
+function PointConfiguration({
+  point,
+  currentOccupancy,
+  disabled,
+  onRun,
+}: {
+  point: MeetPoint;
+  currentOccupancy: number;
+  disabled: boolean;
+  onRun: (command: Command) => void;
+}) {
+  const [location, setLocation] = useState(point.location);
+  const [capacity, setCapacity] = useState(String(pointCapacity(point)));
+  const parsedCapacity = Number(capacity);
+  return (
+    <form
+      className="meet-point-config"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (
+          location.trim().length > 100 ||
+          !Number.isInteger(parsedCapacity) ||
+          parsedCapacity < Math.max(1, currentOccupancy) ||
+          parsedCapacity > 160
+        )
+          return;
+        onRun({
+          type: "point-config",
+          pointId: point.id,
+          location: location.trim(),
+          capacity: parsedCapacity,
+        });
+      }}
+    >
+      <label>
+        现场位置
+        <input
+          value={location}
+          maxLength={100}
+          disabled={disabled}
+          onChange={(event) => setLocation(event.target.value)}
+          placeholder="填写现场可识别的位置"
+        />
+      </label>
+      <label>
+        容量（对）
+        <input
+          type="number"
+          min={Math.max(1, currentOccupancy)}
+          max="160"
+          step="1"
+          required
+          value={capacity}
+          disabled={disabled}
+          onChange={(event) => setCapacity(event.target.value)}
+        />
+      </label>
+      <button
+        className="table-action"
+        type="submit"
+        disabled={
+          disabled ||
+          location.trim().length > 100 ||
+          !Number.isInteger(parsedCapacity) ||
+          parsedCapacity < Math.max(1, currentOccupancy) ||
+          parsedCapacity > 160
+        }
+      >
+        保存配置
+      </button>
+    </form>
   );
 }
 function EncounterCard({
@@ -900,6 +1398,25 @@ function EncounterCard({
 }) {
   const from = person(s, i.from)!,
     to = person(s, i.to)!;
+  const pointName = s.points.find((point) => point.id === i.pointId)?.name;
+  const fromRecorded = hasPersonalEncounter(i, from.id);
+  const toRecorded = hasPersonalEncounter(i, to.id);
+  const fromRecordedAt =
+    i.confirmations[from.id] ||
+    (i.status === "CONFIRMED" ? i.realMeetAt : undefined);
+  const toRecordedAt =
+    i.confirmations[to.id] ||
+    (i.status === "CONFIRMED" ? i.realMeetAt : undefined);
+  const statusLabel =
+    fromRecorded && toRecorded
+      ? "双方已记录"
+      : fromRecorded || toRecorded
+        ? "单方已记录"
+        : i.pointId
+          ? "已分配相遇点"
+          : i.status === "ACCEPTED"
+            ? "等待相遇点"
+            : STATUS_LABELS[i.status];
   return (
     <button className="encounter-card" onClick={onOpen}>
       <div className="encounter-people">
@@ -918,35 +1435,25 @@ function EncounterCard({
               : "wine"
         }
       >
-        {STATUS_LABELS[i.status]}
+        {statusLabel}
       </Badge>
       <div className="encounter-meta">
         <div>
           <span>
-            {s.points.find((p) => p.id === i.pointId)?.name || "相遇点待分配"}
+            {pointName || "相遇点待分配"}
           </span>
           <span>{timeText(i.createdAt)}</span>
         </div>
         <div>
           <span>
-            {from.name}：
-            {i.confirmations[from.id]
-              ? "已见面"
-              : i.arrivals[from.id]
-                ? "已到达"
-                : i.departures[from.id]
-                  ? "已出发"
-                  : "待出发"}
+            {from.name}：{fromRecorded
+              ? `已记录相遇 · ${fromRecordedAt ? timeText(fromRecordedAt) : "时间未知"}`
+              : "未记录相遇"}
           </span>
           <span>
-            {to.name}：
-            {i.confirmations[to.id]
-              ? "已见面"
-              : i.arrivals[to.id]
-                ? "已到达"
-                : i.departures[to.id]
-                  ? "已出发"
-                  : "待出发"}
+            {to.name}：{toRecorded
+              ? `已记录相遇 · ${toRecordedAt ? timeText(toRecordedAt) : "时间未知"}`
+              : "未记录相遇"}
           </span>
         </div>
         {s.helps.some(
@@ -977,7 +1484,7 @@ function ParticipantList({
     if (stage === "invited") return s.invitations.some((i) => i.from === p.id);
     if (stage === "real")
       return s.invitations.some(
-        (i) => !!i.realMeetAt && [i.from, i.to].includes(p.id),
+        (i) => [i.from, i.to].includes(p.id) && hasPersonalEncounter(i, p.id),
       );
     return true;
   };
@@ -1013,7 +1520,7 @@ function ParticipantList({
               ["answered", "已完成首答"],
               ["completed", "已完成探索"],
               ["invited", "已发出邀请"],
-              ["real", "已有真实见面"],
+              ["real", "已记录相遇"],
               ["left", "已离场"],
             ].map(([value, label]) => (
               <option key={value} value={value}>

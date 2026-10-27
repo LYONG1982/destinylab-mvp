@@ -1,4 +1,4 @@
-export const QUESTIONS = [
+export const ALL_QUESTIONS = [
   {
     id: "q1",
     title: "今天，想怎样遇见？",
@@ -61,6 +61,11 @@ export const QUESTIONS = [
     options: ["有趣会聊天", "温柔有耐心", "独立有想法", "真诚"],
   },
 ] as const;
+/** Current six questions; historic IDs and wording remain available for old tasks. */
+export const ACTIVE_QUESTION_IDS: readonly string[] = ["q1", "q3", "q5", "q6", "q8", "q9"];
+export const QUESTIONS = [ALL_QUESTIONS[0], ALL_QUESTIONS[2], ALL_QUESTIONS[4], ALL_QUESTIONS[5], ALL_QUESTIONS[7], ALL_QUESTIONS[8]] as const;
+export const questionById = (id: string) => ALL_QUESTIONS.find(q => q.id === id);
+export const activeQuestionId = (id?: string) => QUESTIONS.some(q => q.id === id) ? id! : "q1";
 export const AGES = ["22–25", "26–29", "30–33", "34–37", "38+"];
 export const MOBILE_ROUTES = [
   "01-start",

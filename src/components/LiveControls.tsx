@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState, useSyncExternalStore } from "react";
-import type { DemoState, Invitation } from "@/domain/types";
+import type { DemoState } from "@/domain/types";
 import * as live from "@/lib/api/live-client";
 import { Brand, Button, Loading, Notice } from "./ui";
 
@@ -243,7 +243,7 @@ export function LiveOperatorPanel({
               />
             </label>
             <p>
-              默认 Meet01–Meet20，可继续添加编号。当前 {state.points.length}{" "}
+              默认 Meet01–Meet30，可继续添加编号。当前 {state.points.length}{" "}
               个相遇点，{state.points.filter((p) => !p.closed).length}{" "}
               个已启用。
             </p>
@@ -255,94 +255,5 @@ export function LiveOperatorPanel({
         </div>
       </details>
     </section>
-  );
-}
-export function PairDisplayPermission({
-  state,
-  invitation,
-  actor,
-}: {
-  state: DemoState;
-  invitation: Invitation;
-  actor: string;
-}) {
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  if (
-    !state.live ||
-    !invitation.acceptedAt ||
-    (!invitation.realMeetAt &&
-      !["ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(invitation.status))
-  )
-    return null;
-  const allowed = state.displayGrants?.[invitation.id]?.[actor] === true;
-  return (
-    <section className="live-permission" aria-label="本次相遇公开展示">
-      <strong>让这次相遇被看见</strong>
-      <p>
-        双方都同意后，大屏才会展示你们的活动昵称、系统头像与相遇连线。你可随时撤回，不影响见面。
-      </p>
-      <Button
-        kind="secondary"
-        disabled={busy}
-        onClick={async () => {
-          setBusy(true);
-          setError("");
-          try {
-            await live.command({
-              type: "display-consent",
-              invitationId: invitation.id,
-              allow: !allowed,
-            });
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "未能保存，请重试。");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        {busy ? "正在保存…" : allowed ? "撤回本次公开展示" : "允许本次公开展示"}
-      </Button>
-      {allowed && <small>你已允许，展示还需对方独立同意。</small>}
-      {error && <Notice tone="error">{error}</Notice>}
-    </section>
-  );
-}
-
-export function PastDisplayPermissions({ state }: { state: DemoState }) {
-  const [busy, setBusy] = useState(""),
-    [error, setError] = useState("");
-  if (!state.live?.displayPermissions?.length) return null;
-  return (
-    <details className="live-permission">
-      <summary>管理之前相遇的公开展示许可</summary>
-      {state.live.displayPermissions.map((p) => (
-        <div key={p.invitationId}>
-          <span>与 {p.otherName} 的相遇</span>
-          <Button
-            kind="text"
-            disabled={!!busy}
-            onClick={async () => {
-              setBusy(p.invitationId);
-              setError("");
-              try {
-                await live.command({
-                  type: "display-consent",
-                  invitationId: p.invitationId,
-                  allow: false,
-                });
-              } catch (e) {
-                setError(e instanceof Error ? e.message : "撤回失败，请重试。");
-              } finally {
-                setBusy("");
-              }
-            }}
-          >
-            撤回公开展示
-          </Button>
-        </div>
-      ))}
-      {error && <Notice tone="error">{error}</Notice>}
-    </details>
   );
 }

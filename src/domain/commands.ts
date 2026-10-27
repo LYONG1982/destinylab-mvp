@@ -1,3 +1,4 @@
+import { pointOccupants, setPointOccupants, reconcileEncounters, ownEncounterCode, is520Encounter, isPointDeleted } from "./encounters";
 import { validAvatar } from "@/config/avatars";
 import { applyTongzhouCommand, isTongzhouCommand } from "./tongzhou";
 import { AGES, QUESTIONS } from "@/data/questions";
@@ -12,6 +13,7 @@ import {
   available,
   commonAnswers,
   currentInvite,
+  hasPersonalEncounter,
   nicknameError,
   nowOf,
   pendingBroadcast,
@@ -73,8 +75,7 @@ export function applyCommand(
   };
   const close = (i: Invitation, status: Invitation["status"]) => {
     i.status = status;
-    const p = s.points.find((p) => p.occupant === i.id);
-    if (p && Object.keys(i.departures).length === 0) p.occupant = null;
+    // A displayed assignment may already be in use; only explicit physical release frees it.
   };
   s.invitations
     .filter((i) => i.status === "SENT" && at - i.createdAt >= 900000)
@@ -140,6 +141,17 @@ export function applyCommand(
       ensure(!s.activityPaused, "现场暂时暂停新邀请，稍后再来看看。");
       const target = person(s, c.targetId);
       ensure(target, "对方暂时不可见。");
+      const reciprocal = currentInvite(s, p);
+      if (reciprocal && target.currentId === reciprocal.id &&
+          [reciprocal.from, reciprocal.to].includes(target.id) && ACTIVE_STATUSES.includes(reciprocal.status)) {
+        ensure(p.ready && !p.paused && target.present && !target.paused, "当前无法确认认识。");
+        if (reciprocal.status === "SENT" && reciprocal.to === actor) {
+          reciprocal.status = "ACCEPTED";
+          reciprocal.acceptedAt = at;
+          log("MUTUAL", "双方都愿意认识彼此", reciprocal.id);
+        }
+        break;
+      }
       ensure(available(s, p), "请先完成探索、准备见面，并结束当前相遇任务。");
       ensure(
         available(s, target) &&
@@ -169,9 +181,8 @@ export function applyCommand(
         pass: standard
           ? "A-018"
           : `A-${String(s.invitations.length + 1).padStart(3, "0")}`,
-        code: standard
-          ? "4721"
-          : String(1000 + ((s.invitations.length * 137) % 9000)),
+        code: "",
+        codeVersion: "520",
       };
       s.invitations.push(i);
       p.currentId = id;
@@ -182,6 +193,7 @@ export function applyCommand(
     case "accept": {
       const i = related(c.invitationId);
       ensure(i.to === actor, "只有收到邀请的人可以接受。");
+      if (i.acceptedAt && ["ACCEPTED", "MEET_ASSIGNED", "ARRIVING", "CONFIRMED"].includes(i.status)) break;
       ensure(i.status === "SENT", "邀请状态已变化，请查看当前任务。");
       ensure(
         me?.present && !me.paused && me.ready,
@@ -236,22 +248,24 @@ export function applyCommand(
     }
     case "confirm": {
       const i = related(c.invitationId);
+      if (hasPersonalEncounter(i, actor)) break;
       ensure(
-        ["ARRIVING", "CONFIRMED"].includes(i.status),
+        ["MEET_ASSIGNED", "ARRIVING"].includes(i.status) && i.acceptedAt && i.pointId,
         "当前不能确认见面。",
       );
+      const code = ownEncounterCode(i, actor);
       ensure(
-        i.arrivals[i.from] && i.arrivals[i.to],
-        "请等待双方都确认到达后再确认见面。",
+        is520Encounter(i) ? /^\d{3}$/.test(code) : /^\d{4}$/.test(code),
+        "请等待有效相遇码与地点分配后再记录相遇。",
       );
       if (!i.confirmations[actor]) {
         i.confirmations[actor] = at;
-        log("CONFIRM", `${me?.name}已确认见到对方`, i.id, actor);
+        log("CONFIRM", `${me?.name}已记录本人的相遇`, i.id, actor);
       }
       if (i.confirmations[i.from] && i.confirmations[i.to] && !i.realMeetAt) {
         i.realMeetAt = at;
         i.status = "CONFIRMED";
-        log("REAL_MEET", "双方已确认真实见面，新增一次真实相遇", i.id);
+        log("REAL_MEET", "双方均已记录相遇，新增一对相遇", i.id);
       }
       break;
     }
@@ -283,7 +297,7 @@ export function applyCommand(
     }
     case "next": {
       const i = related(c.invitationId);
-      ensure(i.status === "CONFIRMED", "双方确认见面后才可以选择下一站。");
+      ensure(hasPersonalEncounter(i, actor), "请先记录本人的相遇，再选择下一站。");
       ensure(
         ["WALK", "MERCHANT", "END"].includes(c.choice),
         "请选择有效去向。",
@@ -303,10 +317,10 @@ export function applyCommand(
       const p = participant();
       const i = related(c.invitationId);
       ensure(
-        !ACTIVE_STATUSES.includes(i.status),
+        hasPersonalEncounter(i, actor) || !ACTIVE_STATUSES.includes(i.status),
         "请先结束当前邀请再继续探索。",
       );
-      if (i.status === "CONFIRMED" && !i.choices[actor])
+      if (hasPersonalEncounter(i, actor) && !i.choices[actor])
         i.choices[actor] = "END";
       p.currentId = null;
       p.ready = true;
@@ -316,7 +330,7 @@ export function applyCommand(
     }
     case "merchant-view": {
       const i = related(c.invitationId);
-      ensure(i.status === "CONFIRMED", "请先完成双方见面确认。");
+      ensure(hasPersonalEncounter(i, actor), "请先记录本人的相遇。");
       const view = `${i.id}:${c.merchantId}`;
       if (!s.merchantViews.includes(view)) s.merchantViews.push(view);
       break;
@@ -377,26 +391,73 @@ export function applyCommand(
       log("HELP_STATUS", h.reply, h.invitationId, h.participantId);
       break;
     }
+    case "point-add": {
+      admin();
+      ensure(/^Meet\d{2,3}$/.test(c.name), "相遇点名称须符合 Meet 加2至3位数字。");
+      ensure(!s.points.some(p => p.name === c.name), "这个相遇点已经存在或保留在历史中。");
+      const capacity = c.capacity ?? 30;
+      ensure(Number.isInteger(capacity) && capacity >= 1 && capacity <= 160, "容量须为1至160对。");
+      ensure(c.location === undefined || typeof c.location === "string" && c.location.trim().length <= 100, "现场位置最多100字。");
+      const base = `pt-${envelope.id.slice(0, 100)}`;
+      let id = base, suffix = 0;
+      while (s.points.some(p => p.id === id)) id = `${base}-${++suffix}`;
+      s.points.push({ id, name: c.name, location: c.location?.trim() || "", distance: 0, occupant: null, capacity, closed: false });
+      log("POINT_ADD", `运营添加相遇点 ${c.name}`);
+      break;
+    }
+    case "point-remove": {
+      admin();
+      const point = s.points.find(p => p.id === c.pointId);
+      ensure(point, "相遇点不存在。");
+      if (isPointDeleted(point)) break;
+      ensure(!pointOccupants(point).length && !point.retainedCodes?.length && !s.invitations.some(i => i.pointId === point.id && ACTIVE_STATUSES.includes(i.status)), "该点仍被相遇或待确认空闲记录占用，暂不能删除。");
+      point.deletedAt = at;
+      point.closed = true;
+      log("POINT_REMOVE", `运营删除相遇点 ${point.name}`);
+      break;
+    }
+    case "point-capacity-defaults": {
+      admin();
+      ensure(c.mode === "apply", "请确认应用缺省容量。");
+      const missing = s.points.filter(p => !isPointDeleted(p) && p.capacity === undefined);
+      ensure(missing.every(p => pointOccupants(p).length + Math.ceil((p.retainedCodes?.length || 0) / 2) <= 30), "实际占用超过30对，请逐点配置容量。");
+      missing.forEach(p => { p.capacity = 30; });
+      if (missing.length) log("POINT_CAPACITY_DEFAULTS", `运营将 ${missing.length} 个未配置容量的相遇点设为30对`);
+      break;
+    }
     case "point-status": {
       admin();
       const point = s.points.find((p) => p.id === c.pointId);
-      ensure(point, "相遇点不存在。");
-      ensure(!point.occupant, "请先结束安排并确认场地空闲，再修改开放状态。");
+      ensure(point && point.deletedAt === undefined, "相遇点不存在或已删除。");
+      ensure(!pointOccupants(point).length, "请先结束安排并确认场地空闲，再修改开放状态。");
+      ensure(!c.enabled || !point.retainedCodes?.length, "请先确认归档配对的场地已空闲，再启用相遇点。");
       point.closed = !c.enabled;
       log("POINT_STATUS", `${point.name}${c.enabled ? "已启用" : "已停用"}`);
       break;
     }
+    case "point-config": {
+      admin();
+      const point = s.points.find(p => p.id === c.pointId);
+      ensure(point && point.deletedAt === undefined, "相遇点不存在或已删除。");
+      ensure(typeof c.location === "string" && c.location.trim().length <= 100, "现场位置最多100字。");
+      ensure(Number.isInteger(c.capacity) && c.capacity >= 1 && c.capacity <= 160, "容量须为1至160对。");
+      ensure(c.capacity >= pointOccupants(point).length + Math.ceil((point.retainedCodes?.length || 0) / 2), "容量不能小于当前实际占用，请先确认场地空闲。");
+      point.location = c.location.trim(); point.capacity = c.capacity;
+      log("POINT_CONFIG", `${point.name}的现场位置与容量已更新`);
+      break;
+    }
     case "release": {
       admin();
-      const p = s.points.find((p) => p.id === c.pointId);
-      ensure(p, "相遇点不存在。");
-      const i = s.invitations.find((i) => i.id === p.occupant);
-      ensure(
-        !i || !ACTIVE_STATUSES.includes(i.status),
-        "请先结束进行中的安排，再确认场地已空闲。",
-      );
-      p.occupant = null;
-      p.closed = false;
+      const p = s.points.find(p => p.id === c.pointId);
+      ensure(p && !isPointDeleted(p), "相遇点不存在或已删除。");
+      const held = pointOccupants(p);
+      const releasing = c.invitationId ? held.filter(id => id === c.invitationId) : held;
+      ensure(!c.invitationId || releasing.length, "这次相遇已不占用此地点，请刷新。");
+      ensure(releasing.every(id => !ACTIVE_STATUSES.includes(s.invitations.find(i => i.id === id)?.status || "")),
+        "请先结束进行中的安排，再确认场地已空闲。");
+      setPointOccupants(p, held.filter(id => !releasing.includes(id)));
+      if (!c.invitationId) p.retainedCodes = [];
+      p.closed = !!p.retainedCodes?.length;
       log("RELEASE", `${p.name}已确认空闲`);
       break;
     }
@@ -431,14 +492,7 @@ export function applyCommand(
       close(i, "EXPIRED");
       log("EXPIRED", "一条邀请已过期", i.id);
     });
-  for (const i of s.invitations.filter((i) => i.status === "ACCEPTED")) {
-    const p = s.points.find((p) => !p.occupant && !p.closed);
-    if (!p) break;
-    p.occupant = i.id;
-    i.pointId = p.id;
-    i.status = "MEET_ASSIGNED";
-    log("ASSIGNED", `系统分配了 ${p.name}`, i.id);
-  }
+  reconcileEncounters(s, s.now);
   s.commands.push(key);
   s.revision++;
   return s;

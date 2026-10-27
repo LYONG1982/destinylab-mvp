@@ -9,6 +9,7 @@ import {
   nicknameError,
   person,
   recommendations,
+  routeFor,
   screenProjection,
   stats,
 } from "@/domain/selectors";
@@ -56,7 +57,7 @@ test("seed has valid relationships, one clock, 28 historical meets and coherent 
     distribution(s).map((d) => d.percentage),
     [33, 42, 25],
   );
-  assert.equal(commonAnswers(person(s, A)!, person(s, B)!).length, 4);
+  assert.equal(commonAnswers(person(s, A)!, person(s, B)!).length, 3);
   for (const i of s.invitations) {
     assert.ok(person(s, i.from));
     assert.ok(person(s, i.to));
@@ -118,21 +119,20 @@ test("only receiver can accept; active invitation prevents multiple chains", () 
     1,
   );
 });
-test("arrival cannot be inferred from navigation or acceptance; individual facts remain separate", () => {
+test("one participant can record a meeting without departure or arrival and leaves the other unrecorded", () => {
   let s = accept();
-  assert.throws(
-    () => run(s, A, { type: "arrive", invitationId: id(s) }),
-    /先确认出发/,
-  );
-  s = run(s, A, { type: "depart", invitationId: id(s) });
+  const invitationId = id(s);
+  s = run(s, A, { type: "confirm", invitationId });
   const i = currentInvite(s, person(s, A)!)!;
-  assert.ok(i.departures[A]);
+  assert.ok(i.confirmations[A]);
+  assert.equal(i.confirmations[B], undefined);
+  assert.equal(i.departures[A], undefined);
   assert.equal(i.departures[B], undefined);
-  s = run(s, A, { type: "arrive", invitationId: id(s) });
-  assert.throws(
-    () => run(s, A, { type: "confirm", invitationId: id(s) }),
-    /双方都确认到达/,
-  );
+  assert.equal(i.arrivals[A], undefined);
+  assert.equal(i.arrivals[B], undefined);
+  assert.equal(i.realMeetAt, undefined);
+  assert.equal(routeFor(s, person(s, A)!), "10-next-step");
+  assert.equal(routeFor(s, person(s, B)!), "08-mutual");
 });
 test("two independent meet confirmations add exactly one fact; replays and later repeat do not add", () => {
   let s = bothArrived();

@@ -1,6 +1,6 @@
 import { defaultAvatarId } from "@/config/avatars";
 import { defaultMeetPoints } from "@/domain/meet-points";
-import { QUESTIONS } from "./questions";
+import { QUESTIONS, ALL_QUESTIONS } from "./questions";
 import type { DemoState, Participant, Invitation } from "@/domain/types";
 import { commonAnswers } from "@/domain/selectors";
 const START = Date.parse("2026-11-07T18:36:00+08:00");
@@ -111,7 +111,7 @@ export function createSeed(
   // Fictional seed answers only; persisted participants are never backfilled.
   // Keep the original six-question common-answer counts for the demo actors.
   participants.forEach((p, n) => {
-    QUESTIONS.slice(6).forEach((q, index) => {
+    ALL_QUESTIONS.slice(6).forEach((q, index) => {
       p.answers[q.id] = q.options[n === 0 ? 0 : 1 + ((n + index) % 3)];
     });
   });

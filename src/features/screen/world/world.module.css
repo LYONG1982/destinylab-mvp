@@ -25,7 +25,7 @@
   pointer-events: none;
   background:
     linear-gradient(180deg, #160f150a 0%, #160f1510 70%, #160f1520),
-    url("/assets/destiny-field/ambient-act12-v2.png") center / cover no-repeat;
+    url("/assets/destiny-field/ambient-act12-v3.webp") center / cover no-repeat;
   opacity: 1;
   transition: opacity 1.7s ease;
 }
@@ -579,58 +579,6 @@
   font: 10px/1 sans-serif;
   z-index: 12;
   pointer-events: none;
-}
-.qr {
-  position: absolute;
-  z-index: 10;
-  right: 2%;
-  bottom: 3.5%;
-  width: 14%;
-  color: #f3e7d8;
-  text-align: center;
-  contain: layout paint;
-  padding: 0;
-  background: #160f17;
-  border: 1px solid #a7825b45;
-  border-radius: 0 0 0.75cqw 0.75cqw;
-  overflow: hidden;
-  box-shadow: 0 5px 24px #06050950;
-}
-.qr img,
-.qrPlaceholder {
-  width: 100%;
-  aspect-ratio: 1;
-  height: auto;
-  display: block;
-  border: 0;
-  border-radius: 0;
-  opacity: 1;
-  transform: none;
-  filter: none;
-  background: #fff9ec;
-  image-rendering: pixelated;
-}
-.qr strong {
-  display: block;
-  font-family: "Songti SC", serif;
-  font-size: 1.25cqw;
-  font-weight: 400;
-  letter-spacing: 0.15em;
-  padding: 0.7cqw 0.3cqw 0.25cqw;
-}
-.qr small {
-  display: block;
-  font-size: 0.6cqw;
-  color: #baa89c;
-  letter-spacing: 0.02em;
-  padding: 0 0.25cqw 0.7cqw;
-  white-space: nowrap;
-}
-.qrPlaceholder {
-  color: #251824;
-  display: grid;
-  place-items: center;
-  font-size: 0.8cqw;
 }
 .stage[data-intersection="true"] .modeCopy {
   opacity: 0.05;

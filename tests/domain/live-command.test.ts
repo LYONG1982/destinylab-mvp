@@ -202,7 +202,7 @@ test("invalid enums, values, IDs, booleans, and overlong strings are rejected", 
         { type: "display-question", questionId: "q2" },
         "operator",
       ),
-    /仅允许展示 q1/,
+    /问题编号无效/,
   );
 });
 

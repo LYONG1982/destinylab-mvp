@@ -129,7 +129,13 @@
     ".next-weapp-release/types/**/*.ts",
     ".next-weapp-release/dev/types/**/*.ts",
     ".next-points-uat-20261013/types/**/*.ts",
-    ".next-points-uat-20261013/dev/types/**/*.ts"
+    ".next-points-uat-20261013/dev/types/**/*.ts",
+    ".next-520-uat/types/**/*.ts",
+    ".next-520-uat/dev/types/**/*.ts",
+    ".next-selfmeet-uat/types/**/*.ts",
+    ".next-selfmeet-uat/dev/types/**/*.ts",
+    ".next-selfmeet-uat-final/types/**/*.ts",
+    ".next-selfmeet-uat-final/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

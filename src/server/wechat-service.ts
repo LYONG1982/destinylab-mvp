@@ -21,6 +21,19 @@ import {
   wechatConfig,
 } from "./wechat-provider";
 
+export function trustedMiniSourceLimit() {
+  const configuredLimit = process.env.DESTINY_MINI_SOURCE_LIMIT_PER_MINUTE;
+  const sourceLimit =
+    configuredLimit === undefined ? 300 : Number(configuredLimit);
+  if (
+    !Number.isSafeInteger(sourceLimit) ||
+    sourceLimit < 1 ||
+    sourceLimit > 600
+  )
+    throw new HttpError(503, "登录额度配置无效。");
+  return sourceLimit;
+}
+
 export async function limitMiniLoginSource(request: Request) {
   // Only enable a header that the deployment proxy overwrites; never trust arbitrary forwarded input.
   const header = process.env.DESTINY_TRUSTED_CLIENT_IP_HEADER;
@@ -29,7 +42,7 @@ export async function limitMiniLoginSource(request: Request) {
       throw new HttpError(503, "登录来源配置无效。");
     const address = (request.headers.get(header) || "").trim();
     if (!isIP(address)) throw new HttpError(503, "登录来源暂不可验证。");
-    await rateLimit(`mini-source:${digest(address)}`, 20);
+    await rateLimit(`mini-source:${digest(address)}`, trustedMiniSourceLimit());
   }
 }
 // Dependency injection is for isolated tests only; the HTTP route always uses the real provider.

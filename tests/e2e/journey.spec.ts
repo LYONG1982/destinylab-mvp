@@ -80,7 +80,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await receiver.setViewportSize({ width: 390, height: 844 });
       await actorPage(receiver, "p-xiaoman", "07-invitation");
       await expect(receiver.locator(".person-card")).toContainText("山风");
-      await receiver.getByRole("button", { name: "我也愿意认识" }).click();
+      await receiver.getByRole("button", { name: "确认认识" }).click();
       await expect(receiver).toHaveURL(/08-mutual/);
       await expect(
         page.getByText("你们都愿意认识彼此。", { exact: true }),
@@ -88,41 +88,40 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await page.getByRole("button", { name: "查看相遇任务" }).click();
       await expect(page).toHaveURL(/08-mutual/);
       for (const p of [page, receiver]) {
-        await p.getByRole("button", { name: "查看见面指引" }).click();
-        await expect(p).toHaveURL(/09-meet/);
-        await expect(p.locator(".verification-code")).toContainText("4721");
+        await expect(p).toHaveURL(/08-mutual/);
+        await expect(p.locator(".mutual-code-copy")).toContainText("4721");
+        await expect(p.getByRole("button", { name: "确认出发" })).toHaveCount(0);
+        await expect(p.getByRole("button", { name: "我已经到了" })).toHaveCount(0);
+        await expect(
+          p.getByRole("button", { name: "我已遇见 TA", exact: true }),
+        ).toBeEnabled();
       }
-      await Promise.all(
-        [page, receiver].map((p) =>
-          p.getByRole("button", { name: "确认出发", exact: true }).click(),
-        ),
-      );
-      for (const p of [page, receiver])
-        await expect(
-          p.getByRole("button", { name: "我已经到了", exact: true }),
-        ).toBeEnabled();
-      await Promise.all(
-        [page, receiver].map((p) =>
-          p.getByRole("button", { name: "我已经到了", exact: true }).click(),
-        ),
-      );
-      for (const p of [page, receiver])
-        await expect(
-          p.getByRole("button", { name: "我已经见到 TA", exact: true }),
-        ).toBeEnabled();
       const admin = await context.newPage();
       await admin.goto("/admin/dashboard");
       const screen = await context.newPage();
       await screen.goto("/screen/real-meet");
       await page
-        .getByRole("button", { name: "我已经见到 TA", exact: true })
+        .getByRole("button", { name: "我已遇见 TA", exact: true })
         .click();
       await expect(admin.getByTestId("real-count")).toHaveText("28");
       await expect(
         screen.locator('[data-world-copy="MEET"] .animated-counter'),
       ).toHaveText("28");
+      await expect(page).toHaveURL(/10-next-step/);
+      const afterFirstRecord = await saved(page);
+      const firstRecorded = afterFirstRecord.invitations.find(
+        (i: {
+          confirmations: Record<string, number>;
+          departures: Record<string, number>;
+          arrivals: Record<string, number>;
+        }) =>
+          i.confirmations["p-shanfeng"],
+      );
+      expect(firstRecorded?.departures).toEqual({});
+      expect(firstRecorded?.arrivals).toEqual({});
+      expect(firstRecorded?.confirmations["p-xiaoman"]).toBeUndefined();
       await receiver
-        .getByRole("button", { name: "我已经见到 TA", exact: true })
+        .getByRole("button", { name: "我已遇见 TA", exact: true })
         .click();
       await expect(page).toHaveURL(/10-next-step/);
       await expect(receiver).toHaveURL(/10-next-step/);
@@ -234,9 +233,10 @@ test("same-origin storage synchronizes help and point allocation, not isolated b
   await page.getByRole("button", { name: "关闭弹窗" }).click();
   await scenario(page, "busy");
   await actorPage(mobile, "p-shanfeng", "08-mutual");
+  await expect(mobile.locator(".mutual-place-copy")).toContainText("正在分配");
   await expect(
-    mobile.getByRole("heading", { name: "正在等候相遇点" }),
-  ).toBeVisible();
+    mobile.getByRole("button", { name: "我已遇见 TA", exact: true }),
+  ).toBeDisabled();
   await page.goto("/admin/dashboard");
   await page
     .getByRole("button", { name: "确认空闲", exact: true })
@@ -247,7 +247,7 @@ test("same-origin storage synchronizes help and point allocation, not isolated b
     .getByRole("button", { name: "确认操作" })
     .click();
   await expect(
-    mobile.getByRole("button", { name: "查看见面指引" }),
+    mobile.getByRole("button", { name: "我已遇见 TA", exact: true }),
   ).toBeVisible();
   const isolated = await browser.newContext();
   const isolatedPage = await isolated.newPage();
@@ -371,7 +371,7 @@ test("one real mutual acceptance triggers an anonymous global event without cons
   await expect(world).toHaveAttribute("data-intersection", "false");
   const before = await saved(page);
   await actorPage(page, "p-xiaoman", "07-invitation");
-  await page.getByRole("button", { name: "我也愿意认识", exact: true }).click();
+  await page.getByRole("button", { name: "确认认识", exact: true }).click();
   await expect(world).toHaveAttribute("data-intersection", "true");
   await expect(world).toHaveAttribute("data-mode", "CHOICE");
   await expect(world).toHaveAttribute("data-meetings", "28");

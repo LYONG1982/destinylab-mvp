@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { getImageProps } from "next/image";
+import { isPublicSystemAvatarSource } from "@/domain/photo";
 import { screenMotion } from "@/lib/motion-tokens";
 import { reduceQuery } from "../lifecycle";
 import { MotionController } from "./controller";
@@ -522,9 +523,8 @@ export function ScreenMotion({
       for (const src of needed)
         if (
           !images.has(src) &&
-          /^\/assets\/(avatar-(male|female)\.png|avatars\/(male|female)\/(male|female)_\d{2}\.png)$/.test(
-            src,
-          )
+          (/^\/assets\/avatar-(male|female)\.png$/.test(src) ||
+            isPublicSystemAvatarSource(src))
         ) {
           const img = new Image();
           img.onload = () => {

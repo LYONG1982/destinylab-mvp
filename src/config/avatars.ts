@@ -12,7 +12,7 @@ const options = (gender: Gender): AvatarOption[] =>
     return {
       id,
       gender,
-      src: `/assets/avatars/${gender}/${id}.png`,
+      src: `/assets/avatars-v520/${gender}/${id}.webp`,
       alt: `${gender === "male" ? "男生" : "女生"}虚拟头像 ${number}`,
     };
   });

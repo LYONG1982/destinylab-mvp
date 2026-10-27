@@ -492,7 +492,7 @@ test("field lifecycle, privacy preservation and admission", async (t) => {
       const created = await read(newId);
       assert.equal(created.fieldOpen, false);
       assert.equal(created.participants.length, 0);
-      assert.equal(created.points.length, 20);
+      assert.equal(created.points.length, 30);
     },
   );
   if (process.env.FIELD_TEST_FIXTURE)

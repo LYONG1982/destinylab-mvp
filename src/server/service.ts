@@ -1,6 +1,8 @@
 import "server-only";
 import {
   createHash,
+  createHmac,
+  randomUUID,
   randomBytes,
   scrypt as cryptoScrypt,
   timingSafeEqual,
@@ -11,7 +13,7 @@ import type { DemoState } from "@/domain/types";
 import type { Audience, LiveCommand, RemovedEntry } from "@/lib/api/live-types";
 import type { WorldEvent } from "@/features/screen/world/types";
 import { applyCommand } from "@/domain/commands";
-import { ACTIVE_STATUSES } from "@/domain/selectors";
+import { hasEncounterWork, isPointDeleted, pointOccupants, reconcileEncounters } from "@/domain/encounters";
 import { database, transaction } from "./db";
 import { liveConfig } from "./config";
 import {
@@ -193,33 +195,39 @@ export async function join(
     if (!(e instanceof HttpError) || e.status !== 401) throw e;
   }
   await rateLimit(`join:${activity}`, 600);
-  const token = randomBytes(32).toString("base64url");
-  const participant = newParticipant();
-  await transaction(async (client) => {
+  const entryKey = request.headers.get("x-destiny-entry-key");
+  if (entryKey && !/^[A-Za-z0-9_-]{16,120}$/.test(entryKey)) throw new HttpError(400, "入场标识无效。");
+  return transaction(async client => {
     const before = await load(client, activity, true);
-    if (before.fieldOpen === false)
-      throw new HttpError(409, "现场尚未开放，请稍后再来。");
-    const next = structuredClone(before);
-    next.participants.push(participant);
-    next.scans.push(participant.id);
-    next.events.push({
-      id: `join-${participant.id}`,
-      at: participant.joinedAt,
-      type: "JOIN",
-      text: "一位参与者进入活动",
-      participantId: participant.id,
-    });
+    if (before.fieldOpen === false) throw new HttpError(409, "现场尚未开放，请稍后再来。");
+    const commandId = entryKey ? digest(`entry:${entryKey}`) : null;
+    const prior = commandId ? (await client.query(
+      "SELECT payload,created_at FROM dl_commands WHERE activity_id=$1 AND actor='@entry' AND command_id=$2",
+      [activity, commandId],
+    )).rows[0] : null;
+    if (prior && prior.payload.epoch !== before.epoch) throw new HttpError(410, "活动轮次已变化，请主动重新进入。");
+    if (prior && Date.now() - new Date(prior.created_at).getTime() > 600000) throw new HttpError(410, "入场请求已过期，请主动重新进入。");
+    if (prior && !before.participants.some(p => p.id === prior.payload.actor)) throw await participationEnded(activity, before, prior.payload.actor, client);
+    const participant = prior ? before.participants.find(p => p.id === prior.payload.actor)! : newParticipant();
+    const token = entryKey ? createHmac("sha256", liveConfig().secret).update(`entry:${activity}:${before.epoch}:${entryKey}`).digest("base64url") : randomBytes(32).toString("base64url");
     await client.query(
-      "INSERT INTO dl_sessions(token_hash,activity_id,role,actor,expires_at) VALUES($1,$2,'participant',$3,now()+interval '30 days')",
+      "INSERT INTO dl_sessions(token_hash,activity_id,role,actor,expires_at) VALUES($1,$2,'participant',$3,now()+interval '30 days') ON CONFLICT(token_hash) DO NOTHING",
       [digest(token), activity, participant.id],
     );
-    await save(client, activity, before, next);
+    if (!prior) {
+      const next = structuredClone(before);
+      next.participants.push(participant); next.scans.push(participant.id);
+      next.events.push({ id: `join-${participant.id}`, at: participant.joinedAt, type: "JOIN", text: "一位参与者进入活动", participantId: participant.id });
+      await save(client, activity, before, next);
+      if (commandId) await client.query(
+        "INSERT INTO dl_commands(activity_id,actor,command_id,payload_hash,revision,payload) VALUES($1,'@entry',$2,$2,$3,$4::jsonb)",
+        [activity, commandId, next.revision, JSON.stringify({ type: "entry", epoch: before.epoch, actor: participant.id })],
+      );
+    }
+    return { session: { actor: participant.id, role: "participant" as const }, token };
   });
-  return {
-    session: { actor: participant.id, role: "participant" as const },
-    token,
-  };
 }
+
 export async function operatorLogin(
   activity: string,
   username: unknown,
@@ -272,13 +280,13 @@ export async function readState(activity: string) {
   return transaction(async (client) => {
     let state = await load(client, activity);
     if (
-      state.invitations.some(
+      hasEncounterWork(state) || state.invitations.some(
         (i) => i.status === "SENT" && Date.now() - i.createdAt >= 900000,
       )
     ) {
       state = await load(client, activity, true);
       if (
-        state.invitations.some(
+        hasEncounterWork(state) || state.invitations.some(
           (i) => i.status === "SENT" && Date.now() - i.createdAt >= 900000,
         )
       ) {
@@ -353,6 +361,7 @@ export async function execute(
   input: unknown,
   id: string,
   epoch: unknown,
+  protocol = "520-v1",
 ) {
   if (!/^[A-Za-z0-9_-]{8,120}$/.test(id))
     throw new HttpError(400, "提交标识无效。");
@@ -372,6 +381,9 @@ export async function execute(
     }
     if (epoch !== before.epoch)
       throw new HttpError(409, "活动状态已变化，请刷新后重试。");
+    if (session.role === "participant" && protocol !== "520-v1" &&
+      (command.type === "invite" || (command.type === "accept" && before.invitations.find(i => i.id === command.invitationId)?.codeVersion === "520")))
+      throw new HttpError(409, "本场相遇规则已更新，请刷新页面或更新小程序后再确认认识。");
     const payloadHash = digest(JSON.stringify(command));
     const existing = await client.query(
       "SELECT payload_hash FROM dl_commands WHERE activity_id=$1 AND actor=$2 AND command_id=$3",
@@ -387,12 +399,15 @@ export async function execute(
       if (before.points.some((p) => p.name === command.name))
         throw new HttpError(409, "这个相遇点已经存在。");
       next = structuredClone(before);
+      let pointId = randomUUID();
+      while (before.points.some((point) => point.id === pointId)) pointId = randomUUID();
       next.points.push({
-        id: `point-${command.name}`,
+        id: pointId,
         name: command.name,
-        location: "",
+        location: command.location || "",
         distance: 0,
         occupant: null,
+        capacity: command.capacity ?? 30,
         closed: false,
       });
       next.events.push({
@@ -401,16 +416,44 @@ export async function execute(
         type: "POINT_ADD",
         text: `运营添加相遇点 ${command.name}`,
       });
-      next = applyCommand(
-        next,
-        {
-          actor: "operator",
-          id: `allocate-${id}`,
-          epoch: next.epoch,
-          command: { type: "sweep" },
-        },
-        Date.now(),
-      );
+      reconcileEncounters(next, Date.now());
+    } else if (command.type === "point-remove") {
+      const target = before.points.find((point) => point.id === command.pointId);
+      if (!target) throw new HttpError(404, "相遇点不存在。");
+      next = structuredClone(before);
+      const point = next.points.find((item) => item.id === command.pointId)!;
+      if (!isPointDeleted(point)) {
+        const held = pointOccupants(point).length > 0;
+        const retained = (point.retainedCodes || []).length > 0;
+        const activeReference = before.invitations.some((invitation) =>
+          invitation.pointId === point.id && ["SENT", "ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(invitation.status),
+        );
+        if (held || retained || activeReference)
+          throw new HttpError(409, "该点仍被相遇、待确认空闲记录或归档配对占用，暂不能删除。");
+        point.deletedAt = Date.now();
+        point.closed = true;
+        next.events.push({ id, at: point.deletedAt, type: "POINT_REMOVE", text: `运营删除相遇点 ${point.name}` });
+      }
+    } else if (command.type === "point-capacity-defaults") {
+      next = structuredClone(before);
+      const missing = next.points.filter((point) => !isPointDeleted(point) && point.capacity === undefined);
+      if (missing.some(point => pointOccupants(point).length + Math.ceil((point.retainedCodes?.length || 0) / 2) > 30))
+        throw new HttpError(409, "未配置点位的实际占用超过30对，请逐点配置容量。");
+      if (missing.length)
+        await client.query(
+          "INSERT INTO dl_field_archives(id,activity_id,epoch,action,snapshot) VALUES($1,$2,$3,$4,$5::jsonb)",
+          [randomUUID(), activity, before.epoch, "point-capacity-defaults", JSON.stringify(before)],
+        );
+      for (const point of missing) point.capacity = 30;
+      if (missing.length) {
+        next.events.push({
+          id,
+          at: Date.now(),
+          type: "POINT_CAPACITY_DEFAULTS",
+          text: `运营将 ${missing.length} 个未配置容量的相遇点设为30对`,
+        });
+        reconcileEncounters(next, Date.now());
+      }
     } else if (command.type === "display-question") {
       next = structuredClone(before);
       next.displayQuestionId = command.questionId;
@@ -421,28 +464,7 @@ export async function execute(
         text: `运营切换展示题 ${command.questionId}`,
       });
     } else if (command.type === "display-consent") {
-      const inv = before.invitations.find((i) => i.id === command.invitationId);
-      if (
-        !inv ||
-        ![inv.from, inv.to].includes(session.actor) ||
-        !inv.acceptedAt ||
-        (!inv.realMeetAt && !ACTIVE_STATUSES.includes(inv.status))
-      )
-        throw new HttpError(403, "不能修改这次相遇的公开展示许可。");
-      next = structuredClone(before);
-      next.displayGrants ??= {};
-      next.displayGrants[inv.id] ??= {};
-      next.displayGrants[inv.id][session.actor] = command.allow;
-      next.events.push({
-        id,
-        at: Date.now(),
-        type: "DISPLAY_CONSENT",
-        text: command.allow
-          ? "参与者允许本次相遇公开展示"
-          : "参与者撤回本次相遇公开展示",
-        participantId: session.actor,
-        invitationId: inv.id,
-      });
+      throw new HttpError(409, "本场已采用默认展示，请刷新页面或更新小程序。");
     } else {
       try {
         next = applyCommand(

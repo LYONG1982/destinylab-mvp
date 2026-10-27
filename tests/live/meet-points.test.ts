@@ -37,7 +37,7 @@ test("live defaults, safe backfill, persistence, permissions and duplicate reque
     ),
   );
   const initial = emptyActivity();
-  assert.equal(initial.points.length, 20);
+  assert.equal(initial.points.length, 30);
   const legacyPoint = {
     ...initial.points[0],
     id: "legacy-point",
@@ -72,12 +72,12 @@ test("live defaults, safe backfill, persistence, permissions and duplicate reque
     "backup precedes backfill, repeats do not change revision or current invitation",
     async () => {
       const result = await migrateMeetPoints(activity, backupDir);
-      assert.equal(result.added, 19);
+      assert.equal(result.added, 29);
       const backup = JSON.parse(await readFile(result.backup!, "utf8"));
       assert.deepEqual(backup.state, initial);
       assert.equal((await stat(result.backup!)).mode & 0o777, 0o600);
       const state = await readState(activity);
-      assert.equal(state.points.length, 20);
+      assert.equal(state.points.length, 30);
       assert.deepEqual(state.points[0], legacyPoint);
       assert.deepEqual(state.invitations, initial.invitations);
       assert.deepEqual(state.participants, initial.participants);
@@ -127,7 +127,7 @@ test("live defaults, safe backfill, persistence, permissions and duplicate reque
       await execute(
         activity,
         operator,
-        { type: "point-add", name: "Meet21" },
+        { type: "point-add", name: "Meet31" },
         randomUUID(),
         initial.epoch,
       );
@@ -135,14 +135,14 @@ test("live defaults, safe backfill, persistence, permissions and duplicate reque
         execute(
           activity,
           operator,
-          { type: "point-add", name: "Meet21" },
+          { type: "point-add", name: "Meet31" },
           randomUUID(),
           initial.epoch,
         ),
         /已经存在/,
       );
       const state = await readState(activity);
-      assert.equal(state.points.length, 21);
+      assert.equal(state.points.length, 31);
       assert.equal(state.points.at(-1)!.location, "");
       await execute(
         activity,

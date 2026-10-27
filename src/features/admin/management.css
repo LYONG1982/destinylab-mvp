@@ -647,3 +647,209 @@ input:focus-visible {
     padding: 12px;
   }
 }
+.meet-point-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(105px, 1fr));
+  gap: 10px;
+  padding: 16px 20px;
+}
+.meet-point-summary > div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #eee5df;
+  border-radius: 10px;
+  background: #fffdfb;
+}
+.meet-point-summary span,
+.meet-point-capacity {
+  color: #746962;
+  font-size: 12px;
+}
+.meet-point-summary strong {
+  font-size: 22px;
+  color: #442f31;
+}
+.meet-point-summary strong small {
+  color: #746962;
+  font-size: 12px;
+  font-weight: 500;
+}
+.add-meet-point-form,
+.point-capacity-defaults {
+  margin: 0 20px 14px;
+  padding: 14px;
+  border: 1px solid #eee5df;
+  border-radius: 10px;
+  background: #fffdfb;
+}
+.add-meet-point-form {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.2fr) minmax(120px, .8fr) minmax(200px, 1.5fr) minmax(120px, .8fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+.add-meet-point-copy {
+  display: grid;
+  align-self: center;
+  gap: 5px;
+  color: #442f31;
+}
+.add-meet-point-copy small,
+.point-capacity-defaults p,
+.point-capacity-defaults details,
+.point-form-error,
+.point-remove-reason {
+  color: #746962;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.add-meet-point-form label {
+  display: grid;
+  gap: 4px;
+  color: #746962;
+  font-size: 12px;
+}
+.add-meet-point-form input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid #d8ccc5;
+  border-radius: 7px;
+  background: #fff;
+  color: #332b29;
+}
+.point-form-error {
+  grid-column: 1 / -1;
+  color: #9d4147;
+}
+.point-capacity-defaults {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.point-capacity-defaults p {
+  margin: 5px 0 0;
+}
+.point-capacity-defaults summary,
+.deleted-point-history summary {
+  cursor: pointer;
+  color: #73484b;
+  font-size: 13px;
+  font-weight: 600;
+}
+.point-capacity-defaults details p {
+  margin-top: 5px;
+}
+.meet-point-actions {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  min-width: 150px;
+}
+.meet-point-actions .danger {
+  color: #9d4147;
+  border-color: #e4c7c7;
+}
+.meet-point-actions .danger:disabled {
+  color: #9b9290;
+  border-color: #e7e0dd;
+}
+.point-remove-reason {
+  max-width: 180px;
+}
+.deleted-point-history {
+  margin: 14px 20px 18px;
+  padding: 14px;
+  border: 1px solid #eee5df;
+  border-radius: 10px;
+  background: #fffdfb;
+}
+.deleted-point-history .table-scroll {
+  margin-top: 10px;
+}
+.meet-point-table-scroll {
+  max-height: 66vh;
+}
+.meet-point-table {
+  min-width: 1120px;
+}
+.meet-point-capacity {
+  display: block;
+  margin-top: 4px;
+}
+.meet-point-pairs {
+  display: grid;
+  gap: 10px;
+  min-width: 190px;
+}
+.meet-point-pair {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #eee5df;
+  border-radius: 8px;
+  background: #fffdfb;
+}
+.meet-point-pair small {
+  color: #746962;
+  font-size: 12px;
+}
+.meet-point-config {
+  display: grid;
+  gap: 8px;
+  min-width: 210px;
+}
+.meet-point-config label {
+  display: grid;
+  gap: 4px;
+  color: #746962;
+  font-size: 12px;
+}
+.meet-point-config input {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #d8ccc5;
+  border-radius: 7px;
+  background: #fff;
+  color: #332b29;
+}
+.meet-point-config button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (max-width: 1100px) {
+  .meet-point-summary {
+    grid-template-columns: repeat(3, minmax(105px, 1fr));
+  }
+  .add-meet-point-form {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+  .add-meet-point-copy,
+  .add-point-location,
+  .point-form-error {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 600px) {
+  .meet-point-summary {
+    grid-template-columns: repeat(2, minmax(105px, 1fr));
+    padding: 12px;
+  }
+  .add-meet-point-form,
+  .point-capacity-defaults {
+    margin-right: 12px;
+    margin-left: 12px;
+  }
+  .point-capacity-defaults {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .deleted-point-history {
+    margin-right: 12px;
+    margin-left: 12px;
+  }
+}

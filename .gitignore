@@ -40,3 +40,8 @@ miniapp/release/
 miniapp/.swc/
 
 .next-admin*/
+
+# Isolated 2026-10-26 UAT build; never publish runtime artifacts.
+.next-520-uat/
+.next-selfmeet-uat/
+.next-selfmeet-uat-final/

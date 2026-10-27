@@ -1,13 +1,15 @@
 import { useState, useSyncExternalStore } from "react";
 import Taro, { useLoad, useDidShow, useDidHide, useUnload } from "@tarojs/taro";
 import { View, Text, Button, Input, Picker, Switch } from "@tarojs/components";
-import { QUESTIONS, AGES } from "@/data/questions";
+import { QUESTIONS, AGES, questionById } from "@/data/questions";
+import { is520Encounter, ownEncounterCode } from "@/domain/encounters";
 import {
   currentInvite,
   counterpart,
   recommendations,
   commonAnswers,
   complete,
+  hasPersonalEncounter,
 } from "@/domain/selectors";
 import type { Participant, DemoState } from "@/domain/types";
 import { client, API_ORIGIN } from "../../lib/client";
@@ -47,6 +49,9 @@ function Profile({
   return (
     <View className="card">
       <Text className="title">让彼此更容易认识</Text>
+      <Text className="muted">
+        双方愿意认识后，活动昵称、系统头像与相遇连线会在现场大屏展示；联系方式不会自动分享。
+      </Text>
       <Text className="label">活动昵称</Text>
       <Input
         className="input"
@@ -117,10 +122,18 @@ function InviteFlow({
   const terminal = ["DECLINED", "CANCELLED", "EXPIRED", "MEET_FAILED"].includes(
     invite.status,
   );
-  const bothArrived =
-    !!invite.arrivals[invite.from] && !!invite.arrivals[invite.to];
-  const permit = !!invite.acceptedAt && (!terminal || !!invite.realMeetAt);
-  const allowed = state.displayGrants?.[invite.id]?.[me.id] === true;
+  const is520 = is520Encounter(invite);
+  const ownCode = is520 ? ownEncounterCode(invite, me.id) : invite.code;
+  const hasOwnRecord = hasPersonalEncounter(invite, me.id);
+  const canShowGuide =
+    !terminal &&
+    !!point &&
+    ["ACCEPTED", "MEET_ASSIGNED", "ARRIVING", "CONFIRMED"].includes(
+      invite.status,
+    );
+  const recordedAt =
+    invite.confirmations[me.id] ||
+    (invite.status === "CONFIRMED" ? invite.realMeetAt : undefined);
   return (
     <View className="card">
       <Text className="eyebrow">一次真实的相遇</Text>
@@ -132,7 +145,7 @@ function InviteFlow({
       )}
       {invite.common.map((c) => (
         <Text key={c.questionId} className="tag">
-          {QUESTIONS.find((q) => q.id === c.questionId)?.short} · {c.answer}
+          {questionById(c.questionId)?.short || "共同选择"} · {c.answer}
         </Text>
       ))}
       {invite.status === "SENT" && (
@@ -148,7 +161,7 @@ function InviteFlow({
                 disabled={busy}
                 onClick={() => send("accept")}
               >
-                愿意认识
+                确认认识
               </Button>
               <Button disabled={busy} onClick={() => send("decline")}>
                 暂时不了
@@ -161,72 +174,40 @@ function InviteFlow({
           )}
         </>
       )}
-      {["ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(invite.status) && (
+      {canShowGuide && (
         <>
-          <Text className="title">
-            {point ? `在 ${point.name} 相遇` : "你们都愿意认识彼此"}
-          </Text>
+          <Text className="title">在 {point?.name || "相遇点"} 相遇</Text>
           <Text className="muted">
-            {point
-              ? point.location || "请前往现场对应编号的相遇点。"
-              : "工作人员正在安排相遇点，请稍候。"}
+            现场位置：{point?.location || "请前往现场对应编号的相遇点。"}
           </Text>
-          {point && <Text className="meeting-code">相认码 {invite.code}</Text>}
-          {point && !invite.departures[me.id] && (
-            <Button
-              className="primary"
-              disabled={busy}
-              onClick={() => send("depart")}
-            >
-              我出发了
-            </Button>
-          )}
-          {invite.departures[me.id] && !invite.arrivals[me.id] && (
-            <Button
-              className="primary"
-              disabled={busy}
-              onClick={() => send("arrive")}
-            >
-              我已到达相遇点
-            </Button>
-          )}
-          {invite.arrivals[me.id] && (
-            <Text className="notice">
-              {bothArrived
-                ? "双方已到达，请见到对方后分别确认。"
-                : "你已到达，等待对方到达。"}
+          <Text className="meeting-code">
+            {ownCode
+              ? `${is520 ? "我的相遇码" : "相遇码"} ${ownCode}`
+              : "相遇码正在生成，请稍后查看。"}
+          </Text>
+          {ownCode && (
+            <Text className="muted">
+              ① 找到相遇点　② 交换相遇码　③ 核对活动昵称
             </Text>
           )}
-          {bothArrived && !invite.confirmations[me.id] && (
+          {is520 && ownCode && (
+            <Text className="muted">
+              两个相遇码相加等于 520；页面只显示你的码。请同时核对活动昵称。
+            </Text>
+          )}
+          {!hasOwnRecord && ownCode && (
             <Button
               className="primary"
-              disabled={busy}
-              onClick={async () => {
-                if (
-                  (
-                    await Taro.showModal({
-                      title: "已经见到对方了吗？",
-                      content:
-                        "请实际见到对方后确认；双方都确认才计为一次相遇。",
-                      confirmText: "已见到",
-                    })
-                  ).confirm
-                )
-                  send("confirm");
-              }}
+              disabled={busy || !point}
+              onClick={() => send("confirm")}
             >
-              确认已经见到对方
+              我已遇见 TA
             </Button>
-          )}
-          {invite.confirmations[me.id] && (
-            <Text className="notice">你已确认，等待对方独立确认。</Text>
           )}
           <Button disabled={busy} onClick={() => send("help")}>
             需要工作人员帮助
           </Button>
-          {["ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(
-            invite.status,
-          ) && (
+          {!hasOwnRecord && ["ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(invite.status) && (
             <Button
               className="text-button"
               disabled={busy}
@@ -247,6 +228,23 @@ function InviteFlow({
           )}
         </>
       )}
+      {!terminal &&
+        !canShowGuide &&
+        ["ACCEPTED", "MEET_ASSIGNED", "ARRIVING", "CONFIRMED"].includes(
+          invite.status,
+        ) && (
+          <>
+            <Text className="title">相遇点与相遇码正在准备</Text>
+            <Text className="muted">
+              系统分配完成后，这里会显示现场位置和你的相遇码。
+            </Text>
+          </>
+        )}
+      {hasOwnRecord && (
+        <Text className="notice">
+          你已记录这次相遇{recordedAt ? ` · ${new Date(recordedAt).toLocaleString("zh-CN", { hour12: false })}` : ""}。
+        </Text>
+      )}
       {state.helps
         .filter(
           (h) => h.invitationId === invite.id && h.participantId === me.id,
@@ -259,11 +257,11 @@ function InviteFlow({
                 : "工作人员正在处理。")}
           </Text>
         ))}
-      {invite.status === "CONFIRMED" && (
+      {hasOwnRecord && (
         <>
-          <Text className="title">很高兴，你们遇见了</Text>
+          <Text className="title">相遇的下一站</Text>
           <Text className="muted">
-            接下来，你想怎样继续？每个人都可以独立选择。
+            接下来，想怎样继续？这些选择由你独立决定。
           </Text>
           {(
             [
@@ -302,7 +300,7 @@ function InviteFlow({
           </Button>
         </>
       )}
-      {terminal && (
+      {terminal && !hasOwnRecord && (
         <>
           <Text className="title">这次邀请已结束</Text>
           <Button
@@ -313,20 +311,6 @@ function InviteFlow({
             继续发现
           </Button>
         </>
-      )}
-      {permit && (
-        <View className="permission-block">
-          <Text className="subtitle">让这次相遇被看见</Text>
-          <Text className="muted">
-            双方都同意后，大屏才会公开展示你们的活动昵称、头像与相遇连线。你可随时撤回。
-          </Text>
-          <Button
-            disabled={busy}
-            onClick={() => send("display-consent", { allow: !allowed })}
-          >
-            {allowed ? "撤回本次公开展示" : "允许本次公开展示"}
-          </Button>
-        </View>
       )}
     </View>
   );
@@ -385,7 +369,7 @@ export default function Index() {
         <Text className="muted">
           {current.removedEntry
             ? "原参与记录已归档。重新参与需填写本场资料并重新答题。"
-            : "扫码进入活动，发现同频的人。你的答案和选择会同步到现场；手机号等服务资料不会在大屏公开。"}
+            : "扫码进入活动，发现同频的人。双方愿意认识后，活动昵称、系统头像与相遇连线会在现场大屏展示；手机号等服务资料不会公开。"}
         </Text>
         <Button
           className="primary"
@@ -542,7 +526,7 @@ export default function Index() {
           <Text className="muted">从你们共同的选择开始聊聊。</Text>
           {commonAnswers(me, other).map((c) => (
             <Text key={c.questionId} className="tag">
-              {QUESTIONS.find((q) => q.id === c.questionId)?.title}：{c.answer}
+              {questionById(c.questionId)?.title || "共同选择"}：{c.answer}
             </Text>
           ))}
           <Button
