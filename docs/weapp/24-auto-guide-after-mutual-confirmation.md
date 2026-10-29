@@ -51,6 +51,6 @@
 
 - [本机用户入口](http://127.0.0.1:3244/mobile/01-start?activity=meet-uat-520-v2)
 - [本机后台](http://127.0.0.1:3244/admin/dashboard?activity=meet-uat-520-v2)
-- [已确认计划](../../plans/active/2026-10-29-双向确认后双方自动展示相遇安排.md)
+- [已确认计划](../../plans/archive/2026-10-29-双向确认后双方自动展示相遇安排.md)
 
-实现与验证完成后正常推送同一GitHub分支；实际提交于发布收尾记录。未自动部署线上或修改线上配置。Next构建生成的本地类型路径与未提交的活动策划文档保留在本地，不混入本次源码提交。
+功能提交 [ea7e3e2](https://github.com/LYONG1982/destinylab-mvp/commit/ea7e3e235894a6904dd5f492e460c2da0e76f1b1) 已正常推送同一GitHub分支，远端分支SHA经Git和GitHub API核对一致；详见[部署交接](../releases/2026-10-29-auto-guide-source.md)。未自动部署线上或修改线上配置。Next构建生成的本地类型路径与未提交的活动策划文档保留在本地，不混入本次源码提交。

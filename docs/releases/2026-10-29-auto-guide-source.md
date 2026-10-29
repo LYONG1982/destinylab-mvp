@@ -26,4 +26,6 @@
 
 ## 发布记录
 
-源码推送及远端核对在本次发布收尾记录，代码在当前开发分支持续维护。
+功能提交：[ea7e3e2 — 双向确认后双方自动展示相遇地点与相遇码](https://github.com/LYONG1982/destinylab-mvp/commit/ea7e3e235894a6904dd5f492e460c2da0e76f1b1)。已正常推送到上述分支，并以git ls-remote与GitHub分支API回读核对SHA一致。后续本次文档归档提交不改变已验证的业务代码。
+
+可直接转发：请部署 `codex/weapp-release-20261013` 分支（功能提交 `ea7e3e2`）的最新源码并重建H5应用，让用户刷新页面；本次让邀请双方确认认识后自动看到共同相遇点及各自相遇码，保留原配对和520规则，无新增DDL，不清库或重置任务。本地166项领域测试、13项Playwright验证及类型/lint/构建通过；部署后请用两名测试者完成线上双端验收。源码地址：https://github.com/LYONG1982/destinylab-mvp/tree/codex/weapp-release-20261013 。
