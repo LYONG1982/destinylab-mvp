@@ -154,7 +154,7 @@ test("two new mobile participants meet through real UI, with separate step-by-st
     await expect(pages[1].getByRole("button", { name: "确认认识", exact: true })).toBeVisible();
     await shot(pages[1], 1, "收到云川的邀请", "看清昵称和共同话题，愿意后点击「确认认识」。");
     await pages[1].getByRole("button", { name: "确认认识", exact: true }).click();
-    await pages[0].getByRole("button", { name: "查看相遇任务", exact: true }).click();
+    await expect(pages[0]).toHaveURL(/08-mutual/);
     const codes: string[] = [];
     for (const [index, page] of pages.entries()) {
       await expect(page).toHaveURL(/08-mutual/);

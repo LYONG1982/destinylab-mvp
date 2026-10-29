@@ -72,6 +72,12 @@ import { useCityResponse } from "@/components/motion/CityResponseToast";
 import { motionTiming } from "@/lib/motion-tokens";
 import { LiveGate } from "@/components/LiveControls";
 import { is520Encounter, ownEncounterCode } from "@/domain/encounters";
+import {
+  automaticEncounterRoute,
+  encounterGuideVisitKey,
+  encounterGuideVisits,
+  mobileFlowUrl,
+} from "./encounter-navigation";
 
 type Actions = ReturnType<typeof useAction>;
 function FieldAccess({ state, me }: { state: DemoState; me: Participant }) {
@@ -196,11 +202,24 @@ function MobileFlow({
     .map((answer) => `${answer.questionId}:${answer.answer}`)
     .join("|");
   const resumeRoute = routeFor(s, me);
+  const requestedActivity = query.get("activity");
+  const activity = s.live?.activity || requestedActivity || undefined;
+  const pendingNavigation = useRef("");
   const go = (p: string, targetId?: string) =>
-    router.push(`/mobile/${p}${targetId ? `?target=${targetId}` : ""}`);
+    router.push(mobileFlowUrl(p, activity, targetId));
   useEffect(() => {
+    if (s.live && requestedActivity && requestedActivity !== s.live.activity) return;
     let destination = "";
     const n = Number(page.slice(0, 2));
+    const visitKey = inv
+      ? encounterGuideVisitKey(activity || "demo", s.epoch, me.id, inv.id)
+      : "";
+    if (inv && (ownEncounterRecorded ||
+        ["ACCEPTED", "MEET_ASSIGNED", "ARRIVING"].includes(inv.status)) &&
+        (["08-mutual", "09-meet"].includes(page) ||
+        (page === "10-next-step" && ownEncounterRecorded)) &&
+        !encounterGuideVisits.has(visitKey))
+      encounterGuideVisits.remember(visitKey);
     if (n > 2 && !me.answers.q1) destination = "01-start";
     else if (n > 3 && !me.profileComplete) destination = "03-profile";
     // Existing six-answer snapshots may finish their current task, including
@@ -220,9 +239,19 @@ function MobileFlow({
       destination = "07-invitation";
     else if (n === 10 && !ownEncounterRecorded)
       destination = inv?.status === "SENT" ? "07-invitation" : resumeRoute;
-    if (destination && destination !== page)
-      router.replace(`/mobile/${destination}`);
-  }, [s.epoch, me, page, inv, router, resumeRoute, ownEncounterRecorded]);
+    else destination = automaticEncounterRoute({
+      page, invitation: inv, actor: me.id, present: me.present,
+      paused: me.paused, fieldOpen: s.fieldOpen,
+      seen: !!visitKey && encounterGuideVisits.has(visitKey),
+    });
+    if (destination && destination !== page) {
+      const url = mobileFlowUrl(destination, activity);
+      if (pendingNavigation.current !== url) {
+        pendingNavigation.current = url;
+        router.replace(url);
+      }
+    } else pendingNavigation.current = "";
+  }, [s.epoch, s.fieldOpen, s.live, me, page, inv, router, resumeRoute, ownEncounterRecorded, activity, requestedActivity]);
   const hero = (eyebrow: string, title: React.ReactNode, subtitle?: string) => (
     <div className="page-hero">
       <div className="eyebrow">{eyebrow}</div>
@@ -432,7 +461,7 @@ function MobileFlow({
                 {inv && (
                   <Link
                     className="task-banner"
-                    href={`/mobile/${routeFor(s, me) === "05-discover" ? "07-invitation" : routeFor(s, me)}`}
+                    href={mobileFlowUrl(routeFor(s, me) === "05-discover" ? "07-invitation" : routeFor(s, me), activity)}
                   >
                     <Icon name="heart" />
                     <span>
@@ -535,7 +564,7 @@ function MobileFlow({
                         </span>
                         <Link
                           className="notice-action"
-                          href={`/mobile/${routeFor(s, me)}`}
+                          href={mobileFlowUrl(routeFor(s, me), activity)}
                         >
                           {currentTaskLabel}
                           <Icon name="arrow" size={16} />
@@ -614,10 +643,7 @@ function MobileFlow({
                         <Button
                           disabled={a.busy}
                           onClick={() =>
-                            a.run(
-                              { type: "accept", invitationId: inv.id },
-                              () => go("08-mutual"),
-                            )
+                            a.run({ type: "accept", invitationId: inv.id })
                           }
                         >
                           确认认识

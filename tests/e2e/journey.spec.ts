@@ -85,7 +85,6 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await expect(
         page.getByText("你们都愿意认识彼此。", { exact: true }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "查看相遇任务" }).click();
       await expect(page).toHaveURL(/08-mutual/);
       for (const p of [page, receiver]) {
         await expect(p).toHaveURL(/08-mutual/);

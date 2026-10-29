@@ -377,7 +377,7 @@ test("self-meet: two independent participants record and continue on their own",
     await recordShot(femalePage, "female", "女生收到邀请并阅读共同话题", "女生自行确认是否认识星河；未替对方接受。");
     await femalePage.getByRole("button", { name: "确认认识", exact: true }).click();
     await expect(femalePage).toHaveURL(/08-mutual/);
-    await malePage.goto(`/mobile/08-mutual?activity=${activity}`);
+    await expect(malePage).toHaveURL(/08-mutual/);
 
     const codeList: string[] = [];
     for (const [index, page] of userPages.entries()) {

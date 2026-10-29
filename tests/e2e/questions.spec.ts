@@ -208,7 +208,7 @@ test("a persisted six-answer invitation completes two-person meeting then explic
   await mobile(receiver, "07-invitation", "p-xiaoman");
       await receiver.getByRole("button", { name: "确认认识" }).click();
   await expect(receiver).toHaveURL(/08-mutual/);
-  await page.getByRole("button", { name: "查看相遇任务" }).click();
+  await expect(page).toHaveURL(/08-mutual/);
   for (const p of [page, receiver]) {
     await expect(p).toHaveURL(/08-mutual/);
     await expect(p.getByRole("button", { name: "确认出发" })).toHaveCount(0);

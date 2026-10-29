@@ -27,7 +27,7 @@ for (const sharedPoint of [false, true]) {
     const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 2, connectionTimeoutMillis: 5000 });
     const result: Record<string, unknown> = {
       activity, mode, origin, startedAt: new Date().toISOString(),
-      buildId: readFileSync(".next-520-uat/BUILD_ID", "utf8").trim(),
+      buildId: readFileSync(`${process.env.DESTINY_DIST_DIR || ".next-520-uat"}/BUILD_ID`, "utf8").trim(),
       preparation: "Only empty activity/initial point enablement and operator authentication are prepared. All four people, answers, invitations and meeting actions use browser UI.",
       screenshots: [], stages: [],
     };
@@ -134,7 +134,6 @@ for (const sharedPoint of [false, true]) {
         expect(pending.code).toBe("");
         await pages[to].getByRole("link", { name: /查看你的相遇任务/ }).click();
         await pages[to].getByRole("button", { name: "确认认识", exact: true }).click();
-        await pages[from].getByRole("button", { name: "查看相遇任务" }).click();
         await expect(pages[to]).toHaveURL(/08-mutual/);
         await expect(pages[from]).toHaveURL(/08-mutual/);
       }

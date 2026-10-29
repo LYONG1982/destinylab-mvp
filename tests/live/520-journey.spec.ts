@@ -161,8 +161,6 @@ test("two independent H5 users complete the six-question 520 journey and appear 
     await b.getByRole("link", { name: /查看你的相遇任务/ }).click();
     await expect(b).toHaveURL(/07-invitation/);
     await b.getByRole("button", { name: "确认认识", exact: true }).click();
-    await expect(a.getByRole("button", { name: "查看相遇任务" })).toBeVisible();
-    await a.getByRole("button", { name: "查看相遇任务" }).click();
     const codeA = await mutualPage(a);
     const codeB = await mutualPage(b);
     expect(codeA).toMatch(/^\d{3}$/);
